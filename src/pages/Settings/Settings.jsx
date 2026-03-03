@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col } from 'antd';
+import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col, Space } from 'antd';
 import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar, API_BASE_URL } from '../../services/api';
@@ -212,7 +212,7 @@ const Settings = () => {
             render: (_, record) => (
                 <div style={{ position: 'relative', width: 40, height: 40 }}>
                     <Avatar
-                        src={record.avatar_url ? `${API_BASE_URL}${record.avatar_url}` : null}
+                        src={record.avatar_url ? `${API_BASE_URL}/${record.avatar_url.replace(/^\//, '')}` : null}
                         icon={<UserOutlined />}
                         size={40}
                     />
@@ -318,7 +318,10 @@ const Settings = () => {
                                     </Col>
                                     <Col span={12}>
                                         <Form.Item label="Email Address" name="email">
-                                            <Input disabled addonAfter={<LockOutlined />} />
+                                            <Space.Compact style={{ width: '100%' }}>
+                                                <Input disabled />
+                                                <Button disabled icon={<LockOutlined />} />
+                                            </Space.Compact>
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -338,7 +341,7 @@ const Settings = () => {
                             <Avatar
                                 size={160}
                                 icon={<UserOutlined />}
-                                src={profile?.avatar_url ? `${API_BASE_URL}${profile.avatar_url}` : null}
+                                src={profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}` : null}
                                 style={{
                                     border: '4px solid var(--border-color)',
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',

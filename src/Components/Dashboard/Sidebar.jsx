@@ -69,7 +69,7 @@ const Sidebar = () => {
           <Avatar
             size={80}
             icon={<UserOutlined />}
-            src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : null}
+            src={user?.avatar_url ? `${API_BASE_URL}/${user.avatar_url.replace(/^\//, '')}` : null}
             className="sidebar-profile-img"
             style={{
               backgroundColor: 'var(--bg-hover)',
