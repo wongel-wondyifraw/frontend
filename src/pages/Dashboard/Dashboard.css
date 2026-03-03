@@ -1,0 +1,92 @@
+.dashboard-grid {
+    display: flex;
+    gap: 24px;
+    height: 100%;
+}
+
+.left-column {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.right-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 320px;
+}
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+/* Activity Section (Programs & Todo) */
+.activity-section-row {
+    display: flex;
+    gap: 24px;
+    height: 400px;
+}
+
+.programs-widget {
+    flex: 1;
+}
+
+.todo-widget {
+    flex: 1;
+}
+
+/* Right Column Widgets */
+.quick-actions-widget {
+    /* Height handled by content */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+    .dashboard-grid {
+        flex-direction: column;
+    }
+
+    .right-column {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .quick-actions-widget {
+        flex: 1;
+        min-width: 300px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .activity-section-row {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .programs-widget,
+    .todo-widget {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+
+    .right-column {
+        flex-direction: column;
+    }
+}

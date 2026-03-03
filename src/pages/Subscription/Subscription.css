@@ -1,0 +1,119 @@
+.subscription-page {
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.subscription-header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.back-button {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.plans-container {
+    width: 100%;
+    max-width: 1200px;
+}
+
+.plan-card {
+    height: 100%;
+    border-radius: 12px;
+    text-align: left;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.plan-card.popular-plan {
+    border: 2px solid #1890ff;
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(24, 144, 255, 0.15);
+}
+
+.popular-tag {
+    position: absolute;
+    top: 12px;
+    right: -30px;
+    background-color: #1890ff;
+    color: white;
+    padding: 4px 40px;
+    transform: rotate(45deg);
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.plan-header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.plan-header h3.ant-typography {
+    margin-bottom: 8px;
+}
+
+.plan-price .currency {
+    font-size: 36px;
+    font-weight: bold;
+    color: #1f1f1f;
+}
+
+.plan-price .period {
+    font-size: 16px;
+    margin-left: 4px;
+}
+
+.plan-features {
+    flex: 1;
+    margin-bottom: 32px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.feature-icon {
+    color: #52c41a;
+    margin-right: 12px;
+    font-size: 16px;
+}
+
+.plan-button {
+    border-radius: 6px;
+    height: 48px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .subscription-header {
+        margin-bottom: 32px;
+    }
+
+    .back-button {
+        position: static;
+        margin-bottom: 16px;
+        display: block;
+    }
+
+    .plan-card.popular-plan {
+        transform: none;
+    }
+}

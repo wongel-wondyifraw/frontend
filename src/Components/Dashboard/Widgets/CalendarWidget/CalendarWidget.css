@@ -1,0 +1,81 @@
+.calendar-widget-card {
+    background: var(--bg-card);
+    /* was #FFFFFF */
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    padding: 8px;
+    height: auto;
+    border: 1px solid var(--border-color);
+    /* was #DBEAFE */
+}
+
+.calendar-widget-card .ant-picker-calendar {
+    background: transparent;
+    font-size: 12px;
+}
+
+/* Header */
+.calendar-widget-card .ant-picker-calendar-header {
+    padding: 4px 0;
+}
+
+.calendar-widget-card .ant-picker-calendar-header .ant-picker-calendar-mode-switch {
+    color: var(--text-main);
+}
+
+.calendar-widget-card .ant-picker-calendar-header .ant-select-selector {
+    background: var(--bg-body) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Compact Dates */
+.calendar-widget-card .ant-picker-panel .ant-picker-body {
+    padding: 4px 0 !important;
+}
+
+.calendar-widget-card .ant-picker-cell {
+    padding: 2px 0 !important;
+    color: var(--text-secondary);
+}
+
+.calendar-widget-card .ant-picker-content th {
+    color: var(--text-secondary) !important;
+}
+
+.calendar-widget-card .ant-picker-cell-inner {
+    min-width: 24px !important;
+    height: 24px !important;
+    line-height: 24px !important;
+    font-size: 13px !important;
+    color: var(--text-main) !important;
+}
+
+/* Selected Date - Executive Blue */
+.calendar-widget-card .ant-picker-cell-selected .ant-picker-cell-inner {
+    background: var(--primary-blue) !important;
+    /* was #3B82F6 */
+    border-color: var(--primary-blue) !important;
+    color: #FFFFFF !important;
+}
+
+/* Today's Date */
+.calendar-widget-card .ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: var(--primary-blue) !important;
+}
+
+/* Full Month View overrides for mini calendar */
+.calendar-widget-card .ant-picker-calendar-mini {
+    border-radius: 8px;
+}
+
+/* Hover effects */
+.calendar-widget-card .ant-picker-cell-inner:hover {
+    background: var(--bg-hover) !important;
+    /* was #EFF6FF */
+}
+
+/* Dark mode specific for Ant Design calendar internal classes overridden globally or here */
+[data-theme='dark'] .calendar-widget-card .ant-picker-cell-in-view {
+    color: var(--text-main);
+}

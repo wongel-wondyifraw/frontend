@@ -1,0 +1,188 @@
+.home-group-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--text-main);
+    /* was #1e293b */
+    padding: 24px;
+}
+
+.content-card-unified {
+    background: var(--bg-card);
+    /* was white */
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    /* was #f1f5f9 */
+}
+
+.group-header-section {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--primary-blue);
+    /* was #1565c0 */
+}
+
+.group-icon-bg {
+    width: 100px;
+    height: 100px;
+    background: var(--bg-hover);
+    /* was #e3f2fd */
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: var(--primary-blue);
+    /* was #1565c0 */
+}
+
+.group-header-info {
+    flex: 1;
+}
+
+.group-header-info h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: var(--text-main);
+    /* was #0f172a */
+}
+
+.group-actions {
+    display: flex;
+    gap: 16px;
+}
+
+.group-meta {
+    display: flex;
+    gap: 24px;
+    color: var(--text-secondary);
+    /* was #64748b */
+    font-size: 14px;
+}
+
+.group-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.group-detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 40px;
+}
+
+.detail-section {
+    margin-bottom: 32px;
+}
+
+.detail-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--primary-blue);
+    /* was #1565c0 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Map Container Styles */
+.map-container {
+    width: 100%;
+    height: 250px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+    /* was #e2e8f0 */
+    position: relative;
+    background: var(--bg-hover);
+    /* was #f1f5f9 */
+}
+
+.map-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.map-overlay-label {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    /* Keep white opaque for visibility on map? or use var(--bg-card)? Maps are usually images, so opaque white is safe */
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-blue);
+    /* was #1565c0 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.info-label {
+    width: 120px;
+    color: var(--text-secondary);
+    /* was #64748b */
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-value {
+    flex: 1;
+    color: var(--text-main);
+    /* was #0f172a */
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-hover);
+    /* was #f8fafc */
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    /* was #f1f5f9 */
+}
+
+@media (max-width: 1024px) {
+    .group-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .group-header-section {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+    }
+
+    .group-meta {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}

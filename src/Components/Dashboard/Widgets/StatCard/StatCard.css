@@ -1,0 +1,128 @@
+.stat-card {
+    background: var(--bg-card);
+    /* was #FFFFFF */
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    /* was #DBEAFE */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    /* Keep shadow opacity low or adjust variable? Custom here is fine for now */
+}
+
+/* Color Variants - Monochromatic Enforced */
+.stat-card.blue,
+.stat-card.green,
+.stat-card.purple {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+.stat-card.blue .stat-title,
+.stat-card.green .stat-title,
+.stat-card.purple .stat-title {
+    color: var(--text-secondary);
+    /* was #94A3B8 */
+}
+
+.stat-card.blue .stat-amount,
+.stat-card.green .stat-amount,
+.stat-card.purple .stat-amount {
+    color: var(--text-main);
+    /* was #020617 */
+}
+
+.stat-card.blue .stat-icon-wrapper,
+.stat-card.green .stat-icon-wrapper,
+.stat-card.purple .stat-icon-wrapper {
+    background: var(--bg-hover);
+    /* was #F1F5F9 (Ice Wash/Slate 800) */
+    color: var(--primary-blue);
+    /* was #3B82F6 */
+}
+
+.stat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.stat-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-hover);
+    color: var(--primary-blue);
+}
+
+.stat-title {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0;
+}
+
+.stat-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-left: 2px;
+}
+
+.stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.trend-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+}
+
+/* Monochromatic Trend Logic */
+.trend-badge.positive {
+    background-color: transparent;
+    color: var(--exec-blue);
+    /* was #3B82F6 */
+}
+
+.trend-badge.negative {
+    background-color: transparent;
+    color: var(--sapphire-deep);
+    /* was #1E3A8A */
+    opacity: 0.8;
+}
+
+.trend-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    /* was #94A3B8 */
+    opacity: 1;
+}

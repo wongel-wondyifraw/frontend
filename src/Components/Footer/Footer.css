@@ -1,0 +1,41 @@
+.footer-section {
+  background: #00171f;
+  padding: 3rem 1.5rem;
+}
+
+.footer-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  color: white;
+}
+
+.footer-title {
+  color: #ffffff !important;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.footer-section a {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  color: white;
+}
+
+.footer-section a:hover {
+  color: #00a8e8;
+}
+
+.footer-bottom {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}

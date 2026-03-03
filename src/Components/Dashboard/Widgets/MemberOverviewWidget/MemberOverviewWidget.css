@@ -1,0 +1,122 @@
+.member-overview-widget {
+    background: #FFFFFF;
+    border: 1px solid #DBEAFE;
+    border-radius: 8px;
+    /* 8px per spec */
+    padding: 16px;
+    height: 100%;
+    box-shadow: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
+    /* Layered shadow */
+    display: flex;
+    flex-direction: column;
+}
+
+.member-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.member-header h3 {
+    margin: 0;
+    font-size: 15px;
+    color: #94A3B8;
+    /* Secondary label color for title */
+    font-weight: 500;
+}
+
+.member-icon-badge {
+    background: #F1F5F9;
+    /* Ghost Slate */
+    color: #3B82F6;
+    /* Executive Blue */
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.member-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+}
+
+.member-stat-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.member-stat-main .stat-label {
+    color: #94A3B8;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.member-stat-main .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #020617;
+    /* Abyssal Black-Blue */
+    line-height: 1.2;
+}
+
+.member-stat-main .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+/* Monochromatic Trend Indicators */
+.member-stat-main .stat-trend.positive {
+    color: #3B82F6;
+    /* Executive Blue */
+    background: transparent;
+    /* Cleaner look or use #EFF6FF if needed */
+    padding: 0;
+    width: fit-content;
+}
+
+.member-chart-wrapper {
+    width: 100px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 10px;
+    margin-top: -15px;
+}
+
+.legend-item {
+    font-size: 10px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legend-item .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.legend-item .dot.active {
+    background-color: #3B82F6;
+}
+
+.legend-item .dot.inactive {
+    background-color: #DBEAFE;
+}

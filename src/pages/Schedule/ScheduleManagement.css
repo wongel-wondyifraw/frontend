@@ -1,0 +1,141 @@
+.schedule-container {
+    max-width: 1200px;
+    /* Increased to match dashboard width more closely */
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Calendar Card Customization */
+.calendar-card {
+    background: #fff;
+    border-radius: 8px;
+    /* 8px spec */
+    box-shadow: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
+    border: 1px solid #DBEAFE;
+    overflow: hidden;
+}
+
+.calendar-header-section {
+    background: #FFFFFF;
+    /* Clean white header */
+    border-bottom: 1px solid #F1F5F9;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-header-section h3 {
+    margin: 0;
+    color: #020617;
+    /* Abyssal Black-Blue */
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.calendar-wrapper {
+    padding: 16px;
+}
+
+/* Ant Dictionary Calendar Overrides for "Colorizing" & "Downsizing" */
+.ant-picker-calendar .ant-picker-panel {
+    background: transparent;
+}
+
+.ant-picker-calendar .ant-picker-content th {
+    color: #94A3B8;
+    /* Slate 400 for headers */
+    font-weight: 600;
+}
+
+.ant-picker-calendar-date-today .ant-picker-calendar-date-value {
+    color: #3B82F6;
+    /* Executive Blue */
+    font-weight: bold;
+}
+
+.ant-picker-cell-selected .ant-picker-calendar-date-value {
+    color: #fff !important;
+    background: #3B82F6;
+    /* Executive Blue selection */
+    border-radius: 4px;
+    padding: 2px 8px;
+    display: inline-block;
+}
+
+/* Reduce cell height for compact look */
+.ant-picker-calendar .ant-picker-cell-inner {
+    padding-top: 2px !important;
+}
+
+.ant-picker-calendar-date-content {
+    height: 40px !important;
+    /* Slightly clearer height */
+    overflow-y: hidden;
+}
+
+/* Event List on Calendar */
+.events {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.events li {
+    margin-bottom: 2px;
+}
+
+.events .ant-badge-status {
+    width: 100%;
+    overflow: hidden;
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Modal Customization */
+.ant-modal-content {
+    border-radius: 8px;
+    /* 8px spec */
+    padding: 24px;
+}
+
+.ant-modal-header {
+    margin-bottom: 24px;
+    background: transparent;
+}
+
+.ant-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #020617;
+}
+
+.poster-upload-container {
+    border: 2px dashed #DBEAFE;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    background: #F8FAFC;
+}
+
+.poster-upload-container:hover {
+    border-color: #3B82F6;
+    background: #EFF6FF;
+}
+
+.poster-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.poster-upload-label span {
+    color: #94A3B8;
+    font-size: 14px;
+    font-weight: 500;
+}

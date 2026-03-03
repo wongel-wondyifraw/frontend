@@ -1,0 +1,146 @@
+.settings-container {
+    max-width: 1200px;
+    /* Reduced max-width */
+    margin: 0 auto;
+}
+
+.settings-header {
+    margin-bottom: 16px;
+    /* Reduced margin */
+}
+
+.settings-header h2 {
+    font-size: 20px;
+    /* Smaller header */
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.settings-card {
+    background: #fcfcfc;
+    border-radius: 16px;
+    /* Slightly smaller radius */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    /* Reduced padding */
+    min-height: auto;
+    /* Remove large min-height */
+}
+
+/* Custom Tabs Styling */
+.ant-tabs-nav::before {
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.ant-tabs-tab {
+    font-size: 14px !important;
+    /* Smaller tab text */
+    font-weight: 500 !important;
+    padding: 8px 0 !important;
+    /* Compact tabs */
+    margin: 0 24px 0 0 !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #1565c0 !important;
+    font-weight: 600 !important;
+}
+
+.ant-tabs-ink-bar {
+    background: #1565c0 !important;
+    height: 2px !important;
+    /* Thinner bar */
+}
+
+/* Form Sections */
+.settings-section {
+    padding-top: 12px;
+    width: 100%;
+}
+
+.settings-section h3 {
+    font-size: 16px;
+    /* Smaller section header */
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 16px;
+}
+
+.settings-avatar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    /* Reduced margin */
+}
+
+.settings-avatar-info p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    /* Smaller text */
+}
+
+.ant-form-item-label label {
+    font-weight: 500;
+    color: #475569;
+    font-size: 13px !important;
+    /* Smaller field labels */
+}
+
+.ant-form-item {
+    margin-bottom: 16px !important;
+    /* Tighter form spacing */
+}
+
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    /* Reduced padding */
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-info h4 {
+    margin: 0;
+    font-size: 15px;
+    color: #1e293b;
+}
+
+.notification-info p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Utility Classes */
+.flex {
+    display: flex;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-2 {
+    gap: 8px;
+}
+
+.gap-4 {
+    gap: 16px;
+}
+
+.mb-4 {
+    margin-bottom: 16px;
+}

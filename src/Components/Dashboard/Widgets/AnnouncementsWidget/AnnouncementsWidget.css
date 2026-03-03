@@ -1,0 +1,137 @@
+.announcements-widget {
+    background: var(--bg-card);
+    /* was #FFFFFF */
+    border: 1px solid var(--border-color);
+    /* was #DBEAFE */
+    border-radius: 8px;
+    padding: 20px;
+    height: 100%;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.announcements-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.announcements-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-secondary);
+    /* was #94A3B8 */
+    font-weight: 500;
+}
+
+.announcements-icon-badge {
+    background: var(--bg-hover);
+    /* was #F1F5F9 */
+    color: var(--primary-blue);
+    /* was #3B82F6 */
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.announcements-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Data Table Styled Rows */
+.announcement-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: transparent;
+    border-bottom: 1px solid var(--divider);
+    /* was #F1F5F9 */
+    transition: transform 0.2s ease, background 0.2s;
+}
+
+/* Alternate row stripes */
+.announcement-item:nth-child(even) {
+    background: var(--bg-hover);
+    /* was rgba(219, 234, 254, 0.2) */
+    opacity: 0.5;
+    /* Slight transparency for zebra striping effect */
+}
+
+.announcement-item:hover {
+    background: var(--bg-hover);
+    /* was rgba(219, 234, 254, 0.5) */
+    opacity: 1;
+    transform: none;
+}
+
+/* Priority Indicators (Monochromatic Blue) */
+.priority-indicator {
+    width: 4px;
+    height: 30px;
+    border-radius: 2px;
+    margin-right: 12px;
+}
+
+.priority-indicator.high {
+    background-color: var(--sapphire-deep);
+    /* was #1E3A8A */
+}
+
+.priority-indicator.medium {
+    background-color: var(--exec-blue);
+    /* was #3B82F6 */
+}
+
+.priority-indicator.normal {
+    background-color: var(--text-secondary);
+    /* was #93C5FD (Light Blue) -> using Slate for normal/low */
+    opacity: 0.5;
+}
+
+.announcement-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.announcement-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    /* was #020617 */
+}
+
+.announcement-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+    /* was #94A3B8 */
+    margin-top: 2px;
+}
+
+.view-all-btn {
+    margin-top: 15px;
+    background: none;
+    border: none;
+    color: var(--primary-blue);
+    /* was #3B82F6 */
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: right;
+    width: 100%;
+    padding: 0;
+}
+
+.view-all-btn:hover {
+    text-decoration: underline;
+    color: var(--sapphire-deep);
+    /* was #1E40AF */
+}

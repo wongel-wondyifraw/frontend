@@ -1,0 +1,221 @@
+/* RESET / BASE */
+/* Variables are now global in index.css */
+
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background-color: transparent;
+  background-image: url('/Images/background-final.png');
+  /* User requested final background */
+  /* User requested final background */
+  /* User requested bg.png */
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  /* Transparent to show global body background */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   HEADER LOGO (Top Left)
+========================= */
+.login-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1rem 1rem;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-container {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+
+.brand-logo {
+  height: 2.25rem;
+  width: auto;
+  filter: none;
+}
+
+/* =========================
+   CENTERED CARD
+========================= */
+.login-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--white);
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02), 0 12px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #bbdefb;
+  /* KPI Border Blue */
+}
+
+.card-header {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  margin-top: 0;
+}
+
+.card-title {
+  margin-bottom: 0.5rem !important;
+  font-weight: 800 !important;
+  color: var(--dark) !important;
+  font-size: 1.75rem !important;
+  letter-spacing: -0.5px;
+}
+
+.card-subtitle {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* =========================
+   FORM ELEMENTS
+========================= */
+.login-form .ant-form-item {
+  margin-bottom: 1rem;
+}
+
+.custom-input {
+  /* Box style inputs */
+  height: 2.5rem;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0 !important;
+  padding: 0.25rem 0.75rem !important;
+  background-color: var(--white) !important;
+  box-shadow: none !important;
+  font-size: 0.9rem;
+  display: flex !important;
+  align-items: center;
+}
+
+.custom-input:hover,
+.custom-input:focus-within {
+  border-color: var(--navy) !important;
+  background-color: #f7f7f7 !important;
+}
+
+/* Icon style */
+.input-icon {
+  color: #1565c0;
+  /* KPI Blue */
+  font-size: 1rem;
+  margin-right: 8px;
+}
+
+/* Antd specific overrides to ensure icon aligns */
+.custom-input .ant-input-prefix {
+  margin-right: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.remember-forgot {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.forgot-link {
+  color: #1565c0;
+  /* KPI Blue */
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.login-button {
+  height: 2.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background-color: #1565c0;
+  /* KPI Blue */
+  border-color: #1565c0;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-button:hover {
+  background-color: #0d47a1 !important;
+  /* KPI Darker */
+  border-color: #0d47a1 !important;
+}
+
+.google-button {
+  height: 3rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  color: var(--dark);
+}
+
+.footer-text {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.footer-text a {
+  color: #1565c0;
+  /* KPI Blue */
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 576px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+    box-shadow: none;
+    background: transparent;
+    border: none;
+  }
+
+  .login-header {
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .login-container {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
+  .login-page {
+    background: transparent;
+    /* Transparent on mobile too to show global bg */
+  }
+}

@@ -1,0 +1,46 @@
+/* RGL Container */
+.dashboard-dynamic-grid {
+    /* No grid display here, RGL manages absolute positioning */
+    width: 100%;
+    min-height: 80vh;
+    position: relative;
+    padding-bottom: 50px;
+}
+
+.grid-item-wrapper {
+    background: transparent;
+    /* RGL adds 'react-grid-item' class */
+}
+
+/* Edit Mode Styles */
+.react-grid-item.react-grid-placeholder {
+    background: rgba(21, 101, 192, 0.1) !important;
+    border-radius: 12px;
+    opacity: 0.5;
+}
+
+.react-grid-item.resizing {
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.widget-drag-handle {
+    cursor: move;
+}
+
+/* Ensure widgets fill the height RGL gives them */
+.widget-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-wrapper>* {
+    flex: 1;
+}
+
+/* Responsive adjustments if needed */
+@media (max-width: 768px) {
+    /* Adjustments for mobile are handled by RGL breakpoints/cols */
+}

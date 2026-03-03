@@ -1,0 +1,90 @@
+.attendance-widget {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    height: 100%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.attendance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.attendance-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #1a1a1a;
+    font-weight: 600;
+}
+
+.attendance-icon-badge {
+    background: #eff6ff;
+    /* Light Blue */
+    color: #1565c0;
+    /* Primary Blue */
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attendance-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.attendance-main {
+    margin-bottom: 10px;
+}
+
+.attendance-label {
+    display: block;
+    color: #64748b;
+    /* Blue Grey */
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.attendance-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.attendance-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.attendance-trend.up {
+    color: #1565c0;
+    /* Blue */
+}
+
+.attendance-trend.down {
+    color: #64748b;
+    /* Grey for down/neutral or keep red if strictly semantic, but request said monochrome blue */
+}
+
+/* Override chart colors via props in JSX or CSS if using CSS variables, but recharts uses inline mostly. 
+   We updated the JS file to use blue strokes. */
+
+.attendance-mini-chart {
+    flex: 1;
+    min-height: 60px;
+    margin-bottom: -10px;
+}

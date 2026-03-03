@@ -1,0 +1,31 @@
+.sidebar-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background-color: #f8fafc;
+    /* Light gray background */
+    overflow: hidden;
+}
+
+.sidebar-layout .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* No Topbar, so content takes full height minus padding if needed */
+    height: 100%;
+}
+
+.sidebar-layout .content-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    /* Generous padding for detail view */
+    height: 100%;
+}
+
+@media (max-width: 768px) {
+    .sidebar-layout .content-scrollable {
+        padding: 16px;
+    }
+}
