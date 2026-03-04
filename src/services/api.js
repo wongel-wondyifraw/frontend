@@ -133,4 +133,51 @@ export const deleteUser = async (id) => {
     }
 };
 
+// ==================== Members Management ====================
+
+export const getMembers = async () => {
+    try {
+        const response = await api.get('/members');
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const getMember = async (id) => {
+    try {
+        const response = await api.get(`/members/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const createMember = async (memberData) => {
+    try {
+        const response = await api.post('/members', memberData);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const updateMember = async (id, memberData) => {
+    try {
+        const response = await api.patch(`/members/${id}`, memberData);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const deleteMember = async (id) => {
+    try {
+        const response = await api.delete(`/members/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
 export default api;
