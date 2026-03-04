@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, DatePicker, Button, Upload, message, Row, Col } from 'antd';
+import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Steps, Card, Row, Col } from 'antd';
 import {
     ArrowLeftOutlined,
     UserOutlined,
@@ -8,35 +8,92 @@ import {
     MailOutlined,
     PhoneOutlined,
     HomeOutlined,
-    GlobalOutlined,
-    PrinterOutlined,
-    PaperClipOutlined
+    CheckCircleOutlined,
 } from '@ant-design/icons';
-import SidebarLayout from '../../Layouts/SidebarLayout';
+import DashboardLayout from '../../Layouts/DashboardLayout';
+import { createMember } from '../../services/api';
 import './AddMember.css';
 
 const { Option } = Select;
-const { TextArea } = Input;
 
 const AddMember = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
 
-    const onFinish = (values) => {
-        setLoading(true);
-        console.log('Received values of form: ', values);
+    // Step validation before advancing
+    const next = async () => {
+        try {
+            if (currentStep === 0) {
+                await form.validateFields(['first_name', 'last_name']);
+            } else if (currentStep === 1) {
+                await form.validateFields(['phone']);
+            }
+            setCurrentStep(currentStep + 1);
+        } catch (error) {
+            message.error('Please correct the errors before proceeding.');
+        }
+    };
 
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            message.success('Member added successfully');
+    const prev = () => {
+        setCurrentStep(currentStep - 1);
+    };
+
+    // Avatar handling
+    const handleAvatarChange = (info) => {
+        const file = info.file.originFileObj || info.file;
+        if (file) {
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setAvatarPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Submit handler
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            setLoading(true);
+
+            const memberData = {
+                first_name: values.first_name,
+                last_name: values.last_name,
+                middle_name: values.middle_name || '',
+                email: values.email || '',
+                phone: values.phone || '',
+                address: values.address || '',
+                date_of_birth: values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : null,
+                marital_status: values.marital_status || '',
+                status: values.status || 'active',
+            };
+
+            await createMember(memberData);
+            message.success('Member registered successfully!');
             navigate('/members/manage');
-        }, 1000);
+        } catch (error) {
+            console.error('Registration Error:', error);
+            message.error(error.message || 'Failed to register member');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Step background colors for visual progression
+    const getStepBackground = () => {
+        switch (currentStep) {
+            case 0: return { background: '#f8fafc', border: 'none' };
+            case 1: return { background: '#f0f9ff', border: '1px solid #bae6fd' };
+            case 2: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
+            default: return { background: '#f8fafc', border: 'none' };
+        }
     };
 
     return (
-        <SidebarLayout>
+        <DashboardLayout>
             <div className="add-member-container">
                 <Button
                     type="text"
@@ -48,184 +105,211 @@ const AddMember = () => {
                 </Button>
 
                 <div className="add-member-header">
-                    <h1>Add New Member</h1>
-                    <p>Enter the details to register a new church member.</p>
+                    <h1>New Member Registration</h1>
+                    <p>Complete all steps to register a new church member.</p>
                 </div>
 
                 <div className="content-card-unified">
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        onFinish={onFinish}
-                        initialValues={{ status: 'active' }}
-                    >
-                        {/* Section 1: Personal Information */}
-                        <div className="form-section">
-                            <h3 className="form-section-title">
-                                <div className="form-icon-wrapper"><UserOutlined /></div>
-                                Personal Information
-                            </h3>
+                    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'active' }}>
+                        <Card
+                            bordered={false}
+                            className="wizard-card"
+                            style={{
+                                ...getStepBackground(),
+                                transition: 'background-color 0.3s ease, border 0.3s ease',
+                                borderRadius: '12px',
+                            }}
+                        >
+                            <Steps
+                                current={currentStep}
+                                style={{ marginBottom: '32px' }}
+                                items={[
+                                    { title: 'Personal Info' },
+                                    { title: 'Contact & Address' },
+                                    { title: 'Status & Review' },
+                                ]}
+                            />
 
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item
-                                        name="firstName"
-                                        label="First Name"
-                                        rules={[{ required: true, message: 'Please enter first name' }]}
-                                    >
-                                        <Input placeholder="John" size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item
-                                        name="lastName"
-                                        label="Last Name"
-                                        rules={[{ required: true, message: 'Please enter last name' }]}
-                                    >
-                                        <Input placeholder="Doe" size="large" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                            {/* =============== STEP 1: Personal Information =============== */}
+                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <UserOutlined style={{ color: '#1565c0' }} /> Personal Information
+                                </h3>
 
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item
-                                        name="email"
-                                        label="Email Address"
-                                        rules={[
-                                            { required: true, message: 'Please enter email' },
-                                            { type: 'email', message: 'Please enter a valid email' }
-                                        ]}
-                                    >
-                                        <Input prefix={<MailOutlined style={{ color: '#bfbfbf' }} />} placeholder="john@example.com" size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item
-                                        name="phone"
-                                        label="Phone Number"
-                                        rules={[{ required: true, message: 'Please enter phone number' }]}
-                                    >
-                                        <Input prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />} placeholder="+1 (555) 000-0000" size="large" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                                {/* Avatar + Name fields side by side */}
+                                <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'flex-start' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <Avatar
+                                            size={100}
+                                            src={avatarPreview}
+                                            icon={<UserOutlined />}
+                                            style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
+                                        />
+                                        <div style={{ marginTop: '8px' }}>
+                                            <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
+                                                <Button size="small" icon={<UploadOutlined />}>Photo</Button>
+                                            </Upload>
+                                        </div>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                            <Form.Item
+                                                label="First Name"
+                                                name="first_name"
+                                                rules={[{ required: true, message: 'First name is required' }]}
+                                            >
+                                                <Input size="large" placeholder="John" />
+                                            </Form.Item>
+                                            <Form.Item label="Middle Name" name="middle_name">
+                                                <Input size="large" placeholder="Optional" />
+                                            </Form.Item>
+                                        </div>
+                                        <Form.Item
+                                            label="Last Name"
+                                            name="last_name"
+                                            rules={[{ required: true, message: 'Last name is required' }]}
+                                        >
+                                            <Input size="large" placeholder="Doe" />
+                                        </Form.Item>
+                                    </div>
+                                </div>
 
-                            <Form.Item
-                                name="address"
-                                label="Address"
-                            >
-                                <Input prefix={<HomeOutlined style={{ color: '#bfbfbf' }} />} placeholder="123 Church St, City, State" size="large" />
-                            </Form.Item>
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item label="Date of Birth" name="date_of_birth">
+                                            <DatePicker style={{ width: '100%' }} size="large" placeholder="Select date" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item label="Marital Status" name="marital_status">
+                                            <Select placeholder="Select status" size="large" allowClear>
+                                                <Option value="single">Single</Option>
+                                                <Option value="married">Married</Option>
+                                                <Option value="divorced">Divorced</Option>
+                                                <Option value="widowed">Widowed</Option>
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </div>
 
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item name="dob" label="Date of Birth">
-                                        <DatePicker style={{ width: '100%' }} size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="maritalStatus" label="Marital Status">
-                                        <Select placeholder="Select status" size="large">
-                                            <Option value="single">Single</Option>
-                                            <Option value="married">Married</Option>
-                                            <Option value="divorced">Divorced</Option>
-                                            <Option value="widowed">Widowed</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </div>
+                            {/* =============== STEP 2: Contact & Address =============== */}
+                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <PhoneOutlined style={{ color: '#1565c0' }} /> Contact & Address
+                                </h3>
 
-                        {/* Section 2: Church Details */}
-                        <div className="form-section" style={{ marginTop: '32px' }}>
-                            <h3 className="form-section-title">
-                                <div className="form-icon-wrapper" style={{ background: '#f0fdf4', color: '#16a34a' }}><GlobalOutlined /></div>
-                                Church Details
-                            </h3>
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            label="Phone Number"
+                                            name="phone"
+                                            rules={[{ required: true, message: 'Phone number is required' }]}
+                                        >
+                                            <Input
+                                                size="large"
+                                                placeholder="+251 9XX XXX XXXX"
+                                                prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            label="Email Address"
+                                            name="email"
+                                            rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+                                        >
+                                            <Input
+                                                size="large"
+                                                placeholder="john@example.com"
+                                                prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
 
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item name="role" label="Role" initialValue="Member">
-                                        <Select size="large">
-                                            <Option value="Member">Member</Option>
-                                            <Option value="Volunteer">Volunteer</Option>
-                                            <Option value="Leader">Leader</Option>
-                                            <Option value="Staff">Staff</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="status" label="Membership Status">
-                                        <Select size="large">
-                                            <Option value="active">Active</Option>
-                                            <Option value="inactive">Inactive</Option>
-                                            <Option value="visitor">Visitor</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                                <Form.Item label="Address" name="address">
+                                    <Input
+                                        size="large"
+                                        placeholder="123 Church St, City, State"
+                                        prefix={<HomeOutlined style={{ color: '#bfbfbf' }} />}
+                                    />
+                                </Form.Item>
+                            </div>
 
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item name="joinedDate" label="Joined Date">
-                                        <DatePicker style={{ width: '100%' }} size="large" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="baptized" label="Baptized?">
-                                        <Select size="large">
-                                            <Option value="yes">Yes</Option>
-                                            <Option value="no">No</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                            {/* =============== STEP 3: Status & Review =============== */}
+                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Membership Status
+                                </h3>
 
-                            <Form.Item name="ministry" label="Assign to Ministry (Optional)">
-                                <Select placeholder="Select ministries" mode="multiple" size="large">
-                                    <Option value="worship">Worship Team</Option>
-                                    <Option value="kids">Kids Church</Option>
-                                    <Option value="ushers">Ushers</Option>
-                                </Select>
-                            </Form.Item>
-                        </div>
+                                <Form.Item label="Membership Status" name="status" rules={[{ required: true, message: 'Please select a status' }]}>
+                                    <Select size="large" placeholder="Select membership status">
+                                        <Option value="active">Active</Option>
+                                        <Option value="inactive">Inactive</Option>
+                                    </Select>
+                                </Form.Item>
 
-                        {/* Section 3: Attachments */}
-                        <div className="form-section" style={{ marginTop: '32px' }}>
-                            <h3 className="form-section-title">
-                                <div className="form-icon-wrapper" style={{ background: '#fef3c7', color: '#d97706' }}><PaperClipOutlined /></div>
-                                Attachments
-                            </h3>
-
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item name="profileImage" label="Profile Image">
-                                        <Upload listType="picture" maxCount={1}>
-                                            <Button icon={<UploadOutlined />}>Upload Profile Picture</Button>
-                                        </Upload>
+                                {/* Review Summary */}
+                                <div style={{
+                                    background: '#fff',
+                                    borderRadius: '8px',
+                                    padding: '20px',
+                                    border: '1px solid #e2e8f0',
+                                    marginTop: '16px'
+                                }}>
+                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Registration Summary</h4>
+                                    <Form.Item noStyle shouldUpdate>
+                                        {() => {
+                                            const values = form.getFieldsValue();
+                                            return (
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
+                                                    <div><strong>Name:</strong> {values.first_name || '—'} {values.middle_name || ''} {values.last_name || ''}</div>
+                                                    <div><strong>Phone:</strong> {values.phone || '—'}</div>
+                                                    <div><strong>Email:</strong> {values.email || '—'}</div>
+                                                    <div><strong>Address:</strong> {values.address || '—'}</div>
+                                                    <div><strong>Date of Birth:</strong> {values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : '—'}</div>
+                                                    <div><strong>Marital Status:</strong> {values.marital_status || '—'}</div>
+                                                    <div><strong>Status:</strong> {values.status || '—'}</div>
+                                                </div>
+                                            );
+                                        }}
                                     </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="churchLetter" label="Church Letter / Transfer Certificate (Optional)">
-                                        <Upload maxCount={1}>
-                                            <Button icon={<UploadOutlined />}>Upload Document</Button>
-                                        </Upload>
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </div>
+                                </div>
+                            </div>
+                        </Card>
 
-                        <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-                            <Button size="large" onClick={() => navigate(-1)}>Cancel</Button>
-                            <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#1565c0', width: '150px' }}>
-                                Add Member
+                        {/* Wizard Navigation Footer */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                            <Button size="large" onClick={() => navigate(-1)}>
+                                Cancel
                             </Button>
+                            {currentStep > 0 && (
+                                <Button onClick={prev} size="large">
+                                    Previous
+                                </Button>
+                            )}
+                            {currentStep < 2 && (
+                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
+                                    Next Step
+                                </Button>
+                            )}
+                            {currentStep === 2 && (
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    size="large"
+                                    loading={loading}
+                                    style={{ background: '#1565c0' }}
+                                >
+                                    Confirm Registration
+                                </Button>
+                            )}
                         </div>
                     </Form>
                 </div>
             </div>
-        </SidebarLayout>
+        </DashboardLayout>
     );
 };
 
