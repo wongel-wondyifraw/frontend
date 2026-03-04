@@ -231,7 +231,7 @@ const Settings = () => {
             render: (_, record) => (
                 <div style={{ position: 'relative', width: 40, height: 40 }}>
                     <Avatar
-                        src={record.avatar_url ? `${API_BASE_URL}/${record.avatar_url.replace(/^\//, '')}` : null}
+                        src={record.avatar_url ? `${API_BASE_URL}/${record.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null}
                         icon={<UserOutlined />}
                         size={40}
                     />
@@ -360,7 +360,7 @@ const Settings = () => {
                             <Avatar
                                 size={160}
                                 icon={<UserOutlined />}
-                                src={avatarPreview || (profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}` : null)}
+                                src={avatarPreview || (profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null)}
                                 style={{
                                     border: '4px solid var(--border-color)',
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',

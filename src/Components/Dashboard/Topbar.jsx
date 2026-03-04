@@ -3,10 +3,13 @@ import { Search, Bell, ChevronDown, Edit, Save, X, PlusSquare, User, CheckCircle
 import { Button, Modal, Card, Typography, Popover, List, Avatar, Badge } from 'antd';
 import { useDashboard } from '../../context/DashboardContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useUser } from '../../context/UserContext';
+import { API_BASE_URL } from '../../services/api';
 import { WidgetRegistry } from './WidgetRegistry';
 import './Topbar.css';
 
 const Topbar = () => {
+  const { user } = useUser();
   // Hardcoded date for visual fidelity to image (or dynamic, let's go dynamic but with similar format)
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -84,7 +87,7 @@ const Topbar = () => {
   return (
     <div className="topbar-container">
       <div className="greeting-section">
-        <h1>Good Afternoon, Wongel</h1>
+        <h1>Good Afternoon, {user ? user.first_name : 'Loading...'}</h1>
         <p className="date-text">It's {today}</p>
       </div>
 
@@ -208,7 +211,13 @@ const Topbar = () => {
           </button>
         </Popover>
 
-        <div className="logo-wrapper">
+        <div className="logo-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Avatar
+            size={40}
+            icon={<User />}
+            src={user?.avatar_url ? `${API_BASE_URL}/${user.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null}
+            style={{ backgroundColor: '#1565c0', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+          />
           <img src="/Logo-Half-Dark.svg" alt="App Logo" className="topbar-logo" />
         </div>
       </div>
