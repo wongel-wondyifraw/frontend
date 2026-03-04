@@ -144,3 +144,45 @@
 .mb-4 {
     margin-bottom: 16px;
 }
+
+/* Wizard Specific Styles */
+.wizard-card {
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.wizard-card h3 {
+    color: #1565c0;
+    font-weight: 600;
+}
+
+/* Force Step Indicator Visibility */
+.wizard-card .ant-steps {
+    display: flex !important;
+    visibility: visible !important;
+}
+
+.wizard-card .ant-steps-item-title,
+.wizard-card .ant-steps-item-description {
+    color: #334155 !important;
+}
+
+.wizard-card .ant-steps-item-active .ant-steps-item-title {
+    color: #1565c0 !important;
+    font-weight: 600 !important;
+}
+
+.wizard-card .ant-steps-item-icon {
+    background-color: #fff !important;
+    border-color: #cbd5e1 !important;
+}
+
+.wizard-card .ant-steps-item-active .ant-steps-item-icon {
+    background-color: #1565c0 !important;
+    border-color: #1565c0 !important;
+}
+
+.wizard-card .ant-steps-item-active .ant-steps-item-icon .ant-steps-icon {
+    color: #fff !important;
+}

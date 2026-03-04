@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col, Space } from 'antd';
-import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col, Space, Steps, Card } from 'antd';
+import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined, SolutionOutlined, IdcardOutlined } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar, API_BASE_URL } from '../../services/api';
 import { useUser } from '../../context/UserContext';
@@ -31,6 +31,9 @@ const Settings = () => {
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+
+    // Wizard State
+    const [currentStep, setCurrentStep] = useState(0);
 
     // Fetch Profile on Mount
     useEffect(() => {
@@ -156,11 +159,31 @@ const Settings = () => {
             }
             setIsModalVisible(false);
             setEditingUser(null);
+            setCurrentStep(0);
             userForm.resetFields();
             loadUsers();
         } catch (error) {
             message.error(error.message || 'Operation failed');
         }
+    };
+
+    // Wizard Navigation
+    const next = async () => {
+        try {
+            if (currentStep === 0) {
+                await userForm.validateFields(['first_name', 'middle_name', 'last_name', 'email', 'password']);
+            } else if (currentStep === 1) {
+                await userForm.validateFields(['role', 'is_active']);
+            }
+            setCurrentStep(currentStep + 1);
+        } catch (error) {
+            // Validation failed, do not proceed and UI will show errors automatically
+            message.error("Please fill in all required fields.");
+        }
+    };
+
+    const prev = () => {
+        setCurrentStep(currentStep - 1);
     };
 
     // Admin: Delete User
@@ -198,10 +221,16 @@ const Settings = () => {
     // Admin: Open Modal
     const openUserModal = (user = null) => {
         setEditingUser(user);
+        setCurrentStep(0);
         if (user) {
-            userForm.setFieldsValue(user);
+            // Need to set is_active explicitly as the form uses valuePropName="checked"
+            userForm.setFieldsValue({
+                ...user,
+                is_active: user.is_active !== undefined ? user.is_active : true
+            });
         } else {
             userForm.resetFields();
+            userForm.setFieldsValue({ is_active: true }); // Default to active for new
         }
         setIsModalVisible(true);
     };
@@ -480,50 +509,119 @@ const Settings = () => {
                 </div>
             </div>
 
-            {/* Admin User Modal */}
+            {/* Admin User Wizard Modal */}
             <Modal
-                title={editingUser ? "Edit User" : "Add New User"}
+                title={editingUser ? "Edit User Registration" : "New User Registration"}
                 open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
+                onCancel={() => {
+                    setIsModalVisible(false);
+                    setCurrentStep(0);
+                }}
                 footer={null}
+                width={700}
+                centered
             >
-                <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <Form.Item label="First Name" name="first_name" rules={[{ required: true }]}>
-                            <Input />
-                        </Form.Item>
-                        <Form.Item label="Middle Name" name="middle_name">
-                            <Input />
-                        </Form.Item>
-                    </div>
-                    <Form.Item label="Last Name" name="last_name" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email' }]}>
-                        <Input />
-                    </Form.Item>
+                <div style={{ padding: '16px 0' }}>
+                    <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
+                        <Card bordered={false} className="wizard-card" style={{ background: currentStep === 2 ? '#e6f7ff' : '#f8fafc', border: currentStep === 2 ? '1px solid #91d5ff' : 'none', transition: 'background-color 0.3s ease' }}>
+                            <Steps
+                                current={currentStep}
+                                style={{ marginBottom: '32px' }}
+                                items={[
+                                    { title: 'Personal', icon: <UserOutlined /> },
+                                    { title: 'Role', icon: <IdcardOutlined /> },
+                                    { title: 'Review', icon: <SolutionOutlined /> },
+                                ]}
+                            />
 
-                    {!editingUser && (
-                        <Form.Item label="Password" name="password" rules={[{ required: true, min: 6 }]}>
-                            <Input.Password placeholder="Set initial password" />
-                        </Form.Item>
-                    )}
+                            {/* STEP 1: Personal Information */}
+                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px' }}>Personal Information</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
+                                        <Input size="large" placeholder="E.g. John" />
+                                    </Form.Item>
+                                    <Form.Item label="Middle Name" name="middle_name">
+                                        <Input size="large" placeholder="Optional" />
+                                    </Form.Item>
+                                </div>
+                                <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
+                                    <Input size="large" placeholder="E.g. Doe" />
+                                </Form.Item>
+                                <Form.Item label="Email Address" name="email" rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}>
+                                    <Input size="large" placeholder="user@example.com" />
+                                </Form.Item>
 
-                    <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-                        <Select>
-                            <Option value="admin">Admin</Option>
-                            <Option value="minister">Minister</Option>
-                            <Option value="staff">Staff</Option>
-                            <Option value="member">Member</Option>
-                        </Select>
-                    </Form.Item>
-                    <Form.Item label="Status" name="is_active" valuePropName="checked">
-                        <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-                    </Form.Item>
-                    <Button type="primary" htmlType="submit" block style={{ background: '#1565c0' }}>
-                        {editingUser ? "Update User" : "Create User"}
-                    </Button>
-                </Form>
+                                {!editingUser && (
+                                    <Form.Item label="Temporary Password" name="password" rules={[{ required: true, min: 6, message: 'Min 6 characters' }]}>
+                                        <Input.Password size="large" placeholder="Set initial password" />
+                                    </Form.Item>
+                                )}
+                            </div>
+
+                            {/* STEP 2: Role & Status */}
+                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px' }}>Roles & Permissions</h3>
+                                <Form.Item label="Select Role" name="role" rules={[{ required: true, message: 'Please assign a role' }]}>
+                                    <Select size="large" placeholder="Select an access level">
+                                        <Option value="admin">Admin (Full Access)</Option>
+                                        <Option value="minister">Minister (Limited Access)</Option>
+                                        <Option value="staff">Staff</Option>
+                                        <Option value="member">General Member</Option>
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item label="Account Status" name="is_active" valuePropName="checked">
+                                    <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                                </Form.Item>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                                    Inactive users will not be able to log in to the portal.
+                                </p>
+                            </div>
+
+                            {/* STEP 3: Review */}
+                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px' }}>Review Registration</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
+                                    <div>
+                                        <strong>Full Name:</strong>
+                                        <p>{userForm.getFieldValue('first_name')} {userForm.getFieldValue('last_name')}</p>
+                                    </div>
+                                    <div>
+                                        <strong>Email Address:</strong>
+                                        <p>{userForm.getFieldValue('email')}</p>
+                                    </div>
+                                    <div>
+                                        <strong>Assigned Role:</strong>
+                                        <p style={{ textTransform: 'capitalize' }}>{userForm.getFieldValue('role')}</p>
+                                    </div>
+                                    <div>
+                                        <strong>Status:</strong>
+                                        <p>{userForm.getFieldValue('is_active') ? <Tag color="success">Active</Tag> : <Tag color="error">Inactive</Tag>}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Wizard Navigation Footer */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                            {currentStep > 0 && (
+                                <Button onClick={prev} size="large">
+                                    Previous
+                                </Button>
+                            )}
+                            {currentStep < 2 && (
+                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
+                                    Next Step
+                                </Button>
+                            )}
+                            {currentStep === 2 && (
+                                <Button type="primary" htmlType="submit" size="large" style={{ background: '#1565c0' }}>
+                                    {editingUser ? "Confirm Update" : "Confirm Registration"}
+                                </Button>
+                            )}
+                        </div>
+                    </Form>
+                </div>
             </Modal>
         </DashboardLayout>
     );
