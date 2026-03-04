@@ -598,7 +598,7 @@ const Settings = () => {
                                             </Form.Item>
                                         </div>
                                         <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
-                                            <Input size="large" placeholder="Doe" />
+                                            <Input size="large" placeholder="Doe" type="text" />
                                         </Form.Item>
                                     </div>
                                 </div>
