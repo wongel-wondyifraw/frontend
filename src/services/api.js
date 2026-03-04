@@ -89,7 +89,11 @@ export const getUsers = async () => {
 
 export const createUser = async (userData) => {
     try {
-        const response = await api.post('/users', userData);
+        const response = await api.post('/users', userData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         throw error.response?.data || { message: error.message };
