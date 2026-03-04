@@ -86,6 +86,11 @@ const Sidebar = () => {
                 {user.role}
               </div>
             )}
+            {user?.title && (
+              <div className="profile-title-pill">
+                {user.title}
+              </div>
+            )}
           </div>
         </div>
       </div>
