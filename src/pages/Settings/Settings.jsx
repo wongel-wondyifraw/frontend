@@ -20,6 +20,10 @@ const Settings = () => {
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
 
+    // New states for deferred avatar upload
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+
     // Filter & Search State
     const [searchText, setSearchText] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -63,34 +67,49 @@ const Settings = () => {
         }
     };
 
-    // Update Profile
+    // Update Profile (Includes delayed Avatar upload)
     const handleProfileUpdate = async (values) => {
         try {
+            setLoading(true);
+
+            // 1. Upload Avatar if a new one was selected
+            if (avatarFile && profile?.id) {
+                await uploadAvatar(profile.id, avatarFile);
+                setAvatarFile(null); // Clear after upload
+            }
+
+            // 2. Update text fields
             await updateProfile({
                 first_name: values.firstName,
                 middle_name: values.middleName,
                 last_name: values.lastName,
             });
+
             message.success('Profile updated successfully!');
-            loadProfile();
-            refreshUser();
+            await loadProfile();
+            await refreshUser(); // This ensures Sidebar and Header update instantly
         } catch (error) {
-            message.error('Failed to update profile');
+            message.error(error.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Avatar Upload Logic
+    // Avatar Upload Logic (Deferred for main profile, immediate for Admin table)
     const handleAvatarUpload = async (file, userId) => {
+        // If it's the current user updating their own profile, defer it
+        if (userId === profile?.id) {
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+            return false; // Prevent immediate upload
+        }
+
+        // If Admin is uploading someone else's avatar from the table, do it immediately
         try {
             await uploadAvatar(userId, file);
             message.success('Avatar updated successfully!');
-            if (userId === profile?.id) {
-                loadProfile();
-                refreshUser();
-            } else {
-                loadUsers();
-            }
-            return false; // Prevent default upload
+            loadUsers();
+            return false;
         } catch (error) {
             message.error(error.message || 'Avatar upload failed');
             return false;
@@ -341,13 +360,14 @@ const Settings = () => {
                             <Avatar
                                 size={160}
                                 icon={<UserOutlined />}
-                                src={profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}` : null}
+                                src={avatarPreview || (profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}` : null)}
                                 style={{
                                     border: '4px solid var(--border-color)',
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
                                     marginBottom: '24px',
                                     backgroundColor: 'var(--bg-hover)',
-                                    color: 'var(--primary-blue)'
+                                    color: 'var(--primary-blue)',
+                                    objectFit: 'cover'
                                 }}
                             />
                             <Upload
