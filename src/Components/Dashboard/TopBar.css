@@ -35,6 +35,10 @@
     gap: 24px;
 }
 
+.global-search-container {
+    position: relative;
+}
+
 .search-wrapper {
     position: relative;
     width: 320px;
@@ -50,14 +54,13 @@
 
 .search-wrapper input {
     width: 100%;
-    padding: 10px 12px 10px 40px;
+    padding: 10px 80px 10px 40px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
     outline: none;
     font-size: 14px;
     color: var(--text-main);
     background: var(--bg-body);
-    /* Subtle bg for input */
     transition: all 0.2s;
 }
 
@@ -66,6 +69,104 @@
     border-color: var(--primary-blue);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
+
+.search-shortcut {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-family: inherit;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+/* Search Results Dropdown */
+.search-results-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    max-height: 380px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 6px 0;
+}
+
+.search-results-group {
+    padding: 4px 0;
+}
+
+.search-results-group+.search-results-group {
+    border-top: 1px solid var(--border-color);
+}
+
+.search-results-category {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    padding: 8px 16px 4px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.search-result-item:hover,
+.search-result-item.selected {
+    background: var(--bg-hover);
+}
+
+.search-result-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg-body);
+    color: var(--primary-blue);
+    flex-shrink: 0;
+}
+
+.search-result-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.search-result-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-sublabel {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 .icon-btn {
     background: none;

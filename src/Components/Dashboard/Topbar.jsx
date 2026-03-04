@@ -1,16 +1,47 @@
-import { useState } from 'react';
-import { Search, Bell, ChevronDown, Edit, Save, X, PlusSquare, User, CheckCircle, AlertCircle, RotateCcw, Moon, Sun } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, Bell, ChevronDown, Edit, Save, X, PlusSquare, User, CheckCircle, AlertCircle, RotateCcw, Moon, Sun, Home, Users, Briefcase, Settings as SettingsIcon, HelpCircle, Calendar, BookOpen, FileText } from 'lucide-react';
 import { Button, Modal, Card, Typography, Popover, List, Avatar, Badge } from 'antd';
 import { useDashboard } from '../../context/DashboardContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
-import { API_BASE_URL } from '../../services/api';
+import { API_BASE_URL, getUsers, getProfile } from '../../services/api';
 import { WidgetRegistry } from './WidgetRegistry';
+import { useNavigate } from 'react-router-dom';
 import './Topbar.css';
+
+// Static pages for search
+const PAGE_ITEMS = [
+  { name: 'Dashboard', path: '/dashboard', icon: 'home', category: 'Pages' },
+  { name: 'Manage Members', path: '/members/manage', icon: 'users', category: 'Pages' },
+  { name: 'Add Member', path: '/members/add', icon: 'users', category: 'Pages' },
+  { name: 'Home Groups', path: '/members/home-groups', icon: 'users', category: 'Pages' },
+  { name: 'Manage Ministries', path: '/ministries/manage', icon: 'briefcase', category: 'Pages' },
+  { name: 'Add Ministry', path: '/ministries/add', icon: 'briefcase', category: 'Pages' },
+  { name: 'Bible Study', path: '/bible-study', icon: 'book', category: 'Pages' },
+  { name: 'Schedule Management', path: '/schedule', icon: 'calendar', category: 'Pages' },
+  { name: 'Settings', path: '/settings', icon: 'settings', category: 'Pages' },
+  { name: 'Help Center', path: '/help', icon: 'help', category: 'Pages' },
+  { name: 'Subscription', path: '/subscription', icon: 'file', category: 'Pages' },
+];
+
+const getPageIcon = (iconName) => {
+  const size = 16;
+  switch (iconName) {
+    case 'home': return <Home size={size} />;
+    case 'users': return <Users size={size} />;
+    case 'briefcase': return <Briefcase size={size} />;
+    case 'book': return <BookOpen size={size} />;
+    case 'calendar': return <Calendar size={size} />;
+    case 'settings': return <SettingsIcon size={size} />;
+    case 'help': return <HelpCircle size={size} />;
+    case 'file': return <FileText size={size} />;
+    default: return <FileText size={size} />;
+  }
+};
 
 const Topbar = () => {
   const { user } = useUser();
-  // Hardcoded date for visual fidelity to image (or dynamic, let's go dynamic but with similar format)
+  const navigate = useNavigate();
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     day: 'numeric',
@@ -18,17 +49,151 @@ const Topbar = () => {
     year: 'numeric'
   });
 
-  // Safely consume context, in case Topbar is used outside DashboardProvider
+  // Safely consume context
   let dashboardContext = null;
   try {
     dashboardContext = useDashboard();
-  } catch (e) {
-    // Ignore if out of context
-  }
+  } catch (e) { }
 
   const { isEditMode, toggleEditMode, saveLayout, cancelEdit, addWidget } = dashboardContext || {};
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  // Global search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [cachedUsers, setCachedUsers] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Fetch users for search (cached)
+  useEffect(() => {
+    const fetchUsersForSearch = async () => {
+      try {
+        const users = await getUsers();
+        setCachedUsers(users || []);
+      } catch { }
+    };
+    if (user?.role === 'admin') {
+      fetchUsersForSearch();
+    }
+  }, [user]);
+
+  // Close search on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setIsSearchOpen(false);
+        setSelectedIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut: Ctrl+K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Perform search
+  const handleSearch = useCallback((query) => {
+    setSearchQuery(query);
+    setSelectedIndex(-1);
+
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearchOpen(false);
+      return;
+    }
+
+    const q = query.toLowerCase();
+    const results = [];
+
+    // Search pages
+    PAGE_ITEMS.forEach(page => {
+      if (page.name.toLowerCase().includes(q)) {
+        results.push({
+          id: `page-${page.path}`,
+          label: page.name,
+          sublabel: page.path,
+          category: 'Pages',
+          icon: getPageIcon(page.icon),
+          action: () => navigate(page.path),
+        });
+      }
+    });
+
+    // Search users (admin only)
+    if (cachedUsers.length > 0) {
+      cachedUsers.forEach(u => {
+        const fullName = `${u.first_name || ''} ${u.middle_name || ''} ${u.last_name || ''}`.trim();
+        if (
+          fullName.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
+          u.role?.toLowerCase().includes(q)
+        ) {
+          results.push({
+            id: `user-${u.id}`,
+            label: fullName,
+            sublabel: `${u.email} · ${u.role}`,
+            category: 'Users',
+            icon: <User size={16} />,
+            action: () => navigate('/settings'),
+          });
+        }
+      });
+    }
+
+    setSearchResults(results.slice(0, 12));
+    setIsSearchOpen(results.length > 0);
+  }, [cachedUsers, navigate]);
+
+  // Keyboard navigation in results
+  const handleSearchKeyDown = (e) => {
+    if (!isSearchOpen || searchResults.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev + 1) % searchResults.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev - 1 + searchResults.length) % searchResults.length);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      searchResults[selectedIndex].action();
+      setSearchQuery('');
+      setIsSearchOpen(false);
+      setSelectedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setIsSearchOpen(false);
+      setSelectedIndex(-1);
+      inputRef.current?.blur();
+    }
+  };
+
+  const handleResultClick = (result) => {
+    result.action();
+    setSearchQuery('');
+    setIsSearchOpen(false);
+    setSelectedIndex(-1);
+  };
+
+  // Group results by category
+  const groupedResults = searchResults.reduce((acc, result) => {
+    if (!acc[result.category]) acc[result.category] = [];
+    acc[result.category].push(result);
+    return acc;
+  }, {});
 
   const handleAddWidget = (type, settings) => {
     if (addWidget) {
@@ -36,10 +201,6 @@ const Topbar = () => {
       setIsWidgetModalOpen(false);
     }
   };
-
-  // ... (WIDGET_OPTIONS and notifications)
-
-
 
   const WIDGET_OPTIONS = [
     { type: 'stats', label: 'Stats Card (Generic)', settings: { title: 'New Stat', amount: '0', trend: '0%', color: 'blue', icon: 'person' } },
@@ -112,8 +273,6 @@ const Topbar = () => {
                   onClick={() => {
                     if (dashboardContext.resetLayout) {
                       dashboardContext.resetLayout();
-                      // Optional: Exit edit mode after reset?
-                      // toggleEditMode(); 
                     }
                   }}
                 >
@@ -146,15 +305,13 @@ const Topbar = () => {
           </div>
         )}
 
-
-
         {/* Add Widget Modal */}
         <Modal
           title="Add Widget"
           open={isWidgetModalOpen}
           onCancel={() => setIsWidgetModalOpen(false)}
           footer={null}
-          width={1200} // Wider modal
+          width={1200}
           centered
           className="add-widget-modal"
         >
@@ -173,16 +330,16 @@ const Topbar = () => {
                   <div style={{
                     flex: 1,
                     padding: '12px',
-                    pointerEvents: 'none', // Disable interaction within preview
-                    minHeight: '140px', // Reduced height for elegance
-                    maxHeight: '140px', // Enforce height limit
-                    background: '#F1F5F9', // Preview bg
+                    pointerEvents: 'none',
+                    minHeight: '140px',
+                    maxHeight: '140px',
+                    background: '#F1F5F9',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden'
                   }}>
                     {WidgetComponent ? (
-                      <div style={{ transform: 'scale(0.75)', transformOrigin: 'top center', width: '133%', height: '133%' }}> {/* Scaled down more, width adjusted to compensate */}
+                      <div style={{ transform: 'scale(0.75)', transformOrigin: 'top center', width: '133%', height: '133%' }}>
                         <WidgetComponent settings={opt.settings} />
                       </div>
                     ) : (
@@ -199,6 +356,51 @@ const Topbar = () => {
           </div>
         </Modal>
 
+        {/* Global Search Bar */}
+        <div className="global-search-container" ref={searchRef}>
+          <div className="search-wrapper">
+            <Search size={16} className="search-icon" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search pages, users, members..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => { if (searchQuery.trim()) setIsSearchOpen(searchResults.length > 0); }}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <kbd className="search-shortcut">Ctrl+K</kbd>
+          </div>
+
+          {/* Search Results Dropdown */}
+          {isSearchOpen && (
+            <div className="search-results-dropdown">
+              {Object.entries(groupedResults).map(([category, items]) => (
+                <div key={category} className="search-results-group">
+                  <div className="search-results-category">{category}</div>
+                  {items.map((result, idx) => {
+                    const globalIdx = searchResults.indexOf(result);
+                    return (
+                      <div
+                        key={result.id}
+                        className={`search-result-item ${globalIdx === selectedIndex ? 'selected' : ''}`}
+                        onClick={() => handleResultClick(result)}
+                        onMouseEnter={() => setSelectedIndex(globalIdx)}
+                      >
+                        <span className="search-result-icon">{result.icon}</span>
+                        <div className="search-result-text">
+                          <span className="search-result-label">{result.label}</span>
+                          <span className="search-result-sublabel">{result.sublabel}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button className="icon-btn theme-toggle-btn" onClick={toggleTheme} title="Toggle Dark/Light Mode">
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
@@ -211,13 +413,7 @@ const Topbar = () => {
           </button>
         </Popover>
 
-        <div className="logo-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Avatar
-            size={40}
-            icon={<User />}
-            src={user?.avatar_url ? `${API_BASE_URL}/${user.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null}
-            style={{ backgroundColor: '#1565c0', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-          />
+        <div className="logo-wrapper">
           <img src="/Logo-Half-Dark.svg" alt="App Logo" className="topbar-logo" />
         </div>
       </div>
