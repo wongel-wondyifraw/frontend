@@ -7,11 +7,9 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import ManageMembers from './pages/Members/ManageMembers';
 import MemberDetail from './pages/Members/MemberDetail';
 import AddMember from './pages/Members/AddMember';
-import EditMember from './pages/Members/EditMember';
 import ManageMinistries from './pages/Ministries/ManageMinistries';
 import MinistryDetail from './pages/Ministries/MinistryDetail';
 import AddMinistry from './pages/Ministries/AddMinistry';
-import EditMinistry from './pages/Ministries/EditMinistry';
 import Settings from './pages/Settings/Settings';
 import Help from './pages/Help/Help';
 import ScheduleManagement from './pages/Schedule/ScheduleManagement';
@@ -32,11 +30,9 @@ function App() {
         <Route path="/members/home-groups/:id" element={<HomeGroupDetail />} />
         <Route path="/members/add" element={<AddMember />} />
         <Route path="/members/details/:id" element={<MemberDetail />} />
-        <Route path="/members/edit/:id" element={<EditMember />} />
         <Route path="/ministries/manage" element={<ManageMinistries />} />
         <Route path="/ministries/add" element={<AddMinistry />} />
         <Route path="/ministries/details/:id" element={<MinistryDetail />} />
-        <Route path="/ministries/edit/:id" element={<EditMinistry />} />
         <Route path="/bible-study" element={<BibleStudy />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/schedule" element={<ScheduleManagement />} />

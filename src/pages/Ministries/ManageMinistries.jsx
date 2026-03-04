@@ -1,63 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Input, Avatar, message, Modal, Tooltip } from 'antd';
+import React from 'react';
+import { Table, Tag, Button, Input, Avatar } from 'antd';
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMinistries, deleteMinistry } from '../../services/api';
-import '../Members/ManageMembers.css';
+import './ManageMinistries.css';
 
 const ManageMinistries = () => {
     const navigate = useNavigate();
-    const [ministries, setMinistries] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchText, setSearchText] = useState('');
 
-    useEffect(() => {
-        loadMinistries();
-    }, []);
-
-    const loadMinistries = async () => {
-        try {
-            setLoading(true);
-            const data = await getMinistries();
-            setMinistries(data);
-        } catch (error) {
-            message.error('Failed to load ministries');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = (ministry) => {
-        Modal.confirm({
-            title: 'Delete Ministry?',
-            icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
-            content: `Are you sure you want to delete "${ministry.name}"? This action cannot be undone.`,
-            okText: 'Delete',
-            okType: 'danger',
-            cancelText: 'Cancel',
-            onOk: async () => {
-                try {
-                    await deleteMinistry(ministry.id);
-                    message.success('Ministry deleted successfully');
-                    loadMinistries();
-                } catch (error) {
-                    message.error(error.message || 'Failed to delete ministry');
-                }
-            },
-        });
-    };
-
-    const filteredMinistries = ministries.filter(m => {
-        const q = searchText.toLowerCase();
-        return (
-            m.name?.toLowerCase().includes(q) ||
-            m.about?.toLowerCase().includes(q) ||
-            m.schedule?.toLowerCase().includes(q)
-        );
-    });
-
-    const getInitial = (name) => (name?.[0] || 'M').toUpperCase();
+    // Sample Data
+    const dataSource = [
+        {
+            key: '1',
+            name: 'Worship Team',
+            leader: 'David Miller',
+            members: 45,
+            status: 'Active',
+            meetingDay: 'Thursday',
+        },
+        {
+            key: '2',
+            name: 'Youth Ministry',
+            leader: 'Sarah Jenkins',
+            members: 120,
+            status: 'Active',
+            meetingDay: 'Friday',
+        },
+        {
+            key: '3',
+            name: 'Outreach Program',
+            leader: 'James Wilson',
+            members: 30,
+            status: 'Inactive',
+            meetingDay: 'Saturday',
+        },
+        {
+            key: '4',
+            name: 'Kids Church',
+            leader: 'Emily Chen',
+            members: 85,
+            status: 'Active',
+            meetingDay: 'Sunday',
+        },
+        {
+            key: '5',
+            name: 'Tech Team',
+            leader: 'Mike Ross',
+            members: 15,
+            status: 'Active',
+            meetingDay: 'Wednesday',
+        },
+    ];
 
     const columns = [
         {
@@ -66,61 +59,54 @@ const ManageMinistries = () => {
             key: 'name',
             render: (text) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Avatar style={{ backgroundColor: '#7b1fa2', fontWeight: 700, fontSize: '16px' }}>
-                        {getInitial(text)}
-                    </Avatar>
-                    <span style={{ fontWeight: 600 }}>{text}</span>
+                    <Avatar icon={<TeamOutlined />} style={{ backgroundColor: '#7b1fa2' }} />
+                    <span style={{ fontWeight: 500 }}>{text}</span>
                 </div>
             ),
         },
         {
-            title: 'About',
-            dataIndex: 'about',
-            key: 'about',
-            ellipsis: true,
-            render: text => text || <em style={{ color: '#cbd5e1' }}>No description</em>,
+            title: 'Leader',
+            dataIndex: 'leader',
+            key: 'leader',
         },
         {
-            title: 'Schedule',
-            dataIndex: 'schedule',
-            key: 'schedule',
-            render: text => text || '-',
+            title: 'Members',
+            dataIndex: 'members',
+            key: 'members',
+            render: (count) => (
+                <Tag color="purple">{count} Members</Tag>
+            ),
         },
         {
-            title: 'Created',
-            dataIndex: 'created_at',
-            key: 'created_at',
-            render: date => date ? new Date(date).toLocaleDateString() : '-',
+            title: 'Meeting Day',
+            dataIndex: 'meetingDay',
+            key: 'meetingDay',
+        },
+        {
+            title: 'Status',
+            key: 'status',
+            dataIndex: 'status',
+            render: (status) => {
+                let color = status === 'Active' ? '#10b981' : '#ef4444';
+                return (
+                    <Tag color={color} key={status} style={{ borderRadius: '20px', padding: '0 12px', fontWeight: 600 }}>
+                        {status.toUpperCase()}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Action',
             key: 'action',
             render: (_, record) => (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <Tooltip title="View Details">
-                        <Button
-                            icon={<InfoCircleOutlined style={{ color: '#7b1fa2' }} />}
-                            onClick={() => navigate(`/ministries/details/${record.id}`)}
-                        />
-                    </Tooltip>
+                    <Button
+                        icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
+                        onClick={() => navigate(`/ministries/details/${record.key}`)}
+                    />
                     <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }}></div>
-                    <Tooltip title="Edit">
-                        <Button
-                            icon={<EditOutlined />}
-                            type="text"
-                            size="small"
-                            onClick={() => navigate(`/ministries/edit/${record.id}`)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                        <Button
-                            icon={<DeleteOutlined />}
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => handleDelete(record)}
-                        />
-                    </Tooltip>
+                    <Button icon={<EditOutlined />} type="text" size="small" />
+                    <Button icon={<DeleteOutlined />} type="text" danger size="small" />
                 </div>
             ),
         },
@@ -128,32 +114,26 @@ const ManageMinistries = () => {
 
     return (
         <DashboardLayout>
-            <div className="manage-members-container">
-                <div className="manage-members-header">
-                    <h2>Manage Ministries</h2>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <Input
-                            placeholder="Search ministries..."
-                            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            style={{ width: 250 }}
-                        />
-                        <Button type="primary" icon={<PlusOutlined />} style={{ background: '#1565c0' }} onClick={() => navigate('/ministries/add')}>
-                            Add Ministry
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="members-table-card">
-                    <Table
-                        dataSource={filteredMinistries}
-                        columns={columns}
-                        rowKey="id"
-                        loading={loading}
-                        pagination={{ pageSize: 10 }}
+            <div className="manage-ministries-header">
+                <h2>Manage Ministries</h2>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <Input
+                        placeholder="Search ministries..."
+                        prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                        style={{ width: '250px', borderRadius: '8px' }}
                     />
+                    <Button type="primary" icon={<PlusOutlined />} style={{ background: '#1565c0', borderRadius: '8px' }} onClick={() => navigate('/ministries/add')}>
+                        Add Ministry
+                    </Button>
                 </div>
+            </div>
+
+            <div className="ministries-table-card">
+                <Table
+                    dataSource={dataSource}
+                    columns={columns}
+                    pagination={{ pageSize: 7 }}
+                />
             </div>
         </DashboardLayout>
     );

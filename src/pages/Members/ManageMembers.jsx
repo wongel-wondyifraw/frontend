@@ -62,21 +62,6 @@ const ManageMembers = () => {
         );
     });
 
-    const getInitials = (record) => {
-        return (record.first_name?.[0] || '').toUpperCase();
-    };
-
-    const getMaritalColor = (status) => {
-        if (!status) return undefined;
-        switch (status.toLowerCase()) {
-            case 'married': return '#10b981';
-            case 'single': return '#3b82f6';
-            case 'divorced': return '#f59e0b';
-            case 'widowed': return '#8b5cf6';
-            default: return undefined;
-        }
-    };
-
     const columns = [
         {
             title: 'Name',
@@ -84,11 +69,10 @@ const ManageMembers = () => {
             render: (_, record) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Avatar
+                        icon={<UserOutlined />}
                         src={record.image_url ? `${API_BASE_URL}/${record.image_url.replace(/^\//, '')}` : null}
-                        style={{ backgroundColor: '#1565c0', fontWeight: 700, fontSize: '16px' }}
-                    >
-                        {!record.image_url && getInitials(record)}
-                    </Avatar>
+                        style={{ backgroundColor: '#1565c0' }}
+                    />
                     <div>
                         <span style={{ fontWeight: 600 }}>
                             {record.first_name} {record.middle_name ? record.middle_name + ' ' : ''}{record.last_name}
@@ -111,9 +95,7 @@ const ManageMembers = () => {
             dataIndex: 'marital_status',
             key: 'marital_status',
             render: status => status ? (
-                <Tag color={getMaritalColor(status)} style={{ borderRadius: '20px', padding: '0 10px', fontWeight: 600, textTransform: 'capitalize' }}>
-                    {status}
-                </Tag>
+                <Tag style={{ borderRadius: '20px', padding: '0 10px' }}>{status}</Tag>
             ) : '-',
         },
         {
@@ -153,7 +135,7 @@ const ManageMembers = () => {
                             icon={<EditOutlined />}
                             type="text"
                             size="small"
-                            onClick={() => navigate(`/members/edit/${record.id}`)}
+                            onClick={() => navigate(`/members/details/${record.id}`)}
                         />
                     </Tooltip>
                     <Tooltip title="Delete">
