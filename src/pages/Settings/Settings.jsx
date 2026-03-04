@@ -34,6 +34,8 @@ const Settings = () => {
 
     // Wizard State
     const [currentStep, setCurrentStep] = useState(0);
+    const [wizardAvatar, setWizardAvatar] = useState(null);
+    const [wizardAvatarPreview, setWizardAvatarPreview] = useState(null);
 
     // Fetch Profile on Mount
     useEffect(() => {
@@ -138,32 +140,48 @@ const Settings = () => {
     };
 
     // Admin: Add/Edit User
-    const handleUserSubmit = async (values) => {
+    const handleUserSubmit = async () => {
         try {
+            const values = await userForm.validateFields();
+            setLoading(true);
+
             if (editingUser) {
                 await updateUser(editingUser.id, {
-                    email: values.email,
-                    role: values.role,
-                    is_active: values.is_active,
+                    ...values,
                     first_name: values.first_name,
                     last_name: values.last_name,
                     middle_name: values.middle_name,
+                    title: values.title,
                 });
                 message.success('User updated successfully');
             } else {
-                await createUser({
-                    ...values,
-                    password_hash: values.password,
-                });
-                message.success('User created successfully');
+                const formData = new FormData();
+                formData.append('first_name', values.first_name);
+                formData.append('last_name', values.last_name);
+                formData.append('middle_name', values.middle_name || '');
+                formData.append('email', values.email);
+                formData.append('password_hash', values.password);
+                formData.append('role', values.role);
+                formData.append('is_active', values.is_active);
+                if (values.title) formData.append('title', values.title);
+                if (wizardAvatar) formData.append('avatar', wizardAvatar);
+
+                await createUser(formData);
+                message.success('User registered successfully');
             }
+
             setIsModalVisible(false);
             setEditingUser(null);
             setCurrentStep(0);
+            setWizardAvatar(null);
+            setWizardAvatarPreview(null);
             userForm.resetFields();
             loadUsers();
         } catch (error) {
+            console.error('Registration Error:', error);
             message.error(error.message || 'Operation failed');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -171,14 +189,15 @@ const Settings = () => {
     const next = async () => {
         try {
             if (currentStep === 0) {
-                await userForm.validateFields(['first_name', 'middle_name', 'last_name', 'email', 'password']);
+                await userForm.validateFields(['first_name', 'last_name']);
             } else if (currentStep === 1) {
-                await userForm.validateFields(['role', 'is_active']);
+                await userForm.validateFields(['email', 'password']);
+            } else if (currentStep === 2) {
+                await userForm.validateFields(['role']);
             }
             setCurrentStep(currentStep + 1);
         } catch (error) {
-            // Validation failed, do not proceed and UI will show errors automatically
-            message.error("Please fill in all required fields.");
+            message.error("Please correct the errors before proceeding.");
         }
     };
 
@@ -222,17 +241,28 @@ const Settings = () => {
     const openUserModal = (user = null) => {
         setEditingUser(user);
         setCurrentStep(0);
+        setWizardAvatar(null);
+        setWizardAvatarPreview(null);
         if (user) {
-            // Need to set is_active explicitly as the form uses valuePropName="checked"
             userForm.setFieldsValue({
                 ...user,
                 is_active: user.is_active !== undefined ? user.is_active : true
             });
         } else {
             userForm.resetFields();
-            userForm.setFieldsValue({ is_active: true }); // Default to active for new
+            userForm.setFieldsValue({ is_active: true });
         }
         setIsModalVisible(true);
+    };
+
+    const handleWizardAvatarChange = (info) => {
+        const file = info.file.originFileObj || info.file;
+        if (file) {
+            setWizardAvatar(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setWizardAvatarPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
     };
 
     // Filter Logic
@@ -297,6 +327,13 @@ const Settings = () => {
             dataIndex: 'role',
             key: 'role',
             render: role => <Tag color={role === 'admin' ? 'blue' : 'green'}>{role.toUpperCase()}</Tag>
+        },
+        { title: 'Title', dataIndex: 'title', key: 'title', render: title => title || '-' },
+        {
+            title: 'Reg. Date',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            render: date => date ? new Date(date).toLocaleDateString() : '-'
         },
         {
             title: 'Status',
@@ -528,28 +565,55 @@ const Settings = () => {
                                 current={currentStep}
                                 style={{ marginBottom: '32px' }}
                                 items={[
-                                    { title: 'Personal', icon: <UserOutlined /> },
-                                    { title: 'Role', icon: <IdcardOutlined /> },
-                                    { title: 'Review', icon: <SolutionOutlined /> },
+                                    { title: 'Personal' },
+                                    { title: 'Account' },
+                                    { title: 'Role' },
                                 ]}
                             />
 
-                            {/* STEP 1: Personal Information */}
+                            {/* STEP 1: Personal Profile */}
                             <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
-                                <h3 style={{ marginBottom: '20px' }}>Personal Information</h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                    <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
-                                        <Input size="large" placeholder="E.g. John" />
-                                    </Form.Item>
-                                    <Form.Item label="Middle Name" name="middle_name">
-                                        <Input size="large" placeholder="Optional" />
-                                    </Form.Item>
+                                <h3 style={{ marginBottom: '20px' }}>Personal Profile</h3>
+                                <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'center' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <Avatar
+                                            size={100}
+                                            src={wizardAvatarPreview || (editingUser?.avatar_url ? `${API_BASE_URL}/${editingUser.avatar_url.replace(/^\//, '')}` : null)}
+                                            icon={<UserOutlined />}
+                                            style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
+                                        />
+                                        <div style={{ marginTop: '8px' }}>
+                                            <Upload showUploadList={false} beforeUpload={() => false} onChange={handleWizardAvatarChange}>
+                                                <Button size="small" icon={<UploadOutlined />}>Upload</Button>
+                                            </Upload>
+                                        </div>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                            <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
+                                                <Input size="large" placeholder="John" />
+                                            </Form.Item>
+                                            <Form.Item label="Middle Name" name="middle_name">
+                                                <Input size="large" placeholder="Optional" />
+                                            </Form.Item>
+                                        </div>
+                                        <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
+                                            <Input size="large" placeholder="Doe" />
+                                        </Form.Item>
+                                    </div>
                                 </div>
-                                <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
-                                    <Input size="large" placeholder="E.g. Doe" />
-                                </Form.Item>
-                                <Form.Item label="Email Address" name="email" rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}>
-                                    <Input size="large" placeholder="user@example.com" />
+                            </div>
+
+                            {/* STEP 2: Account Setup */}
+                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px' }}>Account Setup</h3>
+                                <Form.Item
+                                    label="Email Address"
+                                    name="email"
+                                    rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}
+                                    extra={<span style={{ color: '#fa8c16', fontSize: '12px' }}>⚠️ Warning: Email cannot be changed later. Please enter carefully.</span>}
+                                >
+                                    <Input size="large" placeholder="user@example.com" disabled={editingUser} />
                                 </Form.Item>
 
                                 {!editingUser && (
@@ -559,46 +623,35 @@ const Settings = () => {
                                 )}
                             </div>
 
-                            {/* STEP 2: Role & Status */}
-                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-                                <h3 style={{ marginBottom: '20px' }}>Roles & Permissions</h3>
+                            {/* STEP 3: Role & Designation */}
+                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px' }}>Role & Designation</h3>
                                 <Form.Item label="Select Role" name="role" rules={[{ required: true, message: 'Please assign a role' }]}>
                                     <Select size="large" placeholder="Select an access level">
-                                        <Option value="admin">Admin (Full Access)</Option>
-                                        <Option value="minister">Minister (Limited Access)</Option>
+                                        <Option value="admin">Admin</Option>
+                                        <Option value="minister">Minister</Option>
                                         <Option value="staff">Staff</Option>
-                                        <Option value="member">General Member</Option>
                                     </Select>
                                 </Form.Item>
+
+                                <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.role !== currentValues.role}>
+                                    {({ getFieldValue }) => {
+                                        const role = getFieldValue('role');
+                                        return (role === 'minister' || role === 'staff') ? (
+                                            <Form.Item
+                                                label="Title / Designation"
+                                                name="title"
+                                                rules={[{ required: true, message: 'Title is mandatory for this role' }]}
+                                            >
+                                                <Input size="large" placeholder="e.g. Senior Pastor, IT Manager" />
+                                            </Form.Item>
+                                        ) : null;
+                                    }}
+                                </Form.Item>
+
                                 <Form.Item label="Account Status" name="is_active" valuePropName="checked">
                                     <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
                                 </Form.Item>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                                    Inactive users will not be able to log in to the portal.
-                                </p>
-                            </div>
-
-                            {/* STEP 3: Review */}
-                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
-                                <h3 style={{ marginBottom: '20px' }}>Review Registration</h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
-                                    <div>
-                                        <strong>Full Name:</strong>
-                                        <p>{userForm.getFieldValue('first_name')} {userForm.getFieldValue('last_name')}</p>
-                                    </div>
-                                    <div>
-                                        <strong>Email Address:</strong>
-                                        <p>{userForm.getFieldValue('email')}</p>
-                                    </div>
-                                    <div>
-                                        <strong>Assigned Role:</strong>
-                                        <p style={{ textTransform: 'capitalize' }}>{userForm.getFieldValue('role')}</p>
-                                    </div>
-                                    <div>
-                                        <strong>Status:</strong>
-                                        <p>{userForm.getFieldValue('is_active') ? <Tag color="success">Active</Tag> : <Tag color="error">Inactive</Tag>}</p>
-                                    </div>
-                                </div>
                             </div>
                         </Card>
 
