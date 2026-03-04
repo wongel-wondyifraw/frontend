@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, TimePicker, Button, message, Row, Col } from 'antd';
+import { Form, Input, Select, Button, message, Steps, Card, Row, Col } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
     ClockCircleOutlined,
-    UserOutlined
+    UserOutlined,
+    CheckCircleOutlined,
 } from '@ant-design/icons';
-import SidebarLayout from '../../Layouts/SidebarLayout';
+import DashboardLayout from '../../Layouts/DashboardLayout';
+import { createMinistry, getMembers } from '../../services/api';
 import './AddMinistry.css';
 
 const { Option } = Select;
@@ -17,21 +19,69 @@ const AddMinistry = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [members, setMembers] = useState([]);
 
-    const onFinish = (values) => {
-        setLoading(true);
-        console.log('Received values of form: ', values);
+    // Fetch members for the leader dropdown
+    useEffect(() => {
+        const fetchMembers = async () => {
+            try {
+                const data = await getMembers();
+                setMembers(data);
+            } catch (error) {
+                console.error('Failed to load members for leader selection');
+            }
+        };
+        fetchMembers();
+    }, []);
 
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            message.success('Ministry created successfully');
+    const next = async () => {
+        try {
+            if (currentStep === 0) {
+                await form.validateFields(['name']);
+            }
+            setCurrentStep(currentStep + 1);
+        } catch (error) {
+            message.error('Please correct the errors before proceeding.');
+        }
+    };
+
+    const prev = () => setCurrentStep(currentStep - 1);
+
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            setLoading(true);
+
+            const ministryData = {
+                name: values.name,
+                about: values.about || '',
+                schedule: values.schedule || '',
+                leader_id: values.leader_id || null,
+            };
+
+            await createMinistry(ministryData);
+            message.success('Ministry created successfully!');
             navigate('/ministries/manage');
-        }, 1000);
+        } catch (error) {
+            console.error('Creation Error:', error);
+            message.error(error.message || 'Failed to create ministry');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getStepBackground = () => {
+        switch (currentStep) {
+            case 0: return { background: '#faf5ff', border: 'none' };
+            case 1: return { background: '#f3e8ff', border: '1px solid #d8b4fe' };
+            case 2: return { background: '#ede9fe', border: '1px solid #c4b5fd' };
+            default: return { background: '#faf5ff', border: 'none' };
+        }
     };
 
     return (
-        <SidebarLayout>
+        <DashboardLayout>
             <div className="add-ministry-container">
                 <Button
                     type="text"
@@ -44,112 +94,125 @@ const AddMinistry = () => {
 
                 <div className="add-ministry-header">
                     <h1>Create New Ministry</h1>
-                    <p>Set up a new ministry group or team.</p>
+                    <p>Complete all steps to set up a new ministry group.</p>
                 </div>
 
                 <div className="content-card-unified">
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        onFinish={onFinish}
-                        initialValues={{ status: 'active' }}
-                    >
-                        {/* Section 1: Ministry Details */}
-                        <div className="form-section">
-                            <h3 className="form-section-title-purple">
-                                <div className="form-icon-wrapper-purple"><TeamOutlined /></div>
-                                Ministry Details
-                            </h3>
+                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+                        <Card
+                            bordered={false}
+                            className="wizard-card"
+                            style={{
+                                ...getStepBackground(),
+                                transition: 'background-color 0.3s ease, border 0.3s ease',
+                                borderRadius: '12px',
+                            }}
+                        >
+                            <Steps
+                                current={currentStep}
+                                style={{ marginBottom: '32px' }}
+                                items={[
+                                    { title: 'Ministry Info' },
+                                    { title: 'Schedule & Leader' },
+                                    { title: 'Review' },
+                                ]}
+                            />
 
-                            <Row gutter={24}>
-                                <Col span={24}>
-                                    <Form.Item
-                                        name="name"
-                                        label="Ministry Name"
-                                        rules={[{ required: true, message: 'Please enter ministry name' }]}
+                            {/* STEP 1: Ministry Info */}
+                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <TeamOutlined style={{ color: '#7b1fa2' }} /> Ministry Information
+                                </h3>
+
+                                <Form.Item
+                                    name="name"
+                                    label="Ministry Name"
+                                    rules={[{ required: true, message: 'Ministry name is required' }]}
+                                >
+                                    <Input size="large" placeholder="e.g. Worship Team" />
+                                </Form.Item>
+
+                                <Form.Item name="about" label="About / Description">
+                                    <TextArea rows={4} placeholder="Describe the purpose and activities of this ministry..." />
+                                </Form.Item>
+                            </div>
+
+                            {/* STEP 2: Schedule & Leader */}
+                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <ClockCircleOutlined style={{ color: '#7b1fa2' }} /> Schedule & Leadership
+                                </h3>
+
+                                <Form.Item name="schedule" label="Schedule / Meeting Time">
+                                    <Input size="large" placeholder="e.g. Every Thursday at 7:00 PM" />
+                                </Form.Item>
+
+                                <Form.Item name="leader_id" label="Assign Leader (from Members)">
+                                    <Select
+                                        placeholder="Select a member as leader"
+                                        size="large"
+                                        showSearch
+                                        allowClear
+                                        optionFilterProp="children"
                                     >
-                                        <Input placeholder="e.g. Worship Team" size="large" />
+                                        {members.map(m => (
+                                            <Option key={m.id} value={m.id}>
+                                                {m.first_name} {m.last_name}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            </div>
+
+                            {/* STEP 3: Review */}
+                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <CheckCircleOutlined style={{ color: '#7b1fa2' }} /> Review
+                                </h3>
+
+                                <div style={{
+                                    background: '#fff',
+                                    borderRadius: '8px',
+                                    padding: '20px',
+                                    border: '1px solid #e2e8f0',
+                                }}>
+                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Ministry Summary</h4>
+                                    <Form.Item noStyle shouldUpdate>
+                                        {() => {
+                                            const values = form.getFieldsValue();
+                                            const leader = members.find(m => m.id === values.leader_id);
+                                            return (
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
+                                                    <div><strong>Name:</strong> {values.name || '—'}</div>
+                                                    <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
+                                                    <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
+                                                    <div><strong>Leader:</strong> {leader ? `${leader.first_name} ${leader.last_name}` : '—'}</div>
+                                                </div>
+                                            );
+                                        }}
                                     </Form.Item>
-                                </Col>
-                            </Row>
+                                </div>
+                            </div>
+                        </Card>
 
-                            <Form.Item
-                                name="description"
-                                label="Description"
-                                rules={[{ required: true, message: 'Please enter a description' }]}
-                            >
-                                <TextArea rows={4} placeholder="Describe the purpose and activities of this ministry..." />
-                            </Form.Item>
-
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item
-                                        name="leader"
-                                        label="Assign Leader"
-                                        rules={[{ required: true, message: 'Please Select a leader' }]}
-                                    >
-                                        <Select placeholder="Select a member" size="large" showSearch>
-                                            <Option value="john">John Doe</Option>
-                                            <Option value="jane">Jane Smith</Option>
-                                            <Option value="david">David Miller</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="status" label="Status">
-                                        <Select size="large">
-                                            <Option value="active">Active</Option>
-                                            <Option value="inactive">Inactive</Option>
-                                            <Option value="seasonal">Seasonal</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </div>
-
-                        {/* Section 2: Schedule */}
-                        <div className="form-section" style={{ marginTop: '32px' }}>
-                            <h3 className="form-section-title-purple">
-                                <div className="form-icon-wrapper-purple"><ClockCircleOutlined /></div>
-                                Meeting Schedule
-                            </h3>
-
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item name="meetingDay" label="Meeting Day">
-                                        <Select placeholder="Select day" size="large">
-                                            <Option value="monday">Monday</Option>
-                                            <Option value="tuesday">Tuesday</Option>
-                                            <Option value="wednesday">Wednesday</Option>
-                                            <Option value="thursday">Thursday</Option>
-                                            <Option value="friday">Friday</Option>
-                                            <Option value="saturday">Saturday</Option>
-                                            <Option value="sunday">Sunday</Option>
-                                        </Select>
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item name="meetingTime" label="Meeting Time">
-                                        <TimePicker use12Hours format="h:mm a" style={{ width: '100%' }} size="large" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-
-                            <Form.Item name="location" label="Location / Room">
-                                <Input placeholder="e.g. Main Sanctuary" size="large" />
-                            </Form.Item>
-                        </div>
-
-                        <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                             <Button size="large" onClick={() => navigate(-1)}>Cancel</Button>
-                            <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#9333ea', borderColor: '#9333ea', width: '150px' }}>
-                                Create Ministry
-                            </Button>
+                            {currentStep > 0 && <Button onClick={prev} size="large">Previous</Button>}
+                            {currentStep < 2 && (
+                                <Button type="primary" onClick={next} size="large" style={{ background: '#7b1fa2', borderColor: '#7b1fa2' }}>
+                                    Next Step
+                                </Button>
+                            )}
+                            {currentStep === 2 && (
+                                <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#7b1fa2', borderColor: '#7b1fa2' }}>
+                                    Create Ministry
+                                </Button>
+                            )}
                         </div>
                     </Form>
                 </div>
             </div>
-        </SidebarLayout>
+        </DashboardLayout>
     );
 };
 

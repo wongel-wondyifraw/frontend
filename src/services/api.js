@@ -180,4 +180,51 @@ export const deleteMember = async (id) => {
     }
 };
 
+// ==================== Ministries Management ====================
+
+export const getMinistries = async () => {
+    try {
+        const response = await api.get('/ministries');
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const getMinistry = async (id) => {
+    try {
+        const response = await api.get(`/ministries/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const createMinistry = async (data) => {
+    try {
+        const response = await api.post('/ministries', data);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const updateMinistry = async (id, data) => {
+    try {
+        const response = await api.patch(`/ministries/${id}`, data);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const deleteMinistry = async (id) => {
+    try {
+        const response = await api.delete(`/ministries/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
 export default api;
