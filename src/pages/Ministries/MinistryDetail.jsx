@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Modal, Spin, Breadcrumb, Table, Tag, Avatar } from 'antd';
+import { Button, message, Modal, Spin, Breadcrumb, Table, Tag, Avatar, Form, Select } from 'antd';
 import {
     TeamOutlined,
     CalendarOutlined,
@@ -8,10 +8,13 @@ import {
     DeleteOutlined,
     UserOutlined,
     EyeOutlined,
+    PlusOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMinistry, deleteMinistry, getMinistryMembers } from '../../services/api';
+import { getMinistry, deleteMinistry, getMinistryMembers, getMembers, addMinistryMember } from '../../services/api';
 import './MinistryDetail.css';
+
+const { Option } = Select;
 
 const MinistryDetail = () => {
     const { id } = useParams();
@@ -21,9 +24,16 @@ const MinistryDetail = () => {
     const [ministryMembers, setMinistryMembers] = useState([]);
     const [membersLoading, setMembersLoading] = useState(false);
 
+    // Add Member Modal State
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [allMembers, setAllMembers] = useState([]);
+    const [addingMember, setAddingMember] = useState(false);
+    const [form] = Form.useForm();
+
     useEffect(() => {
         loadMinistry();
         loadMinistryMembers();
+        loadAllMembers();
     }, [id]);
 
     const loadMinistry = async () => {
@@ -51,6 +61,15 @@ const MinistryDetail = () => {
         }
     };
 
+    const loadAllMembers = async () => {
+        try {
+            const data = await getMembers();
+            setAllMembers(data);
+        } catch (error) {
+            console.warn('Failed to load members for add modal:', error);
+        }
+    };
+
     const handleDelete = () => {
         Modal.confirm({
             title: 'Delete Ministry?',
@@ -69,6 +88,21 @@ const MinistryDetail = () => {
                 }
             },
         });
+    };
+
+    const handleAddMember = async (values) => {
+        try {
+            setAddingMember(true);
+            await addMinistryMember(id, values.member_id);
+            message.success('Member added successfully');
+            setIsAddModalVisible(false);
+            form.resetFields();
+            loadMinistryMembers(); // Refresh members list
+        } catch (error) {
+            message.error(error.message || 'Failed to add member to ministry');
+        } finally {
+            setAddingMember(false);
+        }
     };
 
     const getLeaderName = () => {
@@ -116,7 +150,7 @@ const MinistryDetail = () => {
                 <Button
                     type="link"
                     icon={<EyeOutlined />}
-                    onClick={() => navigate(`/members/${record.member?.id}`)}
+                    onClick={() => navigate(`/members/details/${record.member?.id}`)}
                     style={{ color: '#1565c0' }}
                 >
                     View
@@ -136,6 +170,11 @@ const MinistryDetail = () => {
     }
 
     if (!ministry) return null;
+
+    // Filter out members that are already in the ministry
+    const availableMembers = allMembers.filter(
+        m => !ministryMembers.some(mm => mm.member_id === m.id)
+    );
 
     return (
         <DashboardLayout>
@@ -235,7 +274,17 @@ const MinistryDetail = () => {
 
                     {/* Members Section */}
                     <div className="detail-section" style={{ marginTop: '32px' }}>
-                        <h3><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Members ({ministryMembers.length})</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ margin: 0 }}><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Members ({ministryMembers.length})</h3>
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={() => setIsAddModalVisible(true)}
+                                style={{ background: '#10b981', borderColor: '#10b981' }}
+                            >
+                                Add Member
+                            </Button>
+                        </div>
                         <Table
                             dataSource={ministryMembers}
                             columns={memberColumns}
@@ -243,11 +292,58 @@ const MinistryDetail = () => {
                             loading={membersLoading}
                             pagination={{ pageSize: 5 }}
                             locale={{ emptyText: 'No members assigned to this ministry yet.' }}
-                            style={{ marginTop: '16px' }}
                         />
                     </div>
                 </div>
             </div>
+
+            {/* Add Member Modal */}
+            <Modal
+                title="Add Member to Ministry"
+                open={isAddModalVisible}
+                onCancel={() => {
+                    setIsAddModalVisible(false);
+                    form.resetFields();
+                }}
+                footer={null}
+                destroyOnClose
+            >
+                <Form form={form} layout="vertical" onFinish={handleAddMember}>
+                    <Form.Item
+                        name="member_id"
+                        label="Select Member"
+                        rules={[{ required: true, message: 'Please select a member to add' }]}
+                    >
+                        <Select
+                            placeholder="Search and select a member"
+                            size="large"
+                            showSearch
+                            allowClear
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().includes(input.toLowerCase())
+                            }
+                        >
+                            {availableMembers.map(member => (
+                                <Option key={member.id} value={member.id}>
+                                    {member.first_name} {member.middle_name ? member.middle_name + ' ' : ''}{member.last_name}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+                        <Button onClick={() => {
+                            setIsAddModalVisible(false);
+                            form.resetFields();
+                        }}>
+                            Cancel
+                        </Button>
+                        <Button type="primary" htmlType="submit" loading={addingMember}>
+                            Add Member
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
         </DashboardLayout>
     );
 };

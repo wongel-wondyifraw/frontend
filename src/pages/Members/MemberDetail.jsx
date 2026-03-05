@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Button, Timeline } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -13,34 +13,49 @@ import {
     PlusOutlined,
     PrinterOutlined
 } from '@ant-design/icons';
-import SidebarLayout from '../../Layouts/SidebarLayout';
+import DashboardLayout from '../../Layouts/DashboardLayout';
+import { getMember } from '../../services/api';
 import './MemberDetail.css';
 
 const MemberDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [member, setMember] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data - In a real app, fetch based on ID
-    const member = {
-        name: "Sarah Jenkins",
-        role: "Worship Leader",
-        status: "Active",
-        email: "sarah.jenkins@example.com",
-        phone: "+1 (555) 123-4567",
-        address: "123 Faith Lane, Springfield, IL 62704",
-        joinedDate: "January 15, 2023",
-        dob: "March 12, 1990",
-        campus: "Main Campus",
-        maritalStatus: "Married",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-        family: [
-            { name: 'Michael Jenkins', relation: 'Spouse', id: '002', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' },
-            { name: 'Emma Jenkins', relation: 'Daughter', id: '003', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' }
-        ]
+    useEffect(() => {
+        fetchMemberDetails();
+    }, [id]);
+
+    const fetchMemberDetails = async () => {
+        try {
+            setLoading(true);
+            const data = await getMember(id);
+            setMember(data);
+        } catch (error) {
+            message.error('Failed to load member details');
+            navigate('/members/manage');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <Spin size="large" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (!member) return null;
+
+    const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`;
+
     return (
-        <SidebarLayout>
+        <DashboardLayout>
             <div className="member-detail-container">
                 <Button
                     type="text"
@@ -54,18 +69,25 @@ const MemberDetail = () => {
                 <div className="content-card-unified">
                     {/* Unified Header Section */}
                     <div className="member-header-section">
-                        <img src={member.avatar} alt={member.name} className="member-profile-image" />
+                        <Avatar
+                            size={120}
+                            src={member.image_url}
+                            icon={<UserOutlined />}
+                            className="member-profile-image"
+                        />
                         <div className="member-header-info">
-                            <h1 className="member-name">{member.name}</h1>
+                            <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
-                                <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>{member.role}</Tag>
-                                <Tag color="green" style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}>{member.status}</Tag>
-                                <span className="member-id">ID: #{id || '001'}</span>
+                                <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>Member</Tag>
+                                <Tag color={member.status === 'active' ? 'green' : 'orange'} style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}>
+                                    {member.status?.charAt(0).toUpperCase() + member.status?.slice(1)}
+                                </Tag>
+                                <span className="member-id">ID: #{member.id?.slice(0, 8)}</span>
                             </div>
                         </div>
                         <div className="member-actions">
                             <Button icon={<PrinterOutlined />} size="large" onClick={() => window.print()}>Print Info</Button>
-                            <Button icon={<EditOutlined />} size="large">Edit Profile</Button>
+                            <Button icon={<EditOutlined />} size="large" onClick={() => navigate(`/members/edit/${id}`)}>Edit Profile</Button>
                             <Button icon={<DeleteOutlined />} danger size="large">Delete</Button>
                         </div>
                     </div>
@@ -77,58 +99,44 @@ const MemberDetail = () => {
                                 <h3>Personal Information</h3>
                                 <div className="info-row">
                                     <span className="info-label"><MailOutlined /> Email</span>
-                                    <span className="info-value">{member.email}</span>
+                                    <span className="info-value">{member.email || 'N/A'}</span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label"><PhoneOutlined /> Phone</span>
-                                    <span className="info-value">{member.phone}</span>
+                                    <span className="info-value">{member.phone || 'N/A'}</span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label"><EnvironmentOutlined /> Address</span>
-                                    <span className="info-value">{member.address}</span>
+                                    <span className="info-value">{member.address || 'N/A'}</span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label"><CalendarOutlined /> Date of Birth</span>
-                                    <span className="info-value">{member.dob}</span>
+                                    <span className="info-value">{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label"><UserOutlined /> Marital Status</span>
-                                    <span className="info-value">{member.maritalStatus}</span>
+                                    <span className="info-value">{member.marital_status || 'N/A'}</span>
                                 </div>
                             </div>
 
                             <div className="detail-section">
-                                <h3>Family Connections</h3>
-                                <div className="family-list">
-                                    {member.family.map((fam, idx) => (
-                                        <div key={idx} className="family-member-item">
-                                            <img src={fam.avatar} alt={fam.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                                            <div>
-                                                <div style={{ fontWeight: 600, fontSize: '14px' }}>{fam.name}</div>
-                                                <div style={{ fontSize: '12px', color: '#64748b' }}>{fam.relation}</div>
-                                            </div>
-                                            <Button size="small" style={{ marginLeft: 'auto' }} onClick={() => navigate(`/members/details/${fam.id}`)}>View</Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="detail-section">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                    <h3 style={{ margin: 0, border: 'none', padding: 0 }}>Ministry Involvement</h3>
-                                    <Button type="primary" size="small" icon={<PlusOutlined />} style={{ background: '#1565c0' }}>Add to Ministry</Button>
-                                </div>
+                                <h3>Ministry Involvement</h3>
                                 <div className="info-row">
-                                    <span className="info-label">Campus</span>
-                                    <span className="info-value">{member.campus}</span>
+                                    <span className="info-label">Active Ministries</span>
+                                    <span className="info-value">
+                                        {member.ministry_members?.length || 0} ministries
+                                    </span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label">Joined Date</span>
-                                    <span className="info-value">{member.joinedDate}</span>
+                                    <span className="info-value">{new Date(member.created_at).toLocaleDateString()}</span>
                                 </div>
-                                <div className="info-row">
-                                    <span className="info-label">Baptized</span>
-                                    <span className="info-value">Yes (June 2010)</span>
+                                <div style={{ marginTop: '16px' }}>
+                                    {member.ministry_members?.map(mm => (
+                                        <Tag key={mm.ministry_id} color="blue" style={{ marginBottom: '8px' }}>
+                                            {mm.ministry?.name}
+                                        </Tag>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -136,31 +144,23 @@ const MemberDetail = () => {
                         {/* Right Column */}
                         <div className="right-column">
                             <div className="detail-section">
-                                <h3>Recent Activity</h3>
+                                <h3>Activity Timeline</h3>
                                 <Timeline
                                     items={[
                                         {
                                             color: 'green',
-                                            children: 'Attended Sunday Service - oct 22, 2025',
+                                            children: `Member registered on ${new Date(member.created_at).toLocaleDateString()}`,
                                         },
-                                        {
+                                        ...(member.ministry_members || []).map(mm => ({
                                             color: 'blue',
-                                            children: 'Joined "Worship Team" - Sep 15, 2025',
-                                        },
-                                        {
-                                            color: 'gray',
-                                            children: 'Updated contact information - Aug 01, 2025',
-                                        },
-                                        {
-                                            color: 'gray',
-                                            children: 'Registered as a member - Jan 15, 2023',
-                                        },
+                                            children: `Joined ${mm.ministry?.name || 'Ministry'} on ${new Date(mm.joined_at).toLocaleDateString()}`
+                                        }))
                                     ]}
                                 />
                             </div>
                             <div className="detail-section">
                                 <h3>Notes</h3>
-                                <p style={{ color: '#64748b', marginBottom: '16px' }}>No admin notes added yet.</p>
+                                <p style={{ color: '#64748b', marginBottom: '16px' }}>No internal notes for this member.</p>
                                 <Button type="dashed" block>Add Note</Button>
                             </div>
                         </div>
@@ -186,7 +186,7 @@ const MemberDetail = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </DashboardLayout>
     );
 };
 
