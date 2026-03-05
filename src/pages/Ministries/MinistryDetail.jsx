@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Modal, Spin, Breadcrumb, Table, Avatar, Tag } from 'antd';
+import { Button, message, Modal, Spin, Breadcrumb } from 'antd';
 import {
     TeamOutlined,
     CalendarOutlined,
@@ -9,7 +9,7 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMinistry, deleteMinistry, getMinistryMembers } from '../../services/api';
+import { getMinistry, deleteMinistry } from '../../services/api';
 import './MinistryDetail.css';
 
 const MinistryDetail = () => {
@@ -17,11 +17,9 @@ const MinistryDetail = () => {
     const navigate = useNavigate();
     const [ministry, setMinistry] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [ministryMembers, setMinistryMembers] = useState([]);
 
     useEffect(() => {
         loadMinistry();
-        loadMembers();
     }, [id]);
 
     const loadMinistry = async () => {
@@ -34,15 +32,6 @@ const MinistryDetail = () => {
             navigate('/ministries/manage');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const loadMembers = async () => {
-        try {
-            const data = await getMinistryMembers(id);
-            setMinistryMembers(data);
-        } catch (error) {
-            console.warn('Failed to load ministry members:', error);
         }
     };
 
@@ -74,48 +63,6 @@ const MinistryDetail = () => {
         return 'Not assigned';
     };
 
-    const memberColumns = [
-        {
-            title: 'Member',
-            key: 'name',
-            render: (_, record) => {
-                const m = record.member;
-                if (!m) return record.member_id;
-                return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1565c0' }} />
-                        <span style={{ fontWeight: 500 }}>{m.first_name} {m.last_name}</span>
-                    </div>
-                );
-            },
-        },
-        {
-            title: 'Email',
-            key: 'email',
-            render: (_, record) => record.member?.email || '-',
-        },
-        {
-            title: 'Phone',
-            key: 'phone',
-            render: (_, record) => record.member?.phone || '-',
-        },
-        {
-            title: 'Joined',
-            dataIndex: 'joined_at',
-            key: 'joined_at',
-            render: date => date ? new Date(date).toLocaleDateString() : '-',
-        },
-        {
-            title: 'Action',
-            key: 'action',
-            render: (_, record) => (
-                <Button size="small" onClick={() => navigate(`/members/details/${record.member_id}`)}>
-                    View
-                </Button>
-            ),
-        },
-    ];
-
     if (loading) {
         return (
             <DashboardLayout>
@@ -131,7 +78,7 @@ const MinistryDetail = () => {
     return (
         <DashboardLayout>
             <div className="ministry-detail-container">
-                {/* Breadcrumb */}
+                {/* Breadcrumb: Ministries / Ministry Name */}
                 <Breadcrumb
                     style={{ marginBottom: '16px', fontSize: '14px' }}
                     items={[
@@ -145,7 +92,7 @@ const MinistryDetail = () => {
                 />
 
                 <div className="content-card-unified">
-                    {/* Header Section */}
+                    {/* Unified Header Section */}
                     <div className="ministry-header-section">
                         <div className="ministry-icon-bg">
                             <TeamOutlined />
@@ -197,8 +144,14 @@ const MinistryDetail = () => {
                                 </div>
                                 {ministry.leader?.email && (
                                     <div className="info-row">
-                                        <span className="info-label">Leader Email</span>
+                                        <span className="info-label">Email</span>
                                         <span className="info-value">{ministry.leader.email}</span>
+                                    </div>
+                                )}
+                                {ministry.leader?.phone && (
+                                    <div className="info-row">
+                                        <span className="info-label">Phone</span>
+                                        <span className="info-value">{ministry.leader.phone}</span>
                                     </div>
                                 )}
                                 <div className="info-row">
@@ -213,30 +166,6 @@ const MinistryDetail = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Members Section */}
-                    <div className="detail-section" style={{ marginTop: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ margin: 0, border: 'none', padding: 0 }}>
-                                <TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />
-                                Ministry Members ({ministryMembers.length})
-                            </h3>
-                        </div>
-
-                        {ministryMembers.length > 0 ? (
-                            <Table
-                                dataSource={ministryMembers}
-                                columns={memberColumns}
-                                rowKey={(record) => record.member_id}
-                                pagination={{ pageSize: 5 }}
-                                size="small"
-                            />
-                        ) : (
-                            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '24px' }}>
-                                No members added to this ministry yet.
-                            </p>
-                        )}
                     </div>
                 </div>
             </div>

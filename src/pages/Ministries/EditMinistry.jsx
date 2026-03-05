@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Button, Upload, message, Row, Col } from 'antd';
+import { Form, Input, Select, Button, message, Row, Col, Spin } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
-    UploadOutlined,
-    UserOutlined,
     ClockCircleOutlined,
-    GlobalOutlined,
-    PaperClipOutlined
+    UserOutlined,
 } from '@ant-design/icons';
-import SidebarLayout from '../../Layouts/SidebarLayout';
+import DashboardLayout from '../../Layouts/DashboardLayout';
 import { updateMinistry, getMinistry, getMembers } from '../../services/api';
-import GlobalSpinner from '../../Components/Spinner/GlobalSpinner';
 import './AddMinistry.css';
 
 const { Option } = Select;
@@ -73,9 +69,19 @@ const EditMinistry = () => {
         }
     };
 
+    if (initialLoading) {
+        return (
+            <DashboardLayout>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <Spin size="large" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
-        <SidebarLayout>
-            <div className="add-member-container">
+        <DashboardLayout>
+            <div className="add-ministry-container">
                 <Button
                     type="text"
                     icon={<ArrowLeftOutlined />}
@@ -85,9 +91,7 @@ const EditMinistry = () => {
                     Back to Ministries
                 </Button>
 
-                <GlobalSpinner loading={loading || initialLoading} />
-
-                <div className="add-member-header">
+                <div className="add-ministry-header">
                     <h1>Edit Ministry Details</h1>
                     <p>Update ministry information and leadership.</p>
                 </div>
@@ -106,7 +110,7 @@ const EditMinistry = () => {
                             </h3>
 
                             <Row gutter={24}>
-                                <Col span={12}>
+                                <Col span={24}>
                                     <Form.Item
                                         name="name"
                                         label="Ministry Name"
@@ -115,6 +119,24 @@ const EditMinistry = () => {
                                         <Input placeholder="e.g. Worship Team" size="large" />
                                     </Form.Item>
                                 </Col>
+                            </Row>
+
+                            <Form.Item
+                                name="about"
+                                label="About"
+                            >
+                                <TextArea rows={4} placeholder="Describe the purpose and activities of this ministry..." />
+                            </Form.Item>
+                        </div>
+
+                        {/* Section 2: Leadership & Schedule */}
+                        <div className="form-section" style={{ marginTop: '32px' }}>
+                            <h3 className="form-section-title">
+                                <div className="form-icon-wrapper" style={{ background: '#f0fdf4', color: '#16a34a' }}><UserOutlined /></div>
+                                Leadership & Schedule
+                            </h3>
+
+                            <Row gutter={24}>
                                 <Col span={12}>
                                     <Form.Item
                                         name="leader_id"
@@ -138,27 +160,9 @@ const EditMinistry = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                            </Row>
-
-                            <Form.Item
-                                name="about"
-                                label="About"
-                            >
-                                <TextArea rows={4} placeholder="Describe the purpose and activities of this ministry..." />
-                            </Form.Item>
-                        </div>
-
-                        {/* Section 2: Schedule & Details */}
-                        <div className="form-section" style={{ marginTop: '32px' }}>
-                            <h3 className="form-section-title">
-                                <div className="form-icon-wrapper" style={{ background: '#f0fdf4', color: '#16a34a' }}><ClockCircleOutlined /></div>
-                                Schedule & Details
-                            </h3>
-
-                            <Row gutter={24}>
-                                <Col span={24}>
+                                <Col span={12}>
                                     <Form.Item name="schedule" label="Schedule Details">
-                                        <Input placeholder="e.g. Every Thursday 7:00 PM - Main Sanctuary" size="large" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
+                                        <Input placeholder="e.g. Every Thursday 7:00 PM" size="large" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -173,7 +177,7 @@ const EditMinistry = () => {
                     </Form>
                 </div>
             </div>
-        </SidebarLayout>
+        </DashboardLayout>
     );
 };
 
