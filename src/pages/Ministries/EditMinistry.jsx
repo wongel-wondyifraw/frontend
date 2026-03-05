@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Button, message, Row, Col, Spin, Card, Steps, Avatar } from 'antd';
+import { Form, Input, Select, Button, message, Row, Col, Spin, Card, Steps } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
