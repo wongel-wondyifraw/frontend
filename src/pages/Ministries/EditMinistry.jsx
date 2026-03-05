@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Button, message, Row, Col, Spin, Card, Steps } from 'antd';
+import { Form, Input, Select, Button, message, Row, Col, Spin, Card, Steps, Transfer } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
     ClockCircleOutlined,
     UserOutlined,
     CheckCircleOutlined,
+    UsergroupAddOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { updateMinistry, getMinistry, getMembers } from '../../services/api';
+import { updateMinistry, getMinistry, getMembers, getMinistryMembers, addMinistryMember, removeMinistryMember } from '../../services/api';
 import './AddMinistry.css';
 
 const { Option } = Select;
@@ -23,13 +24,16 @@ const EditMinistry = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [members, setMembers] = useState([]);
     const [currentStep, setCurrentStep] = useState(0);
+    const [selectedMemberKeys, setSelectedMemberKeys] = useState([]);
+    const initialMemberKeysRef = useRef([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [ministryData, membersData] = await Promise.all([
+                const [ministryData, membersData, ministryMembersData] = await Promise.all([
                     getMinistry(id),
                     getMembers(),
+                    getMinistryMembers(id),
                 ]);
                 setMembers(membersData);
                 form.setFieldsValue({
@@ -38,6 +42,11 @@ const EditMinistry = () => {
                     schedule: ministryData.schedule,
                     leader_id: ministryData.leader_id || undefined,
                 });
+
+                // Pre-populate selected members from existing ministry members
+                const existingKeys = ministryMembersData.map(mm => mm.member_id);
+                setSelectedMemberKeys(existingKeys);
+                initialMemberKeysRef.current = existingKeys;
             } catch (error) {
                 message.error(error.message || 'Failed to load ministry details');
                 navigate('/ministries/manage');
@@ -47,6 +56,19 @@ const EditMinistry = () => {
         };
         fetchData();
     }, [id, form, navigate]);
+
+    const handleStepClick = async (step) => {
+        // Validate step 0 before leaving it
+        if (currentStep === 0 && step > 0) {
+            try {
+                await form.validateFields(['name']);
+            } catch {
+                message.error('Please correct the errors before proceeding.');
+                return;
+            }
+        }
+        setCurrentStep(step);
+    };
 
     const next = async () => {
         try {
@@ -63,6 +85,17 @@ const EditMinistry = () => {
         setCurrentStep(currentStep - 1);
     };
 
+    // Transfer data
+    const transferDataSource = members.map(m => ({
+        key: m.id,
+        title: `${m.first_name} ${m.middle_name ? m.middle_name + ' ' : ''}${m.last_name}`,
+        description: m.email || m.phone || '',
+    }));
+
+    const handleTransferChange = (targetKeys) => {
+        setSelectedMemberKeys(targetKeys);
+    };
+
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
@@ -74,6 +107,34 @@ const EditMinistry = () => {
                 leader_id: values.leader_id || null,
             };
             await updateMinistry(id, ministryData);
+
+            // Compute members to add and remove
+            const initialKeys = initialMemberKeysRef.current;
+            const toAdd = selectedMemberKeys.filter(k => !initialKeys.includes(k));
+            const toRemove = initialKeys.filter(k => !selectedMemberKeys.includes(k));
+
+            // Add new members
+            if (toAdd.length > 0) {
+                await Promise.all(
+                    toAdd.map(memberId =>
+                        addMinistryMember(id, memberId).catch(err => {
+                            console.warn(`Failed to add member ${memberId}:`, err);
+                        })
+                    )
+                );
+            }
+
+            // Remove old members
+            if (toRemove.length > 0) {
+                await Promise.all(
+                    toRemove.map(memberId =>
+                        removeMinistryMember(id, memberId).catch(err => {
+                            console.warn(`Failed to remove member ${memberId}:`, err);
+                        })
+                    )
+                );
+            }
+
             message.success('Ministry updated successfully');
             navigate('/ministries/manage');
         } catch (error) {
@@ -88,7 +149,8 @@ const EditMinistry = () => {
         switch (currentStep) {
             case 0: return { background: '#f8fafc', border: 'none' };
             case 1: return { background: '#f0f9ff', border: '1px solid #bae6fd' };
-            case 2: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
+            case 2: return { background: '#f0fdf4', border: '1px solid #bbf7d0' };
+            case 3: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
             default: return { background: '#f8fafc', border: 'none' };
         }
     };
@@ -117,7 +179,7 @@ const EditMinistry = () => {
 
                 <div className="add-ministry-header">
                     <h1>Edit Ministry Details</h1>
-                    <p>Update ministry information and leadership.</p>
+                    <p>Update ministry information, leadership, and members.</p>
                 </div>
 
                 <div className="content-card-unified">
@@ -133,10 +195,12 @@ const EditMinistry = () => {
                         >
                             <Steps
                                 current={currentStep}
-                                style={{ marginBottom: '32px' }}
+                                onChange={handleStepClick}
+                                style={{ marginBottom: '32px', cursor: 'pointer' }}
                                 items={[
                                     { title: 'Ministry Info' },
                                     { title: 'Leadership & Schedule' },
+                                    { title: 'Manage Members' },
                                     { title: 'Review & Update' },
                                 ]}
                             />
@@ -196,12 +260,42 @@ const EditMinistry = () => {
                                 </Row>
                             </div>
 
-                            {/* STEP 3: Review & Update */}
+                            {/* STEP 3: Manage Members */}
                             <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members
+                                </h3>
+                                <p style={{ color: '#64748b', marginBottom: '16px' }}>
+                                    Move members between the lists to add or remove them from this ministry.
+                                </p>
+                                <Transfer
+                                    dataSource={transferDataSource}
+                                    targetKeys={selectedMemberKeys}
+                                    onChange={handleTransferChange}
+                                    render={item => item.title}
+                                    showSearch
+                                    filterOption={(inputValue, option) =>
+                                        option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                        option.description.toLowerCase().includes(inputValue.toLowerCase())
+                                    }
+                                    listStyle={{ width: '100%', height: 320 }}
+                                    titles={['Available Members', 'Current Members']}
+                                    style={{ width: '100%' }}
+                                />
+                                <div style={{ marginTop: '12px', color: '#64748b', fontSize: '12px' }}>
+                                    {selectedMemberKeys.length} member(s) selected
+                                </div>
+                            </div>
+
+                            {/* STEP 4: Review & Update */}
+                            <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
                                 </h3>
-                                <div style={{ background: '#fff', borderRadius: '8px', padding: '20px', border: '1px solid #e2e8f0' }}>
+                                <div style={{
+                                    background: '#fff', borderRadius: '8px', padding: '20px',
+                                    border: '1px solid #e2e8f0', marginTop: '16px'
+                                }}>
                                     <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Ministry Summary</h4>
                                     <Form.Item noStyle shouldUpdate>
                                         {() => {
@@ -210,11 +304,16 @@ const EditMinistry = () => {
                                             const leaderName = leader
                                                 ? `${leader.first_name} ${leader.middle_name ? leader.middle_name + ' ' : ''}${leader.last_name}`
                                                 : 'Not assigned';
+                                            const selectedNames = selectedMemberKeys.map(key => {
+                                                const m = members.find(mem => mem.id === key);
+                                                return m ? `${m.first_name} ${m.last_name}` : key;
+                                            });
                                             return (
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
                                                     <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
                                                     <div><strong>Leader:</strong> {leaderName}</div>
                                                     <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
+                                                    <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
                                                     <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                                                 </div>
                                             );
@@ -229,12 +328,12 @@ const EditMinistry = () => {
                             {currentStep > 0 && (
                                 <Button onClick={prev} size="large">Previous</Button>
                             )}
-                            {currentStep < 2 && (
+                            {currentStep < 3 && (
                                 <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
-                                    Next Step
+                                    {currentStep === 2 ? 'Skip / Next' : 'Next Step'}
                                 </Button>
                             )}
-                            {currentStep === 2 && (
+                            {currentStep === 3 && (
                                 <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#1565c0' }}>
                                     Confirm Update
                                 </Button>
