@@ -18,6 +18,7 @@ import HomeGroups from './pages/Members/HomeGroups';
 import HomeGroupDetail from './pages/Members/HomeGroupDetail';
 import BibleStudy from './pages/BibleStudy/BibleStudy';
 import Subscription from './pages/Subscription/Subscription';
+import EditMember from './pages/Members/EditMember';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="/members/add" element={<AddMember />} />
         <Route path="/members/details/:id" element={<MemberDetail />} />
         <Route path="/ministries/manage" element={<ManageMinistries />} />
+        <Route path="/members/edit/:id" element={<EditMember />} />
         <Route path="/ministries/add" element={<AddMinistry />} />
         <Route path="/ministries/edit/:id" element={<EditMinistry />} />
         <Route path="/ministries/details/:id" element={<MinistryDetail />} />

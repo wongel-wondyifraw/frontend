@@ -144,7 +144,7 @@ export const getMembers = async () => {
     }
 };
 
-export const getMember = async (id) => {
+export const getMemberById = async (id) => {
     try {
         const response = await api.get(`/members/${id}`);
         return response.data;

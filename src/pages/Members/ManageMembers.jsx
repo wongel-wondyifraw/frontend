@@ -147,7 +147,7 @@ const ManageMembers = () => {
                             icon={<EditOutlined />}
                             type="text"
                             size="small"
-                            onClick={() => navigate(`/members/details/${record.id}`)}
+                            onClick={() => navigate(`/members/edit/${record.id}`)}
                         />
                     </Tooltip>
                     <Tooltip title="Delete">

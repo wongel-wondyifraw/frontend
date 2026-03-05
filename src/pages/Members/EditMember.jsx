@@ -15,7 +15,7 @@ import {
 import SidebarLayout from '../../Layouts/SidebarLayout';
 import { updateMember, getMemberById, API_BASE_URL } from '../../services/api';
 import dayjs from 'dayjs';
-import GlobalSpinner from '../../Components/Spinner/GlobalSpinner';
+// import GlobalSpinner from '../../Components/Spinner/GlobalSpinner';
 import './AddMember.css';
 
 const { Option } = Select;
@@ -104,7 +104,7 @@ const EditMember = () => {
                     Back to Members
                 </Button>
 
-                <GlobalSpinner loading={loading || initialLoading} />
+                {/* <GlobalSpinner loading={loading || initialLoading} /> */}
 
                 <div className="add-member-header">
                     <h1>Edit Member Details</h1>

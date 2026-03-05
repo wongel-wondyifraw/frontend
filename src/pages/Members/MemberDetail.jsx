@@ -14,7 +14,7 @@ import {
     PrinterOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMember } from '../../services/api';
+import { getMemberById } from '../../services/api';
 import './MemberDetail.css';
 
 const MemberDetail = () => {
@@ -30,7 +30,7 @@ const MemberDetail = () => {
     const fetchMemberDetails = async () => {
         try {
             setLoading(true);
-            const data = await getMember(id);
+            const data = await getMemberById(id);
             setMember(data);
         } catch (error) {
             message.error('Failed to load member details');
