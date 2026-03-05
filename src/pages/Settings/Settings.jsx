@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col, Space, Steps, Card } from 'antd';
+import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Modal, Tag, Tooltip, Select, Row, Col, Space } from 'antd';
 import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined, SolutionOutlined, IdcardOutlined } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import StepperWizard from '../../Components/common/StepperWizard';
+import DataTable from '../../Components/common/DataTable';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar, API_BASE_URL } from '../../services/api';
 import { useUser } from '../../context/UserContext';
 import './Settings.css';
@@ -9,6 +11,18 @@ import './Settings.css';
 const { TextArea } = Input;
 const { Option } = Select;
 const { confirm } = Modal;
+
+const USER_WIZARD_STEPS = [
+    { title: 'Personal' },
+    { title: 'Account' },
+    { title: 'Role' },
+];
+
+const USER_WIZARD_BACKGROUNDS = [
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+];
 
 const Settings = () => {
     const { user: currentUser, refreshUser } = useUser();
@@ -488,40 +502,38 @@ const Settings = () => {
             label: <span><TeamOutlined /> Manage Users</span>,
             children: (
                 <div className="settings-section" style={{ maxWidth: '100%' }}>
-                    <div className="flex justify-between items-center mb-4" style={{ flexWrap: 'wrap', gap: '10px' }}>
-                        <h3>All Users</h3>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Search users..."
-                                prefix={<SearchOutlined />}
-                                value={searchText}
-                                onChange={e => setSearchText(e.target.value)}
-                                style={{ width: 200 }}
-                            />
-                            <Select defaultValue="all" style={{ width: 120 }} onChange={setRoleFilter}>
-                                <Option value="all">All Roles</Option>
-                                <Option value="admin">Admin</Option>
-                                <Option value="minister">Minister</Option>
-                                <Option value="staff">Staff</Option>
-                                <Option value="member">Member</Option>
-                            </Select>
-                            <Select defaultValue="all" style={{ width: 120 }} onChange={setStatusFilter}>
-                                <Option value="all">All Status</Option>
-                                <Option value="active">Active</Option>
-                                <Option value="inactive">Inactive</Option>
-                            </Select>
-                            <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()} style={{ background: '#1565c0' }}>
-                                Add User
-                            </Button>
-                        </div>
-                    </div>
-                    <Table
-                        dataSource={getFilteredUsers()}
+                    <DataTable
+                        title="All Users"
                         columns={userColumns}
-                        rowKey="id"
+                        dataSource={getFilteredUsers()}
                         loading={users.length === 0 && loading}
-                        pagination={{ pageSize: 5 }}
+                        rowKey="id"
+                        searchPlaceholder="Search users..."
+                        searchValue={searchText}
+                        onSearchChange={setSearchText}
+                        pageSize={5}
                         scroll={{ x: 800 }}
+                        actionButton={{
+                            label: 'Add User',
+                            icon: <PlusOutlined />,
+                            onClick: () => openUserModal(),
+                        }}
+                        extraFilters={
+                            <>
+                                <Select defaultValue="all" style={{ width: 120 }} onChange={setRoleFilter}>
+                                    <Option value="all">All Roles</Option>
+                                    <Option value="admin">Admin</Option>
+                                    <Option value="minister">Minister</Option>
+                                    <Option value="staff">Staff</Option>
+                                    <Option value="member">Member</Option>
+                                </Select>
+                                <Select defaultValue="all" style={{ width: 120 }} onChange={setStatusFilter}>
+                                    <Option value="all">All Status</Option>
+                                    <Option value="active">Active</Option>
+                                    <Option value="inactive">Inactive</Option>
+                                </Select>
+                            </>
+                        }
                     />
                 </div>
             ),
@@ -560,19 +572,18 @@ const Settings = () => {
             >
                 <div style={{ padding: '16px 0' }}>
                     <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
-                        <Card bordered={false} className="wizard-card" style={{ background: currentStep === 2 ? '#e6f7ff' : '#f8fafc', border: currentStep === 2 ? '1px solid #91d5ff' : 'none', transition: 'background-color 0.3s ease' }}>
-                            <Steps
-                                current={currentStep}
-                                style={{ marginBottom: '32px' }}
-                                items={[
-                                    { title: 'Personal' },
-                                    { title: 'Account' },
-                                    { title: 'Role' },
-                                ]}
-                            />
-
+                        <StepperWizard
+                            steps={USER_WIZARD_STEPS}
+                            currentStep={currentStep}
+                            onNext={next}
+                            onPrev={prev}
+                            submitText={editingUser ? "Confirm Update" : "Confirm Registration"}
+                            submitLoading={false}
+                            stepBackgrounds={USER_WIZARD_BACKGROUNDS}
+                            showCancel={false}
+                        >
                             {/* STEP 1: Personal Profile */}
-                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px' }}>Personal Profile</h3>
                                 <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'center' }}>
                                     <div style={{ textAlign: 'center' }}>
@@ -605,7 +616,7 @@ const Settings = () => {
                             </div>
 
                             {/* STEP 2: Account Setup */}
-                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px' }}>Account Setup</h3>
                                 <Form.Item
                                     label="Email Address"
@@ -624,7 +635,7 @@ const Settings = () => {
                             </div>
 
                             {/* STEP 3: Role & Designation */}
-                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px' }}>Role & Designation</h3>
                                 <Form.Item label="Select Role" name="role" rules={[{ required: true, message: 'Please assign a role' }]}>
                                     <Select size="large" placeholder="Select an access level">
@@ -653,26 +664,7 @@ const Settings = () => {
                                     <Switch />
                                 </Form.Item>
                             </div>
-                        </Card>
-
-                        {/* Wizard Navigation Footer */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            {currentStep > 0 && (
-                                <Button onClick={prev} size="large">
-                                    Previous
-                                </Button>
-                            )}
-                            {currentStep < 2 && (
-                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
-                                    Next Step
-                                </Button>
-                            )}
-                            {currentStep === 2 && (
-                                <Button type="primary" htmlType="submit" size="large" style={{ background: '#1565c0' }}>
-                                    {editingUser ? "Confirm Update" : "Confirm Registration"}
-                                </Button>
-                            )}
-                        </div>
+                        </StepperWizard>
                     </Form>
                 </div>
             </Modal>

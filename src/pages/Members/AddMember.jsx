@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Steps, Card, Row, Col } from 'antd';
+import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Row, Col } from 'antd';
 import {
     ArrowLeftOutlined,
     UserOutlined,
@@ -11,10 +11,23 @@ import {
     CheckCircleOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import StepperWizard from '../../Components/common/StepperWizard';
 import { createMember } from '../../services/api';
 import './AddMember.css';
 
 const { Option } = Select;
+
+const STEPS = [
+    { title: 'Personal Info' },
+    { title: 'Contact & Address' },
+    { title: 'Status & Review' },
+];
+
+const STEP_BACKGROUNDS = [
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f0f9ff', border: '1px solid #bae6fd' },
+    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+];
 
 const AddMember = () => {
     const navigate = useNavigate();
@@ -82,16 +95,6 @@ const AddMember = () => {
         }
     };
 
-    // Step background colors for visual progression
-    const getStepBackground = () => {
-        switch (currentStep) {
-            case 0: return { background: '#f8fafc', border: 'none' };
-            case 1: return { background: '#f0f9ff', border: '1px solid #bae6fd' };
-            case 2: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
-            default: return { background: '#f8fafc', border: 'none' };
-        }
-    };
-
     return (
         <DashboardLayout>
             <div className="add-member-container">
@@ -111,27 +114,18 @@ const AddMember = () => {
 
                 <div className="content-card-unified">
                     <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'active' }}>
-                        <Card
-                            bordered={false}
-                            className="wizard-card"
-                            style={{
-                                ...getStepBackground(),
-                                transition: 'background-color 0.3s ease, border 0.3s ease',
-                                borderRadius: '12px',
-                            }}
+                        <StepperWizard
+                            steps={STEPS}
+                            currentStep={currentStep}
+                            onNext={next}
+                            onPrev={prev}
+                            onCancel={() => navigate(-1)}
+                            submitText="Confirm Registration"
+                            submitLoading={loading}
+                            stepBackgrounds={STEP_BACKGROUNDS}
                         >
-                            <Steps
-                                current={currentStep}
-                                style={{ marginBottom: '32px' }}
-                                items={[
-                                    { title: 'Personal Info' },
-                                    { title: 'Contact & Address' },
-                                    { title: 'Status & Review' },
-                                ]}
-                            />
-
                             {/* =============== STEP 1: Personal Information =============== */}
-                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <UserOutlined style={{ color: '#1565c0' }} /> Personal Information
                                 </h3>
@@ -194,7 +188,7 @@ const AddMember = () => {
                             </div>
 
                             {/* =============== STEP 2: Contact & Address =============== */}
-                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <PhoneOutlined style={{ color: '#1565c0' }} /> Contact & Address
                                 </h3>
@@ -238,7 +232,7 @@ const AddMember = () => {
                             </div>
 
                             {/* =============== STEP 3: Status & Review =============== */}
-                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Membership Status
                                 </h3>
@@ -277,35 +271,7 @@ const AddMember = () => {
                                     </Form.Item>
                                 </div>
                             </div>
-                        </Card>
-
-                        {/* Wizard Navigation Footer */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <Button size="large" onClick={() => navigate(-1)}>
-                                Cancel
-                            </Button>
-                            {currentStep > 0 && (
-                                <Button onClick={prev} size="large">
-                                    Previous
-                                </Button>
-                            )}
-                            {currentStep < 2 && (
-                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
-                                    Next Step
-                                </Button>
-                            )}
-                            {currentStep === 2 && (
-                                <Button
-                                    type="primary"
-                                    htmlType="submit"
-                                    size="large"
-                                    loading={loading}
-                                    style={{ background: '#1565c0' }}
-                                >
-                                    Confirm Registration
-                                </Button>
-                            )}
-                        </div>
+                        </StepperWizard>
                     </Form>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, Button, message, Steps, Card, Row, Col, Transfer } from 'antd';
+import { Form, Input, Select, Button, message, Row, Col } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
@@ -10,11 +10,27 @@ import {
     UsergroupAddOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import StepperWizard from '../../Components/common/StepperWizard';
+import MemberTransferList from '../../Components/common/MemberTransferList';
 import { createMinistry, getMembers, addMinistryMember } from '../../services/api';
 import './AddMinistry.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const STEPS = [
+    { title: 'Ministry Info' },
+    { title: 'Leadership & Schedule' },
+    { title: 'Add Members', description: 'Optional' },
+    { title: 'Review & Create' },
+];
+
+const STEP_BACKGROUNDS = [
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f0f9ff', border: '1px solid #bae6fd' },
+    { background: '#f0fdf4', border: '1px solid #bbf7d0' },
+    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+];
 
 const AddMinistry = () => {
     const navigate = useNavigate();
@@ -52,17 +68,6 @@ const AddMinistry = () => {
         setCurrentStep(currentStep - 1);
     };
 
-    // Transfer data
-    const transferDataSource = members.map(m => ({
-        key: m.id,
-        title: `${m.first_name} ${m.middle_name ? m.middle_name + ' ' : ''}${m.last_name}`,
-        description: m.email || m.phone || '',
-    }));
-
-    const handleTransferChange = (targetKeys) => {
-        setSelectedMemberKeys(targetKeys);
-    };
-
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
@@ -97,16 +102,6 @@ const AddMinistry = () => {
         }
     };
 
-    const getStepBackground = () => {
-        switch (currentStep) {
-            case 0: return { background: '#f8fafc', border: 'none' };
-            case 1: return { background: '#f0f9ff', border: '1px solid #bae6fd' };
-            case 2: return { background: '#f0fdf4', border: '1px solid #bbf7d0' };
-            case 3: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
-            default: return { background: '#f8fafc', border: 'none' };
-        }
-    };
-
     return (
         <DashboardLayout>
             <div className="add-ministry-container">
@@ -126,28 +121,19 @@ const AddMinistry = () => {
 
                 <div className="content-card-unified">
                     <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                        <Card
-                            bordered={false}
-                            className="wizard-card"
-                            style={{
-                                ...getStepBackground(),
-                                transition: 'background-color 0.3s ease, border 0.3s ease',
-                                borderRadius: '12px',
-                            }}
+                        <StepperWizard
+                            steps={STEPS}
+                            currentStep={currentStep}
+                            onNext={next}
+                            onPrev={prev}
+                            onCancel={() => navigate(-1)}
+                            submitText="Create Ministry"
+                            submitLoading={loading}
+                            stepBackgrounds={STEP_BACKGROUNDS}
+                            lastStepLabel="Skip / Next"
                         >
-                            <Steps
-                                current={currentStep}
-                                style={{ marginBottom: '32px' }}
-                                items={[
-                                    { title: 'Ministry Info' },
-                                    { title: 'Leadership & Schedule' },
-                                    { title: 'Add Members', description: 'Optional' },
-                                    { title: 'Review & Create' },
-                                ]}
-                            />
-
                             {/* STEP 1: Ministry Information */}
-                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <TeamOutlined style={{ color: '#1565c0' }} /> Ministry Information
                                 </h3>
@@ -168,7 +154,7 @@ const AddMinistry = () => {
                             </div>
 
                             {/* STEP 2: Leadership & Schedule */}
-                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Schedule
                                 </h3>
@@ -202,35 +188,22 @@ const AddMinistry = () => {
                             </div>
 
                             {/* STEP 3: Add Members (Optional) */}
-                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Add Members to Ministry
                                     <span style={{ fontWeight: 400, fontSize: '13px', color: '#94a3b8' }}>(Optional)</span>
                                 </h3>
-                                <p style={{ color: '#64748b', marginBottom: '16px' }}>
-                                    Select members from the left and move them to the right to add them to this ministry.
-                                </p>
-                                <Transfer
-                                    dataSource={transferDataSource}
-                                    targetKeys={selectedMemberKeys}
-                                    onChange={handleTransferChange}
-                                    render={item => item.title}
-                                    showSearch
-                                    filterOption={(inputValue, option) =>
-                                        option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
-                                        option.description.toLowerCase().includes(inputValue.toLowerCase())
-                                    }
-                                    listStyle={{ width: '100%', height: 320 }}
+                                <MemberTransferList
+                                    members={members}
+                                    selectedKeys={selectedMemberKeys}
+                                    onChange={setSelectedMemberKeys}
                                     titles={['Available Members', 'Selected Members']}
-                                    style={{ width: '100%' }}
+                                    description="Select members from the left and move them to the right to add them to this ministry."
                                 />
-                                <div style={{ marginTop: '12px', color: '#64748b', fontSize: '12px' }}>
-                                    {selectedMemberKeys.length} member(s) selected
-                                </div>
                             </div>
 
                             {/* STEP 4: Review & Create */}
-                            <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Ministry
                                 </h3>
@@ -263,24 +236,7 @@ const AddMinistry = () => {
                                     </Form.Item>
                                 </div>
                             </div>
-                        </Card>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <Button size="large" onClick={() => navigate(-1)}>Cancel</Button>
-                            {currentStep > 0 && (
-                                <Button onClick={prev} size="large">Previous</Button>
-                            )}
-                            {currentStep < 3 && (
-                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
-                                    {currentStep === 2 ? 'Skip / Next' : 'Next Step'}
-                                </Button>
-                            )}
-                            {currentStep === 3 && (
-                                <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#1565c0' }}>
-                                    Create Ministry
-                                </Button>
-                            )}
-                        </div>
+                        </StepperWizard>
                     </Form>
                 </div>
             </div>

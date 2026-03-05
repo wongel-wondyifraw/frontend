@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Button, message, Row, Col, Spin, Card, Steps, Transfer } from 'antd';
+import { Form, Input, Select, Button, message, Row, Col, Spin } from 'antd';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
@@ -10,11 +10,27 @@ import {
     UsergroupAddOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import StepperWizard from '../../Components/common/StepperWizard';
+import MemberTransferList from '../../Components/common/MemberTransferList';
 import { updateMinistry, getMinistry, getMembers, getMinistryMembers, addMinistryMember, removeMinistryMember } from '../../services/api';
 import './AddMinistry.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const STEPS = [
+    { title: 'Ministry Info' },
+    { title: 'Leadership & Schedule' },
+    { title: 'Manage Members' },
+    { title: 'Review & Update' },
+];
+
+const STEP_BACKGROUNDS = [
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f0f9ff', border: '1px solid #bae6fd' },
+    { background: '#f0fdf4', border: '1px solid #bbf7d0' },
+    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+];
 
 const EditMinistry = () => {
     const navigate = useNavigate();
@@ -85,17 +101,6 @@ const EditMinistry = () => {
         setCurrentStep(currentStep - 1);
     };
 
-    // Transfer data
-    const transferDataSource = members.map(m => ({
-        key: m.id,
-        title: `${m.first_name} ${m.middle_name ? m.middle_name + ' ' : ''}${m.last_name}`,
-        description: m.email || m.phone || '',
-    }));
-
-    const handleTransferChange = (targetKeys) => {
-        setSelectedMemberKeys(targetKeys);
-    };
-
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
@@ -145,16 +150,6 @@ const EditMinistry = () => {
         }
     };
 
-    const getStepBackground = () => {
-        switch (currentStep) {
-            case 0: return { background: '#f8fafc', border: 'none' };
-            case 1: return { background: '#f0f9ff', border: '1px solid #bae6fd' };
-            case 2: return { background: '#f0fdf4', border: '1px solid #bbf7d0' };
-            case 3: return { background: '#e6f7ff', border: '1px solid #91d5ff' };
-            default: return { background: '#f8fafc', border: 'none' };
-        }
-    };
-
     if (initialLoading) {
         return (
             <DashboardLayout>
@@ -184,29 +179,20 @@ const EditMinistry = () => {
 
                 <div className="content-card-unified">
                     <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                        <Card
-                            bordered={false}
-                            className="wizard-card"
-                            style={{
-                                ...getStepBackground(),
-                                transition: 'background-color 0.3s ease, border 0.3s ease',
-                                borderRadius: '12px',
-                            }}
+                        <StepperWizard
+                            steps={STEPS}
+                            currentStep={currentStep}
+                            onNext={next}
+                            onPrev={prev}
+                            onCancel={() => navigate(-1)}
+                            submitText="Confirm Update"
+                            submitLoading={loading}
+                            stepBackgrounds={STEP_BACKGROUNDS}
+                            onStepClick={handleStepClick}
+                            lastStepLabel="Skip / Next"
                         >
-                            <Steps
-                                current={currentStep}
-                                onChange={handleStepClick}
-                                style={{ marginBottom: '32px', cursor: 'pointer' }}
-                                items={[
-                                    { title: 'Ministry Info' },
-                                    { title: 'Leadership & Schedule' },
-                                    { title: 'Manage Members' },
-                                    { title: 'Review & Update' },
-                                ]}
-                            />
-
                             {/* STEP 1: Ministry Information */}
-                            <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <TeamOutlined style={{ color: '#1565c0' }} /> Ministry Information
                                 </h3>
@@ -227,7 +213,7 @@ const EditMinistry = () => {
                             </div>
 
                             {/* STEP 2: Leadership & Schedule */}
-                            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Schedule
                                 </h3>
@@ -261,34 +247,21 @@ const EditMinistry = () => {
                             </div>
 
                             {/* STEP 3: Manage Members */}
-                            <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members
                                 </h3>
-                                <p style={{ color: '#64748b', marginBottom: '16px' }}>
-                                    Move members between the lists to add or remove them from this ministry.
-                                </p>
-                                <Transfer
-                                    dataSource={transferDataSource}
-                                    targetKeys={selectedMemberKeys}
-                                    onChange={handleTransferChange}
-                                    render={item => item.title}
-                                    showSearch
-                                    filterOption={(inputValue, option) =>
-                                        option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
-                                        option.description.toLowerCase().includes(inputValue.toLowerCase())
-                                    }
-                                    listStyle={{ width: '100%', height: 320 }}
+                                <MemberTransferList
+                                    members={members}
+                                    selectedKeys={selectedMemberKeys}
+                                    onChange={setSelectedMemberKeys}
                                     titles={['Available Members', 'Current Members']}
-                                    style={{ width: '100%' }}
+                                    description="Move members between the lists to add or remove them from this ministry."
                                 />
-                                <div style={{ marginTop: '12px', color: '#64748b', fontSize: '12px' }}>
-                                    {selectedMemberKeys.length} member(s) selected
-                                </div>
                             </div>
 
                             {/* STEP 4: Review & Update */}
-                            <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>
+                            <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
                                 </h3>
@@ -321,24 +294,7 @@ const EditMinistry = () => {
                                     </Form.Item>
                                 </div>
                             </div>
-                        </Card>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <Button size="large" onClick={() => navigate(-1)}>Cancel</Button>
-                            {currentStep > 0 && (
-                                <Button onClick={prev} size="large">Previous</Button>
-                            )}
-                            {currentStep < 3 && (
-                                <Button type="primary" onClick={next} size="large" style={{ background: '#1565c0' }}>
-                                    {currentStep === 2 ? 'Skip / Next' : 'Next Step'}
-                                </Button>
-                            )}
-                            {currentStep === 3 && (
-                                <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ background: '#1565c0' }}>
-                                    Confirm Update
-                                </Button>
-                            )}
-                        </div>
+                        </StepperWizard>
                     </Form>
                 </div>
             </div>

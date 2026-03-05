@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Input, Avatar, message, Modal, Tooltip } from 'antd';
-import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Tag, Button, Avatar, message, Modal, Tooltip } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import DataTable from '../../Components/common/DataTable';
 import { getMembers, deleteMember, API_BASE_URL } from '../../services/api';
 import './ManageMembers.css';
 
@@ -167,35 +168,26 @@ const ManageMembers = () => {
     return (
         <DashboardLayout>
             <div className="manage-members-container">
-                <div className="manage-members-header">
-                    <h2>Manage Members</h2>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <Input
-                            placeholder="Search members..."
-                            prefix={<SearchOutlined />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            style={{ width: 250 }}
-                        />
-                        <Button type="primary" icon={<PlusOutlined />} style={{ background: '#1565c0' }} onClick={() => navigate('/members/add')}>
-                            Add Member
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="members-table-card">
-                    <Table
-                        dataSource={filteredMembers}
-                        columns={columns}
-                        rowKey="id"
-                        loading={loading}
-                        pagination={{ pageSize: 10 }}
-                    />
-                </div>
+                <DataTable
+                    title="Manage Members"
+                    columns={columns}
+                    dataSource={filteredMembers}
+                    loading={loading}
+                    rowKey="id"
+                    searchPlaceholder="Search members..."
+                    searchValue={searchText}
+                    onSearchChange={setSearchText}
+                    pageSize={10}
+                    actionButton={{
+                        label: 'Add Member',
+                        icon: <PlusOutlined />,
+                        onClick: () => navigate('/members/add'),
+                    }}
+                    tableCardClassName="members-table-card"
+                />
             </div>
         </DashboardLayout>
     );
 };
 
 export default ManageMembers;
-

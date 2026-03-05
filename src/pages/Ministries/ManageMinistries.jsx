@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Input, Avatar, message, Modal, Tooltip } from 'antd';
-import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Tag, Button, Avatar, message, Modal, Tooltip } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import DataTable from '../../Components/common/DataTable';
 import { getMinistries, deleteMinistry } from '../../services/api';
 import './ManageMinistries.css';
 
@@ -133,31 +134,23 @@ const ManageMinistries = () => {
     return (
         <DashboardLayout>
             <div className="manage-ministries-container">
-                <div className="manage-ministries-header">
-                    <h2>Manage Ministries</h2>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <Input
-                            placeholder="Search ministries..."
-                            prefix={<SearchOutlined />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            style={{ width: 250 }}
-                        />
-                        <Button type="primary" icon={<PlusOutlined />} style={{ background: '#1565c0' }} onClick={() => navigate('/ministries/add')}>
-                            Add Ministry
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="ministries-table-card">
-                    <Table
-                        dataSource={filteredMinistries}
-                        columns={columns}
-                        rowKey="id"
-                        loading={loading}
-                        pagination={{ pageSize: 10 }}
-                    />
-                </div>
+                <DataTable
+                    title="Manage Ministries"
+                    columns={columns}
+                    dataSource={filteredMinistries}
+                    loading={loading}
+                    rowKey="id"
+                    searchPlaceholder="Search ministries..."
+                    searchValue={searchText}
+                    onSearchChange={setSearchText}
+                    pageSize={10}
+                    actionButton={{
+                        label: 'Add Ministry',
+                        icon: <PlusOutlined />,
+                        onClick: () => navigate('/ministries/add'),
+                    }}
+                    tableCardClassName="ministries-table-card"
+                />
             </div>
         </DashboardLayout>
     );
