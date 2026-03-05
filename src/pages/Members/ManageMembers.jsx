@@ -94,9 +94,21 @@ const ManageMembers = () => {
             title: 'Marital Status',
             dataIndex: 'marital_status',
             key: 'marital_status',
-            render: status => status ? (
-                <Tag style={{ borderRadius: '20px', padding: '0 10px' }}>{status}</Tag>
-            ) : '-',
+            render: status => {
+                if (!status) return '-';
+                const colorMap = {
+                    single: '#3B82F6',
+                    married: '#10b981',
+                    divorced: '#f59e0b',
+                    widowed: '#8b5cf6',
+                };
+                const color = colorMap[status.toLowerCase()] || '#94A3B8';
+                return (
+                    <Tag color={color} style={{ borderRadius: '20px', padding: '0 10px', fontWeight: 500 }}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Status',

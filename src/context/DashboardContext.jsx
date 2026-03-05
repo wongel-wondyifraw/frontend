@@ -14,10 +14,10 @@ const INITIAL_WIDGETS = [
 ];
 
 const DEFAULT_LAYOUT = [
-    // Top Row: 3 Overview Widgets (7 cols each in 24-col grid = 21 cols total, 3 cols spacing)
-    { i: 'w1', x: 0, y: 0, w: 7, h: 4 },
-    { i: 'w2', x: 7, y: 0, w: 7, h: 4 },
-    { i: 'w3', x: 14, y: 0, w: 7, h: 4 },
+    // Top Row: 3 Overview Widgets (7 cols each in 24-col grid — restricted to 5-col min/max)
+    { i: 'w1', x: 0, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
+    { i: 'w2', x: 7, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
+    { i: 'w3', x: 14, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
 
     // Bottom Row: Calendar and Announcements
     { i: 'w10', x: 0, y: 4, w: 14, h: 9 }, // Announcements (Left, spans 2 KPIs)
@@ -80,9 +80,9 @@ export const DashboardProvider = ({ children }) => {
 
         // Default Sizes Mapping (Updated for 24-col Grid)
         const defaultSizes = {
-            memberOverview: { w: 7, h: 4 },
-            ministers: { w: 7, h: 4 },
-            ministries: { w: 7, h: 4 },
+            memberOverview: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
+            ministers: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
+            ministries: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
             attendance: { w: 6, h: 8 },
             announcements: { w: 14, h: 9 },
             dataAccess: { w: 16, h: 8 },

@@ -4,7 +4,7 @@ import { Button, Modal, Card, Typography, Popover, List, Avatar, Badge } from 'a
 import { useDashboard } from '../../context/DashboardContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
-import { API_BASE_URL, getUsers, getProfile } from '../../services/api';
+import { API_BASE_URL, getUsers, getProfile, getMembers, getMinistries } from '../../services/api';
 import { WidgetRegistry } from './WidgetRegistry';
 import { useNavigate } from 'react-router-dom';
 import './Topbar.css';
@@ -64,21 +64,27 @@ const Topbar = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cachedUsers, setCachedUsers] = useState([]);
+  const [cachedMembers, setCachedMembers] = useState([]);
+  const [cachedMinistries, setCachedMinistries] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch users for search (cached)
+  // Fetch users, members, and ministries for search (cached)
   useEffect(() => {
-    const fetchUsersForSearch = async () => {
+    const fetchSearchData = async () => {
       try {
-        const users = await getUsers();
+        const [users, members, ministries] = await Promise.all([
+          user?.role === 'admin' ? getUsers().catch(() => []) : Promise.resolve([]),
+          getMembers().catch(() => []),
+          getMinistries().catch(() => []),
+        ]);
         setCachedUsers(users || []);
+        setCachedMembers(members || []);
+        setCachedMinistries(ministries || []);
       } catch { }
     };
-    if (user?.role === 'admin') {
-      fetchUsersForSearch();
-    }
+    fetchSearchData();
   }, [user]);
 
   // Close search on click outside
@@ -154,9 +160,46 @@ const Topbar = () => {
       });
     }
 
-    setSearchResults(results.slice(0, 12));
+    // Search members
+    cachedMembers.forEach(m => {
+      const fullName = `${m.first_name || ''} ${m.middle_name || ''} ${m.last_name || ''}`.trim();
+      if (
+        fullName.toLowerCase().includes(q) ||
+        m.email?.toLowerCase().includes(q) ||
+        m.phone?.toLowerCase().includes(q)
+      ) {
+        results.push({
+          id: `member-${m.id}`,
+          label: fullName,
+          sublabel: `${m.email || m.phone || 'Member'}`,
+          category: 'Members',
+          icon: <Users size={16} />,
+          action: () => navigate(`/members/details/${m.id}`),
+        });
+      }
+    });
+
+    // Search ministries
+    cachedMinistries.forEach(min => {
+      const leaderName = min.leader ? `${min.leader.first_name} ${min.leader.last_name}` : '';
+      if (
+        min.name?.toLowerCase().includes(q) ||
+        leaderName.toLowerCase().includes(q)
+      ) {
+        results.push({
+          id: `ministry-${min.id}`,
+          label: min.name,
+          sublabel: leaderName ? `Leader: ${leaderName}` : 'Ministry',
+          category: 'Ministries',
+          icon: <Briefcase size={16} />,
+          action: () => navigate(`/ministries/details/${min.id}`),
+        });
+      }
+    });
+
+    setSearchResults(results.slice(0, 15));
     setIsSearchOpen(results.length > 0);
-  }, [cachedUsers, navigate]);
+  }, [cachedUsers, cachedMembers, cachedMinistries, navigate]);
 
   // Keyboard navigation in results
   const handleSearchKeyDown = (e) => {
