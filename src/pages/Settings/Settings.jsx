@@ -650,7 +650,7 @@ const Settings = () => {
                                 </Form.Item>
 
                                 <Form.Item label="Account Status" name="is_active" valuePropName="checked">
-                                    <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                                    <Switch />
                                 </Form.Item>
                             </div>
                         </Card>

@@ -1,8 +1,6 @@
 .overview-widget {
     background: var(--bg-card);
-    /* was #FFFFFF */
     border: 1px solid var(--border-color);
-    /* was #DBEAFE */
     border-radius: 8px;
     padding: 16px;
     height: 100%;
@@ -22,15 +20,12 @@
     margin: 0;
     font-size: 15px;
     color: var(--text-secondary);
-    /* was #94A3B8 */
     font-weight: 500;
 }
 
 .overview-icon-badge {
     background: var(--bg-hover);
-    /* was #F1F5F9 */
     color: var(--primary-blue);
-    /* was #3B82F6 */
     padding: 6px;
     border-radius: 8px;
     display: flex;
@@ -53,7 +48,6 @@
 
 .overview-stat-main .stat-label {
     color: var(--text-secondary);
-    /* was #94A3B8 */
     font-size: 13px;
     margin-bottom: 4px;
 }
@@ -62,7 +56,6 @@
     font-size: 32px;
     font-weight: 700;
     color: var(--text-main);
-    /* was #020617 */
     line-height: 1.2;
 }
 
@@ -77,37 +70,35 @@
 
 .overview-stat-main .stat-trend.positive {
     color: var(--exec-blue);
-    /* was #3B82F6 */
     background: transparent;
     padding: 0;
     width: fit-content;
 }
 
-.overview-chart-wrapper {
-    width: 100px;
-    height: 100%;
+/* Badge breakdown list */
+.overview-breakdown {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 8px;
+    align-items: flex-end;
     justify-content: center;
 }
 
-.chart-legend {
-    display: flex;
-    gap: 10px;
-    margin-top: -15px;
-}
-
-.legend-item {
-    font-size: 10px;
-    color: var(--text-secondary);
+.breakdown-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    font-size: 13px;
 }
 
-.legend-item .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+.breakdown-label {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.breakdown-count {
+    color: var(--text-main);
+    font-weight: 600;
+    min-width: 24px;
+    text-align: right;
 }

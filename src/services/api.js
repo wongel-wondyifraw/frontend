@@ -227,4 +227,42 @@ export const deleteMinistry = async (id) => {
     }
 };
 
+// ==================== Ministry Members ====================
+
+export const getMinistryMembers = async (ministryId) => {
+    try {
+        const response = await api.get(`/ministries/${ministryId}/members`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const addMinistryMember = async (ministryId, memberId) => {
+    try {
+        const response = await api.post(`/ministries/${ministryId}/members/${memberId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const removeMinistryMember = async (ministryId, memberId) => {
+    try {
+        const response = await api.delete(`/ministries/${ministryId}/members/${memberId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const getMemberMinistries = async (memberId) => {
+    try {
+        const response = await api.get(`/members/${memberId}/ministries`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
 export default api;
