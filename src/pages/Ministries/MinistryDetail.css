@@ -142,6 +142,33 @@
     box-shadow: var(--shadow-sm);
 }
 
+.member-card-elegant {
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-card);
+    overflow: hidden;
+}
+
+.member-card-elegant:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-blue);
+}
+
+.member-card-elegant .ant-card-meta-title {
+    color: var(--text-main) !important;
+}
+
+.member-card-elegant .ant-card-actions {
+    background: #fafafa;
+    border-top: 1px solid var(--border-color);
+}
+
+.member-card-elegant .ant-card-actions li {
+    margin: 0 !important;
+}
+
 @media (max-width: 768px) {
     .ministry-header-section {
         flex-direction: column;

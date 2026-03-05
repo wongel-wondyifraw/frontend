@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Modal, Spin, Breadcrumb, Table, Tag, Avatar, Form, Select } from 'antd';
+import { Button, message, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, List, Card, Tooltip } from 'antd';
 import {
     TeamOutlined,
     CalendarOutlined,
     EditOutlined,
     DeleteOutlined,
     UserOutlined,
-    EyeOutlined,
     PlusOutlined,
+    InfoCircleOutlined,
+    MailOutlined,
+    PhoneOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import { getMinistry, deleteMinistry, getMinistryMembers, getMembers, addMinistryMember } from '../../services/api';
@@ -112,52 +114,6 @@ const MinistryDetail = () => {
         }
         return 'Not assigned';
     };
-
-    const memberColumns = [
-        {
-            title: 'Member',
-            key: 'name',
-            render: (_, record) => {
-                const member = record.member;
-                if (!member) return '-';
-                return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Avatar size={32} icon={<UserOutlined />} src={member.image_url || null} />
-                        <span>{member.first_name} {member.middle_name ? member.middle_name + ' ' : ''}{member.last_name}</span>
-                    </div>
-                );
-            },
-        },
-        {
-            title: 'Email',
-            key: 'email',
-            render: (_, record) => record.member?.email || '-',
-        },
-        {
-            title: 'Phone',
-            key: 'phone',
-            render: (_, record) => record.member?.phone || '-',
-        },
-        {
-            title: 'Joined',
-            key: 'joined_at',
-            render: (_, record) => record.joined_at ? new Date(record.joined_at).toLocaleDateString() : '-',
-        },
-        {
-            title: 'Action',
-            key: 'action',
-            render: (_, record) => (
-                <Button
-                    type="link"
-                    icon={<EyeOutlined />}
-                    onClick={() => navigate(`/members/details/${record.member?.id}`)}
-                    style={{ color: '#1565c0' }}
-                >
-                    View
-                </Button>
-            ),
-        },
-    ];
 
     if (loading) {
         return (
@@ -272,26 +228,77 @@ const MinistryDetail = () => {
                         </div>
                     </div>
 
-                    {/* Members Section */}
+                    {/* Members Section - Sophisticated Card Layout */}
                     <div className="detail-section" style={{ marginTop: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h3 style={{ margin: 0 }}><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Members ({ministryMembers.length})</h3>
                             <Button
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={() => setIsAddModalVisible(true)}
-                                style={{ background: '#10b981', borderColor: '#10b981' }}
+                                style={{ background: '#1565c0', borderColor: '#1565c0' }} // Changed to Consistent Blue
                             >
                                 Add Member
                             </Button>
                         </div>
-                        <Table
+
+                        <List
+                            grid={{
+                                gutter: 20,
+                                xs: 1,
+                                sm: 2,
+                                md: 2,
+                                lg: 3,
+                                xl: 3,
+                                xxl: 4,
+                            }}
                             dataSource={ministryMembers}
-                            columns={memberColumns}
-                            rowKey={(record) => record.member_id || record.member?.id}
                             loading={membersLoading}
-                            pagination={{ pageSize: 5 }}
                             locale={{ emptyText: 'No members assigned to this ministry yet.' }}
+                            renderItem={(record) => {
+                                const member = record.member;
+                                if (!member) return null;
+                                return (
+                                    <List.Item>
+                                        <Card
+                                            hoverable
+                                            className="member-card-elegant"
+                                            actions={[
+                                                <Tooltip title="View Profile">
+                                                    <Button
+                                                        type="text"
+                                                        icon={<InfoCircleOutlined style={{ color: '#1565c0', fontSize: '18px' }} />}
+                                                        onClick={() => navigate(`/members/details/${member.id}`)}
+                                                    />
+                                                </Tooltip>
+                                            ]}
+                                            bodyStyle={{ padding: '20px' }}
+                                        >
+                                            <Card.Meta
+                                                avatar={<Avatar size={64} src={member.image_url} icon={<UserOutlined />} style={{ border: '2px solid #f0f2f5' }} />}
+                                                title={<span style={{ fontWeight: 600, fontSize: '16px' }}>{member.first_name} {member.last_name}</span>}
+                                                description={
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                                            <MailOutlined style={{ fontSize: '12px' }} />
+                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                {member.email || 'No email'}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                                            <PhoneOutlined style={{ fontSize: '12px' }} />
+                                                            <span>{member.phone || 'No phone'}</span>
+                                                        </div>
+                                                        <div style={{ marginTop: '8px' }}>
+                                                            <Tag color="blue" size="small">Joined: {record.joined_at ? new Date(record.joined_at).toLocaleDateString() : 'N/A'}</Tag>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            />
+                                        </Card>
+                                    </List.Item>
+                                );
+                            }}
                         />
                     </div>
                 </div>
@@ -338,7 +345,7 @@ const MinistryDetail = () => {
                         }}>
                             Cancel
                         </Button>
-                        <Button type="primary" htmlType="submit" loading={addingMember}>
+                        <Button type="primary" htmlType="submit" loading={addingMember} style={{ background: '#1565c0', borderColor: '#1565c0' }}>
                             Add Member
                         </Button>
                     </div>
