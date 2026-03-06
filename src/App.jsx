@@ -19,6 +19,10 @@ import HomeGroupDetail from './pages/Members/HomeGroupDetail';
 import BibleStudy from './pages/BibleStudy/BibleStudy';
 import Subscription from './pages/Subscription/Subscription';
 import EditMember from './pages/Members/EditMember';
+import ManageMinisters from './pages/Ministers/ManageMinisters';
+import AddMinister from './pages/Ministers/AddMinister';
+import EditMinister from './pages/Ministers/EditMinister';
+import MinisterDetail from './pages/Ministers/MinisterDetail';
 
 function App() {
   return (
@@ -32,11 +36,15 @@ function App() {
         <Route path="/members/home-groups/:id" element={<HomeGroupDetail />} />
         <Route path="/members/add" element={<AddMember />} />
         <Route path="/members/details/:id" element={<MemberDetail />} />
-        <Route path="/ministries/manage" element={<ManageMinistries />} />
         <Route path="/members/edit/:id" element={<EditMember />} />
+        <Route path="/ministries/manage" element={<ManageMinistries />} />
         <Route path="/ministries/add" element={<AddMinistry />} />
         <Route path="/ministries/edit/:id" element={<EditMinistry />} />
         <Route path="/ministries/details/:id" element={<MinistryDetail />} />
+        <Route path="/ministers/manage" element={<ManageMinisters />} />
+        <Route path="/ministers/add" element={<AddMinister />} />
+        <Route path="/ministers/edit/:id" element={<EditMinister />} />
+        <Route path="/ministers/details/:id" element={<MinisterDetail />} />
         <Route path="/bible-study" element={<BibleStudy />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/schedule" element={<ScheduleManagement />} />
