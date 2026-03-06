@@ -22,14 +22,16 @@ const { Option } = Select;
 
 const STEPS = [
     { title: 'Personal Info' },
-    { title: 'Church Details' },
-    { title: 'Attachments & Review' },
+    { title: 'Contact & Address' },
+    { title: 'Membership Details' },
+    { title: 'Review' },
 ];
 
 const STEP_BACKGROUNDS = [
     { background: '#f8fafc', border: 'none' },
-    { background: '#f0f9ff', border: '1px solid #bae6fd' },
-    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
 ];
 
 const EditMember = () => {
