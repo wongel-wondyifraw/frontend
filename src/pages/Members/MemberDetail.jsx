@@ -18,7 +18,7 @@ import {
     InfoCircleOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMemberById, deleteMember, removeMinistryMember } from '../../services/api';
+import { getMemberById, deleteMember, removeMinistryMember, API_BASE_URL } from '../../services/api';
 import './MemberDetail.css';
 
 const MemberDetail = () => {
@@ -88,6 +88,16 @@ const MemberDetail = () => {
 
     const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`;
 
+    const getMediaUrl = (url) => {
+        if (!url) return undefined;
+        if (url.startsWith('http')) return url;
+        const formattedUrl = url.startsWith('/') ? url : `/${url}`;
+        const finalUrl = `${API_BASE_URL}${formattedUrl}`;
+        // Debugging to ensure we're building the right URL dynamically
+        console.log("Resolved Media URL:", finalUrl);
+        return finalUrl;
+    };
+
     return (
         <DashboardLayout>
             <div className="member-detail-container">
@@ -105,7 +115,7 @@ const MemberDetail = () => {
                     <div className="member-header-section">
                         <Avatar
                             size={120}
-                            src={member.image_url ? (member.image_url.startsWith('http') ? member.image_url : `http://localhost:3000${member.image_url.startsWith('/') ? '' : '/'}${member.image_url}`) : undefined}
+                            src={getMediaUrl(member.image_url)}
                             icon={<UserOutlined />}
                             className="member-profile-image"
                             style={{ fontSize: '60px' }}
@@ -183,7 +193,16 @@ const MemberDetail = () => {
                                         <tr>
                                             <th><FilePdfOutlined /> Church Letter</th>
                                             <td>
-                                                {member.document_url ? <a href={member.document_url.startsWith('http') ? member.document_url : `http://localhost:3000${member.document_url.startsWith('/') ? '' : '/'}${member.document_url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
+                                                {member.document_url ? (
+                                                    <a
+                                                        href={getMediaUrl(member.document_url)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--blue)', fontWeight: 600 }}
+                                                    >
+                                                        View Document
+                                                    </a>
+                                                ) : 'N/A'}
                                             </td>
                                         </tr>
                                     </tbody>
