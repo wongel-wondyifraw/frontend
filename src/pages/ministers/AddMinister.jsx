@@ -1,31 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Row, Col, Radio } from 'antd';
+import { Form, Input, Button, message, Avatar, List, Tag, Spin } from 'antd';
 import {
     ArrowLeftOutlined,
     UserOutlined,
-    UploadOutlined,
-    MailOutlined,
-    PhoneOutlined,
-    HomeOutlined,
+    LockOutlined,
     CheckCircleOutlined,
-    GlobalOutlined,
+    SearchOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import StepperWizard from '../../Components/common/StepperWizard';
-import '../Members/AddMember.css';
+import { getMembers, createMinister, API_BASE_URL } from '../../services/api';
+import '../Members/AddMember.css'; // Using the same styling foundation
 
-const { Option } = Select;
 
 const STEPS = [
-    { title: 'Personal Info' },
-    { title: 'Contact & Address' },
-    { title: 'Ministry Details' },
-    { title: 'Review' },
+    { title: 'Select Member' },
+    { title: 'Account Setup' },
+    { title: 'Confirmation' },
 ];
 
 const STEP_BACKGROUNDS = [
-    { background: '#f8fafc', border: 'none' },
     { background: '#f8fafc', border: 'none' },
     { background: '#f8fafc', border: 'none' },
     { background: '#f8fafc', border: 'none' },
@@ -34,20 +29,66 @@ const STEP_BACKGROUNDS = [
 const AddMinister = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
+
+    // State
     const [loading, setLoading] = useState(false);
+    const [fetchingMembers, setFetchingMembers] = useState(true);
     const [currentStep, setCurrentStep] = useState(0);
-    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [members, setMembers] = useState([]);
+    const [filteredMembers, setFilteredMembers] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [createdMinisterData, setCreatedMinisterData] = useState(null);
+
+    useEffect(() => {
+        fetchBaptizedMembers();
+    }, []);
+
+    const fetchBaptizedMembers = async () => {
+        try {
+            setFetchingMembers(true);
+            const data = await getMembers(true); // pass baptized=true
+            setMembers(data);
+            setFilteredMembers(data);
+        } catch (error) {
+            message.error(error.message || 'Failed to fetch members');
+        } finally {
+            setFetchingMembers(false);
+        }
+    };
+
+    const handleSearch = (e) => {
+        const query = e.target.value.toLowerCase();
+        setSearchQuery(query);
+        const filtered = members.filter(m =>
+            m.first_name.toLowerCase().includes(query) ||
+            m.last_name.toLowerCase().includes(query) ||
+            (m.email && m.email.toLowerCase().includes(query))
+        );
+        setFilteredMembers(filtered);
+    };
+
+    const selectMember = (member) => {
+        setSelectedMember(member);
+        form.setFieldsValue({ member_id: member.id });
+    };
 
     const next = async () => {
         try {
             if (currentStep === 0) {
-                await form.validateFields(['first_name', 'last_name']);
+                if (!selectedMember) {
+                    message.error('Please select a member first');
+                    return;
+                }
             } else if (currentStep === 1) {
-                await form.validateFields(['phone']);
+                await form.validateFields(['title', 'password']);
+                // Handle actual submission since clicking "Next" from step 2 goes to step 3 (confirmation)
+                await submitMinister();
+                return; // submitMinister will bump the step
             }
             setCurrentStep(currentStep + 1);
         } catch (error) {
-            message.error('Please correct the errors before proceeding.');
+            // Validation error, do nothing
         }
     };
 
@@ -55,28 +96,35 @@ const AddMinister = () => {
         setCurrentStep(currentStep - 1);
     };
 
-    const handleAvatarChange = (info) => {
-        const file = info.file.originFileObj || info.file;
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => setAvatarPreview(e.target.result);
-            reader.readAsDataURL(file);
+    const submitMinister = async () => {
+        try {
+            setLoading(true);
+            const values = form.getFieldsValue();
+
+            const payload = {
+                member_id: selectedMember.id,
+                title: values.title,
+                password: values.password
+            };
+
+            const response = await createMinister(payload);
+            setCreatedMinisterData(response);
+            message.success('Minister account created successfully!');
+            setCurrentStep(2); // Move to confirmation
+        } catch (error) {
+            message.error(error.message || 'Failed to create minister account');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSubmit = async () => {
-        try {
-            await form.validateFields();
-            setLoading(true);
-            // Prototype: simulate save
-            setTimeout(() => {
-                setLoading(false);
-                message.success('Minister registered successfully!');
-                navigate('/ministers/manage');
-            }, 1000);
-        } catch (error) {
-            message.error('Please complete all required fields.');
-        }
+    // We don't use typical StepperWizard onFinish because Step 2's Next button triggers it
+    const handleWizardSubmit = () => {
+        navigate('/ministers/manage');
+    };
+
+    const renderFirstLetterAvatar = (firstName) => {
+        return (firstName || '?').charAt(0).toUpperCase();
     };
 
     return (
@@ -92,219 +140,194 @@ const AddMinister = () => {
                 </Button>
 
                 <div className="add-member-header">
-                    <h1>New Minister Registration</h1>
-                    <p>Complete all steps to register a new minister.</p>
+                    <h1>Register New Minister</h1>
+                    <p>Select a baptized member and set up their minister account credentials.</p>
                 </div>
 
                 <div className="content-card-unified">
-                    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'active' }}>
+                    <Form form={form} layout="vertical">
+                        {/* Hidden field to keep track of selected member */}
+                        <Form.Item name="member_id" hidden><Input /></Form.Item>
+
                         <StepperWizard
                             steps={STEPS}
                             currentStep={currentStep}
                             onNext={next}
                             onPrev={prev}
                             onCancel={() => navigate(-1)}
-                            submitText="Confirm Registration"
+                            submitText="Go to Ministers List"
                             submitLoading={loading}
                             stepBackgrounds={STEP_BACKGROUNDS}
+                            hideNextOnLastStep={true} // Usually we change submitText
                         >
-                            {/* =============== STEP 1: Personal Information =============== */}
+                            {/* =============== STEP 1: Select Member =============== */}
                             <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UserOutlined style={{ color: '#1565c0' }} /> Personal Information
+                                    <UserOutlined style={{ color: '#1565c0' }} /> Choose Baptized Member
                                 </h3>
 
-                                <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'flex-start' }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <Avatar
-                                            size={100}
-                                            src={avatarPreview}
-                                            icon={<UserOutlined />}
-                                            style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
+                                <Input
+                                    size="large"
+                                    placeholder="Search by name or email..."
+                                    prefix={<SearchOutlined />}
+                                    value={searchQuery}
+                                    onChange={handleSearch}
+                                    style={{ marginBottom: '24px' }}
+                                />
+
+                                {fetchingMembers ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                        <Spin size="large" />
+                                        <div style={{ marginTop: '16px', color: '#64748b' }}>Loading baptized members...</div>
+                                    </div>
+                                ) : (
+                                    <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '12px' }}>
+                                        <List
+                                            itemLayout="horizontal"
+                                            dataSource={filteredMembers}
+                                            locale={{ emptyText: 'No baptized members found' }}
+                                            renderItem={(item) => {
+                                                const isSelected = selectedMember?.id === item.id;
+                                                const fullName = `${item.first_name} ${item.middle_name || ''} ${item.last_name}`;
+
+                                                return (
+                                                    <List.Item
+                                                        onClick={() => selectMember(item)}
+                                                        className="member-list-item" // Custom hover styling usually applied
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            padding: '16px',
+                                                            marginBottom: '12px',
+                                                            borderRadius: '8px',
+                                                            border: isSelected ? '2px solid #1565c0' : '1px solid #e2e8f0',
+                                                            backgroundColor: isSelected ? '#f0f7ff' : '#fff',
+                                                            transition: 'all 0.2s',
+                                                        }}
+                                                    >
+                                                        <List.Item.Meta
+                                                            avatar={
+                                                                <Avatar
+                                                                    size={48}
+                                                                    src={item.image_url ? `${API_BASE_URL}/${item.image_url.replace(/^\//, '')}` : null}
+                                                                    style={{ backgroundColor: '#1565c0' }}
+                                                                >
+                                                                    {renderFirstLetterAvatar(item.first_name)}
+                                                                </Avatar>
+                                                            }
+                                                            title={<strong style={{ fontSize: '16px', color: '#0f172a' }}>{fullName}</strong>}
+                                                            description={
+                                                                <div>
+                                                                    <div style={{ color: '#64748b' }}>{item.email || 'No email provided'}</div>
+                                                                    <div style={{ color: '#64748b' }}>{item.phone || 'No phone'}</div>
+                                                                </div>
+                                                            }
+                                                        />
+                                                    </List.Item>
+                                                );
+                                            }}
                                         />
-                                        <div style={{ marginTop: '8px' }}>
-                                            <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
-                                                <Button size="small" icon={<UploadOutlined />}>Photo</Button>
-                                            </Upload>
-                                        </div>
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                            <Form.Item
-                                                label="First Name"
-                                                name="first_name"
-                                                rules={[{ required: true, message: 'First name is required' }]}
-                                            >
-                                                <Input size="large" placeholder="First Name" />
-                                            </Form.Item>
-                                            <Form.Item label="Middle Name" name="middle_name">
-                                                <Input size="large" placeholder="Optional" />
-                                            </Form.Item>
-                                        </div>
-                                        <Form.Item
-                                            label="Last Name"
-                                            name="last_name"
-                                            rules={[{ required: true, message: 'Last name is required' }]}
-                                        >
-                                            <Input size="large" placeholder="Last Name" />
-                                        </Form.Item>
-                                    </div>
-                                </div>
-
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item label="Date of Birth" name="date_of_birth">
-                                            <DatePicker style={{ width: '100%' }} size="large" placeholder="Select date" />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item label="Marital Status" name="marital_status">
-                                            <Select placeholder="Select status" size="large" allowClear>
-                                                <Option value="single">Single</Option>
-                                                <Option value="married">Married</Option>
-                                                <Option value="divorced">Divorced</Option>
-                                                <Option value="widowed">Widowed</Option>
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
+                                )}
                             </div>
 
-                            {/* =============== STEP 2: Contact & Address =============== */}
+                            {/* =============== STEP 2: Account Setup =============== */}
                             <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <PhoneOutlined style={{ color: '#1565c0' }} /> Contact & Address
+                                    <LockOutlined style={{ color: '#1565c0' }} /> Account Setup
                                 </h3>
 
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item
-                                            label="Phone Number"
-                                            name="phone"
-                                            rules={[{ required: true, message: 'Phone number is required' }]}
-                                        >
-                                            <Input
-                                                size="large"
-                                                placeholder="+251 9XX XXX XXXX"
-                                                prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item
-                                            label="Email Address"
-                                            name="email"
-                                            rules={[{ type: 'email', message: 'Please enter a valid email' }]}
-                                        >
-                                            <Input
-                                                size="large"
-                                                placeholder="minister@church.com"
-                                                prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
+                                {selectedMember && (
+                                    <div style={{
+                                        padding: '16px',
+                                        backgroundColor: '#f8fafc',
+                                        borderRadius: '8px',
+                                        marginBottom: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '16px'
+                                    }}>
+                                        <Avatar size={48} src={selectedMember.image_url ? `${API_BASE_URL}/${selectedMember.image_url.replace(/^\//, '')}` : null} style={{ backgroundColor: '#1565c0' }}>
+                                            {renderFirstLetterAvatar(selectedMember.first_name)}
+                                        </Avatar>
+                                        <div>
+                                            <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                                                {selectedMember.first_name} {selectedMember.middle_name} {selectedMember.last_name}
+                                            </div>
+                                            <div style={{ color: '#64748b', fontSize: '13px' }}>
+                                                Creating Minister Account for this member
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                                <Form.Item label="Address" name="address">
-                                    <Input
-                                        size="large"
-                                        placeholder="123 Church St, City, State"
-                                        prefix={<HomeOutlined style={{ color: '#bfbfbf' }} />}
-                                    />
-                                </Form.Item>
-                            </div>
-
-                            {/* =============== STEP 3: Ministry Details =============== */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <GlobalOutlined style={{ color: '#1565c0' }} /> Ministry Details
-                                </h3>
-
-                                <Row gutter={24}>
-                                    <Col span={12}>
+                                {loading ? (
+                                    <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                                        <Spin size="large" />
+                                        <h3 style={{ marginTop: '24px', color: '#1565c0' }}>Creating Account...</h3>
+                                        <p style={{ color: '#64748b' }}>Setting up system access and linking records.</p>
+                                    </div>
+                                ) : (
+                                    <>
                                         <Form.Item
                                             name="title"
                                             label="Minister Title"
-                                            rules={[{ required: true, message: 'Title is required' }]}
+                                            rules={[{ required: true, message: 'Please enter a title' }]}
                                         >
-                                            <Select placeholder="Select title" size="large">
-                                                <Option value="Senior Pastor">Senior Pastor</Option>
-                                                <Option value="Associate Pastor">Associate Pastor</Option>
-                                                <Option value="Youth Evangelist">Youth Evangelist</Option>
-                                                <Option value="Deacon">Deacon</Option>
-                                                <Option value="Church Elder">Church Elder</Option>
-                                                <Option value="Worship Leader">Worship Leader</Option>
-                                            </Select>
+                                            <Input size="large" placeholder="e.g. Senior Pastor, Deacon, Worship Leader" />
                                         </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item name="department" label="Department">
-                                            <Select placeholder="Select department" size="large" allowClear>
-                                                <Option value="Pastoral">Pastoral</Option>
-                                                <Option value="Youth">Youth</Option>
-                                                <Option value="Worship">Worship</Option>
-                                                <Option value="Administration">Administration</Option>
-                                                <Option value="Education">Education</Option>
-                                                <Option value="Outreach">Outreach</Option>
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
 
-                                <Row gutter={24}>
-                                    <Col span={12}>
-                                        <Form.Item name="status" label="Status">
-                                            <Radio.Group buttonStyle="solid" size="large">
-                                                <Radio.Button value="active">Active</Radio.Button>
-                                                <Radio.Button value="inactive">Inactive</Radio.Button>
-                                            </Radio.Group>
+                                        <Form.Item
+                                            name="password"
+                                            label="Temporary Password"
+                                            rules={[
+                                                { required: true, message: 'Password is required' },
+                                                { min: 6, message: 'Password must be at least 6 characters' }
+                                            ]}
+                                            extra="This password will be used by the minister to log in."
+                                        >
+                                            <Input.Password size="large" placeholder="Enter secure password" />
                                         </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item name="ordination_date" label="Ordination Date">
-                                            <DatePicker style={{ width: '100%' }} size="large" />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-
-                                <Form.Item name="bio" label="Short Biography (Optional)">
-                                    <Input.TextArea rows={3} placeholder="Brief description of the minister's background and calling..." />
-                                </Form.Item>
+                                    </>
+                                )}
                             </div>
 
-                            {/* =============== STEP 4: Review =============== */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Registration
-                                </h3>
+                            {/* =============== STEP 3: Confirmation =============== */}
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <CheckCircleOutlined style={{ fontSize: '64px', color: '#52c41a', marginBottom: '24px' }} />
+                                <h2 style={{ color: '#0f172a', marginBottom: '16px' }}>Minister Added Successfully!</h2>
+
+                                <p style={{ color: '#64748b', fontSize: '16px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                                    The user account has been securely created and linked to the member profile.
+                                </p>
 
                                 <div style={{
-                                    background: '#fff',
+                                    background: '#f8fafc',
+                                    padding: '24px',
                                     borderRadius: '8px',
-                                    padding: '20px',
-                                    border: '1px solid #e2e8f0',
-                                    marginTop: '16px'
+                                    display: 'inline-block',
+                                    textAlign: 'left'
                                 }}>
-                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Registration Summary</h4>
-                                    <Form.Item noStyle shouldUpdate>
-                                        {() => {
-                                            const values = form.getFieldsValue();
-                                            return (
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
-                                                    <div><strong>Name:</strong> {values.first_name || '—'} {values.middle_name || ''} {values.last_name || ''}</div>
-                                                    <div><strong>Title:</strong> {values.title || '—'}</div>
-                                                    <div><strong>Phone:</strong> {values.phone || '—'}</div>
-                                                    <div><strong>Email:</strong> {values.email || '—'}</div>
-                                                    <div><strong>Department:</strong> {values.department || '—'}</div>
-                                                    <div><strong>Status:</strong> {values.status || '—'}</div>
-                                                    <div><strong>Address:</strong> {values.address || '—'}</div>
-                                                    <div><strong>Ordination:</strong> {values.ordination_date ? values.ordination_date.format('YYYY-MM-DD') : '—'}</div>
-                                                </div>
-                                            );
-                                        }}
-                                    </Form.Item>
+                                    <div style={{ marginBottom: '12px' }}>
+                                        <span style={{ color: '#64748b', display: 'inline-block', width: '100px' }}>Name:</span>
+                                        <strong>{selectedMember?.first_name} {selectedMember?.last_name}</strong>
+                                    </div>
+                                    <div style={{ marginBottom: '12px' }}>
+                                        <span style={{ color: '#64748b', display: 'inline-block', width: '100px' }}>Email:</span>
+                                        <strong>{createdMinisterData?.user?.email || selectedMember?.email}</strong>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: '#64748b', display: 'inline-block', width: '100px' }}>Title:</span>
+                                        <Tag color="blue">{form.getFieldValue('title')}</Tag>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '40px' }}>
+                                    <Button type="primary" size="large" onClick={handleWizardSubmit} style={{ backgroundColor: '#1565c0' }}>
+                                        Go to Ministers List
+                                    </Button>
                                 </div>
                             </div>
+
                         </StepperWizard>
                     </Form>
                 </div>

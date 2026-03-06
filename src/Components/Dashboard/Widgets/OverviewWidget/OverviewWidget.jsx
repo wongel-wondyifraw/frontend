@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Church, VolunteerActivism, PersonAdd } from '@mui/icons-material';
 import { Badge } from 'antd';
-import { getMembers, getMinistries } from '../../../../services/api';
+import { getMembers, getMinistries, getMinisters } from '../../../../services/api';
 import './OverviewWidget.css';
 
 const OverviewWidget = ({ settings }) => {
@@ -45,14 +45,23 @@ const OverviewWidget = ({ settings }) => {
                     ]);
                     setLiveTrend(`${total} active`);
                 } else if (title === 'Total Ministers' || icon === 'church') {
-                    const data = settings.data || [];
-                    setBreakdownItems(
-                        data.map((d, i) => ({
-                            label: d.name,
-                            count: d.value,
-                            status: i === 0 ? 'success' : 'warning',
-                        }))
-                    );
+                    const ministers = await getMinisters();
+                    const total = ministers.length;
+
+                    // Simple categorization based on title for the breakdown
+                    const seniorPastors = ministers.filter(m => m.user?.title === 'Senior Pastor' || m.user?.title === 'Associate Pastor').length;
+                    const others = total - seniorPastors;
+
+                    setLiveCount(total.toLocaleString());
+                    setBreakdownItems([
+                        { label: 'Pastors', count: seniorPastors, status: 'success' },
+                        { label: 'Other Leaders', count: others, status: 'warning' },
+                    ]);
+
+                    // Count how many were added this month
+                    const thisMonth = new Date().getMonth();
+                    const recent = ministers.filter(m => new Date(m.created_at || m.user?.created_at).getMonth() === thisMonth).length;
+                    setLiveTrend(`+${recent} this month`);
                 }
             } catch (error) {
                 console.warn('Failed to fetch live widget data:', error);
