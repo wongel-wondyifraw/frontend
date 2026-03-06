@@ -236,11 +236,22 @@ const MemberDetail = () => {
                                                             description={
                                                                 <div style={{ marginTop: '4px' }}>
                                                                     {isLeader && (
-                                                                        <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
-                                                                            <UserOutlined style={{ fontSize: '12px' }} />
-                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                        <div style={{ marginBottom: '12px' }}>
+                                                                            <Tag
+                                                                                icon={<UserOutlined />}
+                                                                                color="#1565c0"
+                                                                                style={{
+                                                                                    fontWeight: 700,
+                                                                                    borderRadius: '4px',
+                                                                                    margin: '0 6px',
+                                                                                    padding: '2px 10px',
+                                                                                    fontSize: '11px',
+                                                                                    letterSpacing: '0.05em',
+                                                                                    textTransform: 'uppercase'
+                                                                                }}
+                                                                            >
                                                                                 Ministry Leader
-                                                                            </span>
+                                                                            </Tag>
                                                                         </div>
                                                                     )}
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
