@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Table, Modal, Tag, Tooltip, Select, Row, Col } from 'antd';
-import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Tabs, Form, Input, Button, Switch, Avatar, Upload, message, Modal, Tag, Tooltip, Select, Row, Col, Space } from 'antd';
+import { UserOutlined, LockOutlined, BellOutlined, UploadOutlined, TeamOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined, SolutionOutlined, IdcardOutlined } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import StepperWizard from '../../Components/common/StepperWizard';
+import DataTable from '../../Components/common/DataTable';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar, API_BASE_URL } from '../../services/api';
 import { useUser } from '../../context/UserContext';
 import './Settings.css';
@@ -9,6 +11,18 @@ import './Settings.css';
 const { TextArea } = Input;
 const { Option } = Select;
 const { confirm } = Modal;
+
+const USER_WIZARD_STEPS = [
+    { title: 'Personal' },
+    { title: 'Account' },
+    { title: 'Role' },
+];
+
+const USER_WIZARD_BACKGROUNDS = [
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+];
 
 const Settings = () => {
     const { user: currentUser, refreshUser } = useUser();
@@ -20,6 +34,10 @@ const Settings = () => {
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
 
+    // New states for deferred avatar upload
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+
     // Filter & Search State
     const [searchText, setSearchText] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -27,6 +45,11 @@ const Settings = () => {
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+
+    // Wizard State
+    const [currentStep, setCurrentStep] = useState(0);
+    const [wizardAvatar, setWizardAvatar] = useState(null);
+    const [wizardAvatarPreview, setWizardAvatarPreview] = useState(null);
 
     // Fetch Profile on Mount
     useEffect(() => {
@@ -63,34 +86,49 @@ const Settings = () => {
         }
     };
 
-    // Update Profile
+    // Update Profile (Includes delayed Avatar upload)
     const handleProfileUpdate = async (values) => {
         try {
+            setLoading(true);
+
+            // 1. Upload Avatar if a new one was selected
+            if (avatarFile && profile?.id) {
+                await uploadAvatar(profile.id, avatarFile);
+                setAvatarFile(null); // Clear after upload
+            }
+
+            // 2. Update text fields
             await updateProfile({
                 first_name: values.firstName,
                 middle_name: values.middleName,
                 last_name: values.lastName,
             });
+
             message.success('Profile updated successfully!');
-            loadProfile();
-            refreshUser();
+            await loadProfile();
+            await refreshUser(); // This ensures Sidebar and Header update instantly
         } catch (error) {
-            message.error('Failed to update profile');
+            message.error(error.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Avatar Upload Logic
+    // Avatar Upload Logic (Deferred for main profile, immediate for Admin table)
     const handleAvatarUpload = async (file, userId) => {
+        // If it's the current user updating their own profile, defer it
+        if (userId === profile?.id) {
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+            return false; // Prevent immediate upload
+        }
+
+        // If Admin is uploading someone else's avatar from the table, do it immediately
         try {
             await uploadAvatar(userId, file);
             message.success('Avatar updated successfully!');
-            if (userId === profile?.id) {
-                loadProfile();
-                refreshUser();
-            } else {
-                loadUsers();
-            }
-            return false; // Prevent default upload
+            loadUsers();
+            return false;
         } catch (error) {
             message.error(error.message || 'Avatar upload failed');
             return false;
@@ -116,32 +154,69 @@ const Settings = () => {
     };
 
     // Admin: Add/Edit User
-    const handleUserSubmit = async (values) => {
+    const handleUserSubmit = async () => {
         try {
+            const values = await userForm.validateFields();
+            setLoading(true);
+
             if (editingUser) {
                 await updateUser(editingUser.id, {
-                    email: values.email,
-                    role: values.role,
-                    is_active: values.is_active,
+                    ...values,
                     first_name: values.first_name,
                     last_name: values.last_name,
                     middle_name: values.middle_name,
+                    title: values.title,
                 });
                 message.success('User updated successfully');
             } else {
-                await createUser({
-                    ...values,
-                    password_hash: values.password,
-                });
-                message.success('User created successfully');
+                const formData = new FormData();
+                formData.append('first_name', values.first_name);
+                formData.append('last_name', values.last_name);
+                formData.append('middle_name', values.middle_name || '');
+                formData.append('email', values.email);
+                formData.append('password_hash', values.password);
+                formData.append('role', values.role);
+                formData.append('is_active', values.is_active);
+                if (values.title) formData.append('title', values.title);
+                if (wizardAvatar) formData.append('avatar', wizardAvatar);
+
+                await createUser(formData);
+                message.success('User registered successfully');
             }
+
             setIsModalVisible(false);
             setEditingUser(null);
+            setCurrentStep(0);
+            setWizardAvatar(null);
+            setWizardAvatarPreview(null);
             userForm.resetFields();
             loadUsers();
         } catch (error) {
+            console.error('Registration Error:', error);
             message.error(error.message || 'Operation failed');
+        } finally {
+            setLoading(false);
         }
+    };
+
+    // Wizard Navigation
+    const next = async () => {
+        try {
+            if (currentStep === 0) {
+                await userForm.validateFields(['first_name', 'last_name']);
+            } else if (currentStep === 1) {
+                await userForm.validateFields(['email', 'password']);
+            } else if (currentStep === 2) {
+                await userForm.validateFields(['role']);
+            }
+            setCurrentStep(currentStep + 1);
+        } catch (error) {
+            message.error("Please correct the errors before proceeding.");
+        }
+    };
+
+    const prev = () => {
+        setCurrentStep(currentStep - 1);
     };
 
     // Admin: Delete User
@@ -179,12 +254,29 @@ const Settings = () => {
     // Admin: Open Modal
     const openUserModal = (user = null) => {
         setEditingUser(user);
+        setCurrentStep(0);
+        setWizardAvatar(null);
+        setWizardAvatarPreview(null);
         if (user) {
-            userForm.setFieldsValue(user);
+            userForm.setFieldsValue({
+                ...user,
+                is_active: user.is_active !== undefined ? user.is_active : true
+            });
         } else {
             userForm.resetFields();
+            userForm.setFieldsValue({ is_active: true });
         }
         setIsModalVisible(true);
+    };
+
+    const handleWizardAvatarChange = (info) => {
+        const file = info.file.originFileObj || info.file;
+        if (file) {
+            setWizardAvatar(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setWizardAvatarPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
     };
 
     // Filter Logic
@@ -212,7 +304,7 @@ const Settings = () => {
             render: (_, record) => (
                 <div style={{ position: 'relative', width: 40, height: 40 }}>
                     <Avatar
-                        src={record.avatar_url ? `${API_BASE_URL}${record.avatar_url}` : null}
+                        src={record.avatar_url ? `${API_BASE_URL}/${record.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null}
                         icon={<UserOutlined />}
                         size={40}
                     />
@@ -249,6 +341,13 @@ const Settings = () => {
             dataIndex: 'role',
             key: 'role',
             render: role => <Tag color={role === 'admin' ? 'blue' : 'green'}>{role.toUpperCase()}</Tag>
+        },
+        { title: 'Title', dataIndex: 'title', key: 'title', render: title => title || '-' },
+        {
+            title: 'Reg. Date',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            render: date => date ? new Date(date).toLocaleDateString() : '-'
         },
         {
             title: 'Status',
@@ -318,7 +417,10 @@ const Settings = () => {
                                     </Col>
                                     <Col span={12}>
                                         <Form.Item label="Email Address" name="email">
-                                            <Input disabled addonAfter={<LockOutlined />} />
+                                            <Space.Compact style={{ width: '100%' }}>
+                                                <Input disabled />
+                                                <Button disabled icon={<LockOutlined />} />
+                                            </Space.Compact>
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -338,13 +440,14 @@ const Settings = () => {
                             <Avatar
                                 size={160}
                                 icon={<UserOutlined />}
-                                src={profile?.avatar_url ? `${API_BASE_URL}${profile.avatar_url}` : null}
+                                src={avatarPreview || (profile?.avatar_url ? `${API_BASE_URL}/${profile.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null)}
                                 style={{
                                     border: '4px solid var(--border-color)',
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
                                     marginBottom: '24px',
                                     backgroundColor: 'var(--bg-hover)',
-                                    color: 'var(--primary-blue)'
+                                    color: 'var(--primary-blue)',
+                                    objectFit: 'cover'
                                 }}
                             />
                             <Upload
@@ -399,40 +502,38 @@ const Settings = () => {
             label: <span><TeamOutlined /> Manage Users</span>,
             children: (
                 <div className="settings-section" style={{ maxWidth: '100%' }}>
-                    <div className="flex justify-between items-center mb-4" style={{ flexWrap: 'wrap', gap: '10px' }}>
-                        <h3>All Users</h3>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Search users..."
-                                prefix={<SearchOutlined />}
-                                value={searchText}
-                                onChange={e => setSearchText(e.target.value)}
-                                style={{ width: 200 }}
-                            />
-                            <Select defaultValue="all" style={{ width: 120 }} onChange={setRoleFilter}>
-                                <Option value="all">All Roles</Option>
-                                <Option value="admin">Admin</Option>
-                                <Option value="minister">Minister</Option>
-                                <Option value="staff">Staff</Option>
-                                <Option value="member">Member</Option>
-                            </Select>
-                            <Select defaultValue="all" style={{ width: 120 }} onChange={setStatusFilter}>
-                                <Option value="all">All Status</Option>
-                                <Option value="active">Active</Option>
-                                <Option value="inactive">Inactive</Option>
-                            </Select>
-                            <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()} style={{ background: '#1565c0' }}>
-                                Add User
-                            </Button>
-                        </div>
-                    </div>
-                    <Table
-                        dataSource={getFilteredUsers()}
+                    <DataTable
+                        title="All Users"
                         columns={userColumns}
-                        rowKey="id"
+                        dataSource={getFilteredUsers()}
                         loading={users.length === 0 && loading}
-                        pagination={{ pageSize: 5 }}
+                        rowKey="id"
+                        searchPlaceholder="Search users..."
+                        searchValue={searchText}
+                        onSearchChange={setSearchText}
+                        pageSize={5}
                         scroll={{ x: 800 }}
+                        actionButton={{
+                            label: 'Add User',
+                            icon: <PlusOutlined />,
+                            onClick: () => openUserModal(),
+                        }}
+                        extraFilters={
+                            <>
+                                <Select defaultValue="all" style={{ width: 120 }} onChange={setRoleFilter}>
+                                    <Option value="all">All Roles</Option>
+                                    <Option value="admin">Admin</Option>
+                                    <Option value="minister">Minister</Option>
+                                    <Option value="staff">Staff</Option>
+                                    <Option value="member">Member</Option>
+                                </Select>
+                                <Select defaultValue="all" style={{ width: 120 }} onChange={setStatusFilter}>
+                                    <Option value="all">All Status</Option>
+                                    <Option value="active">Active</Option>
+                                    <Option value="inactive">Inactive</Option>
+                                </Select>
+                            </>
+                        }
                     />
                 </div>
             ),
@@ -457,50 +558,115 @@ const Settings = () => {
                 </div>
             </div>
 
-            {/* Admin User Modal */}
+            {/* Admin User Wizard Modal */}
             <Modal
-                title={editingUser ? "Edit User" : "Add New User"}
+                title={editingUser ? "Edit User Registration" : "New User Registration"}
                 open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
+                onCancel={() => {
+                    setIsModalVisible(false);
+                    setCurrentStep(0);
+                }}
                 footer={null}
+                width={700}
+                centered
             >
-                <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <Form.Item label="First Name" name="first_name" rules={[{ required: true }]}>
-                            <Input />
-                        </Form.Item>
-                        <Form.Item label="Middle Name" name="middle_name">
-                            <Input />
-                        </Form.Item>
-                    </div>
-                    <Form.Item label="Last Name" name="last_name" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email' }]}>
-                        <Input />
-                    </Form.Item>
+                <div style={{ padding: '16px 0' }}>
+                    <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
+                        <StepperWizard
+                            steps={USER_WIZARD_STEPS}
+                            currentStep={currentStep}
+                            onNext={next}
+                            onPrev={prev}
+                            submitText={editingUser ? "Confirm Update" : "Confirm Registration"}
+                            submitLoading={false}
+                            stepBackgrounds={USER_WIZARD_BACKGROUNDS}
+                            showCancel={false}
+                        >
+                            {/* STEP 1: Personal Profile */}
+                            <div>
+                                <h3 style={{ marginBottom: '20px' }}>Personal Profile</h3>
+                                <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'center' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <Avatar
+                                            size={100}
+                                            src={wizardAvatarPreview || (editingUser?.avatar_url ? `${API_BASE_URL}/${editingUser.avatar_url.replace(/^\//, '')}` : null)}
+                                            icon={<UserOutlined />}
+                                            style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
+                                        />
+                                        <div style={{ marginTop: '8px' }}>
+                                            <Upload showUploadList={false} beforeUpload={() => false} onChange={handleWizardAvatarChange}>
+                                                <Button size="small" icon={<UploadOutlined />}>Upload</Button>
+                                            </Upload>
+                                        </div>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                            <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
+                                                <Input size="large" placeholder="John" />
+                                            </Form.Item>
+                                            <Form.Item label="Middle Name" name="middle_name">
+                                                <Input size="large" placeholder="Optional" />
+                                            </Form.Item>
+                                        </div>
+                                        <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
+                                            <Input size="large" placeholder="Doe" type="text" />
+                                        </Form.Item>
+                                    </div>
+                                </div>
+                            </div>
 
-                    {!editingUser && (
-                        <Form.Item label="Password" name="password" rules={[{ required: true, min: 6 }]}>
-                            <Input.Password placeholder="Set initial password" />
-                        </Form.Item>
-                    )}
+                            {/* STEP 2: Account Setup */}
+                            <div>
+                                <h3 style={{ marginBottom: '20px' }}>Account Setup</h3>
+                                <Form.Item
+                                    label="Email Address"
+                                    name="email"
+                                    rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}
+                                    extra={<span style={{ color: '#fa8c16', fontSize: '12px' }}>⚠️ Warning: Email cannot be changed later. Please enter carefully.</span>}
+                                >
+                                    <Input size="large" placeholder="user@example.com" disabled={editingUser} />
+                                </Form.Item>
 
-                    <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-                        <Select>
-                            <Option value="admin">Admin</Option>
-                            <Option value="minister">Minister</Option>
-                            <Option value="staff">Staff</Option>
-                            <Option value="member">Member</Option>
-                        </Select>
-                    </Form.Item>
-                    <Form.Item label="Status" name="is_active" valuePropName="checked">
-                        <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-                    </Form.Item>
-                    <Button type="primary" htmlType="submit" block style={{ background: '#1565c0' }}>
-                        {editingUser ? "Update User" : "Create User"}
-                    </Button>
-                </Form>
+                                {!editingUser && (
+                                    <Form.Item label="Temporary Password" name="password" rules={[{ required: true, min: 6, message: 'Min 6 characters' }]}>
+                                        <Input.Password size="large" placeholder="Set initial password" />
+                                    </Form.Item>
+                                )}
+                            </div>
+
+                            {/* STEP 3: Role & Designation */}
+                            <div>
+                                <h3 style={{ marginBottom: '20px' }}>Role & Designation</h3>
+                                <Form.Item label="Select Role" name="role" rules={[{ required: true, message: 'Please assign a role' }]}>
+                                    <Select size="large" placeholder="Select an access level">
+                                        <Option value="admin">Admin</Option>
+                                        <Option value="minister">Minister</Option>
+                                        <Option value="staff">Staff</Option>
+                                    </Select>
+                                </Form.Item>
+
+                                <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.role !== currentValues.role}>
+                                    {({ getFieldValue }) => {
+                                        const role = getFieldValue('role');
+                                        return (role === 'minister' || role === 'staff') ? (
+                                            <Form.Item
+                                                label="Title / Designation"
+                                                name="title"
+                                                rules={[{ required: true, message: 'Title is mandatory for this role' }]}
+                                            >
+                                                <Input size="large" placeholder="e.g. Senior Pastor, IT Manager" />
+                                            </Form.Item>
+                                        ) : null;
+                                    }}
+                                </Form.Item>
+
+                                <Form.Item label="Account Status" name="is_active" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </div>
+                        </StepperWizard>
+                    </Form>
+                </div>
             </Modal>
         </DashboardLayout>
     );

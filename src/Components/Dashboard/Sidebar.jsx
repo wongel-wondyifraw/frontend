@@ -69,7 +69,7 @@ const Sidebar = () => {
           <Avatar
             size={80}
             icon={<UserOutlined />}
-            src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : null}
+            src={user?.avatar_url ? `${API_BASE_URL}/${user.avatar_url.replace(/^\//, '')}?t=${new Date().getTime()}` : null}
             className="sidebar-profile-img"
             style={{
               backgroundColor: 'var(--bg-hover)',
@@ -84,6 +84,11 @@ const Sidebar = () => {
             {user && (
               <div className="profile-role-pill">
                 {user.role}
+              </div>
+            )}
+            {user?.title && (
+              <div className="profile-title-pill">
+                {user.title}
               </div>
             )}
           </div>

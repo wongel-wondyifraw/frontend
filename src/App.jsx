@@ -10,6 +10,7 @@ import AddMember from './pages/Members/AddMember';
 import ManageMinistries from './pages/Ministries/ManageMinistries';
 import MinistryDetail from './pages/Ministries/MinistryDetail';
 import AddMinistry from './pages/Ministries/AddMinistry';
+import EditMinistry from './pages/Ministries/EditMinistry';
 import Settings from './pages/Settings/Settings';
 import Help from './pages/Help/Help';
 import ScheduleManagement from './pages/Schedule/ScheduleManagement';
@@ -17,6 +18,7 @@ import HomeGroups from './pages/Members/HomeGroups';
 import HomeGroupDetail from './pages/Members/HomeGroupDetail';
 import BibleStudy from './pages/BibleStudy/BibleStudy';
 import Subscription from './pages/Subscription/Subscription';
+import EditMember from './pages/Members/EditMember';
 
 function App() {
   return (
@@ -31,7 +33,9 @@ function App() {
         <Route path="/members/add" element={<AddMember />} />
         <Route path="/members/details/:id" element={<MemberDetail />} />
         <Route path="/ministries/manage" element={<ManageMinistries />} />
+        <Route path="/members/edit/:id" element={<EditMember />} />
         <Route path="/ministries/add" element={<AddMinistry />} />
+        <Route path="/ministries/edit/:id" element={<EditMinistry />} />
         <Route path="/ministries/details/:id" element={<MinistryDetail />} />
         <Route path="/bible-study" element={<BibleStudy />} />
         <Route path="/settings" element={<Settings />} />

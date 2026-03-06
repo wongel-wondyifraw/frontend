@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Button, Timeline } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, List, Modal } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -11,36 +11,85 @@ import {
     ArrowLeftOutlined,
     UserOutlined,
     PlusOutlined,
-    PrinterOutlined
+    PrinterOutlined,
+    CheckCircleOutlined,
+    FilePdfOutlined,
+    TeamOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons';
-import SidebarLayout from '../../Layouts/SidebarLayout';
+import DashboardLayout from '../../Layouts/DashboardLayout';
+import { getMemberById, deleteMember, removeMinistryMember } from '../../services/api';
 import './MemberDetail.css';
 
 const MemberDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [member, setMember] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data - In a real app, fetch based on ID
-    const member = {
-        name: "Sarah Jenkins",
-        role: "Worship Leader",
-        status: "Active",
-        email: "sarah.jenkins@example.com",
-        phone: "+1 (555) 123-4567",
-        address: "123 Faith Lane, Springfield, IL 62704",
-        joinedDate: "January 15, 2023",
-        dob: "March 12, 1990",
-        campus: "Main Campus",
-        maritalStatus: "Married",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-        family: [
-            { name: 'Michael Jenkins', relation: 'Spouse', id: '002', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' },
-            { name: 'Emma Jenkins', relation: 'Daughter', id: '003', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' }
-        ]
+    useEffect(() => {
+        fetchMemberDetails();
+    }, [id]);
+
+    const fetchMemberDetails = async () => {
+        try {
+            setLoading(true);
+            const data = await getMemberById(id);
+            setMember(data);
+        } catch (error) {
+            message.error('Failed to load member details');
+            navigate('/members/manage');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    const handleDelete = async () => {
+        try {
+            await deleteMember(id);
+            message.success('Member deleted successfully');
+            navigate('/members/manage');
+        } catch (error) {
+            message.error('Failed to delete member');
+        }
+    };
+
+    const handleRemoveMinistry = (ministryId, ministryName) => {
+        Modal.confirm({
+            title: 'Remove from Ministry',
+            icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+            content: `Are you sure you want to remove this member from "${ministryName}"?`,
+            okText: 'Remove',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: async () => {
+                try {
+                    await removeMinistryMember(ministryId, id);
+                    message.success(`Removed from ${ministryName}`);
+                    fetchMemberDetails();
+                } catch (error) {
+                    message.error(error.message || 'Failed to remove from ministry');
+                }
+            },
+        });
+    };
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <Spin size="large" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (!member) return null;
+
+    const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`;
+
     return (
-        <SidebarLayout>
+        <DashboardLayout>
             <div className="member-detail-container">
                 <Button
                     type="text"
@@ -54,19 +103,39 @@ const MemberDetail = () => {
                 <div className="content-card-unified">
                     {/* Unified Header Section */}
                     <div className="member-header-section">
-                        <img src={member.avatar} alt={member.name} className="member-profile-image" />
+                        <Avatar
+                            size={120}
+                            src={member.image_url ? (member.image_url.startsWith('http') ? member.image_url : `http://localhost:3000${member.image_url.startsWith('/') ? '' : '/'}${member.image_url}`) : undefined}
+                            icon={<UserOutlined />}
+                            className="member-profile-image"
+                            style={{ fontSize: '60px' }}
+                        />
                         <div className="member-header-info">
-                            <h1 className="member-name">{member.name}</h1>
+                            <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
-                                <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>{member.role}</Tag>
-                                <Tag color="green" style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}>{member.status}</Tag>
-                                <span className="member-id">ID: #{id || '001'}</span>
+                                <Tag
+                                    icon={member.status === 'active' ? <CheckCircleOutlined /> : <UserOutlined />}
+                                    color={member.status === 'active' ? 'success' : 'error'}
+                                    style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
+                                >
+                                    {member.status === 'active' ? 'Active Member' : 'Inactive Member'}
+                                </Tag>
+
                             </div>
                         </div>
-                        <div className="member-actions">
-                            <Button icon={<PrinterOutlined />} size="large" onClick={() => window.print()}>Print Info</Button>
-                            <Button icon={<EditOutlined />} size="large">Edit Profile</Button>
-                            <Button icon={<DeleteOutlined />} danger size="large">Delete</Button>
+                        <div className="member-actions-stacked">
+                            <Button type="primary" icon={<PrinterOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => window.print()}>Print</Button>
+                            <Button type="primary" icon={<EditOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => navigate(`/members/edit/${id}`)}>Edit</Button>
+                            <Popconfirm
+                                title="Delete Member"
+                                description="Are you sure you want to delete this member?"
+                                onConfirm={handleDelete}
+                                okText="Yes"
+                                cancelText="No"
+                                placement="bottomRight"
+                            >
+                                <Button type="primary" danger icon={<DeleteOutlined />} size="middle">Delete</Button>
+                            </Popconfirm>
                         </div>
                     </div>
 
@@ -75,60 +144,131 @@ const MemberDetail = () => {
                         <div className="left-column">
                             <div className="detail-section">
                                 <h3>Personal Information</h3>
-                                <div className="info-row">
-                                    <span className="info-label"><MailOutlined /> Email</span>
-                                    <span className="info-value">{member.email}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><PhoneOutlined /> Phone</span>
-                                    <span className="info-value">{member.phone}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><EnvironmentOutlined /> Address</span>
-                                    <span className="info-value">{member.address}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><CalendarOutlined /> Date of Birth</span>
-                                    <span className="info-value">{member.dob}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><UserOutlined /> Marital Status</span>
-                                    <span className="info-value">{member.maritalStatus}</span>
-                                </div>
+                                <table className="elegant-info-table">
+                                    <tbody>
+                                        <tr>
+                                            <th><MailOutlined /> Email</th>
+                                            <td>{member.email || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><PhoneOutlined /> Phone</th>
+                                            <td>{member.phone || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><EnvironmentOutlined /> Address</th>
+                                            <td>{member.address || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CalendarOutlined /> Date of Birth</th>
+                                            <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><UserOutlined /> Marital Status</th>
+                                            <td>{member.marital_status || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CheckCircleOutlined /> Baptized</th>
+                                            <td>
+                                                {member.baptized === true || member.baptized === 'true' ? (
+                                                    <Tag icon={<CheckCircleOutlined />} color="success" style={{ padding: '2px 8px', borderRadius: '4px' }}>
+                                                        Yes
+                                                    </Tag>
+                                                ) : (
+                                                    <Tag color="default" style={{ padding: '2px 8px', borderRadius: '4px' }}>
+                                                        No
+                                                    </Tag>
+                                                )}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th><FilePdfOutlined /> Church Letter</th>
+                                            <td>
+                                                {member.document_url ? <a href={member.document_url.startsWith('http') ? member.document_url : `http://localhost:3000${member.document_url.startsWith('/') ? '' : '/'}${member.document_url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
 
                             <div className="detail-section">
-                                <h3>Family Connections</h3>
-                                <div className="family-list">
-                                    {member.family.map((fam, idx) => (
-                                        <div key={idx} className="family-member-item">
-                                            <img src={fam.avatar} alt={fam.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                                            <div>
-                                                <div style={{ fontWeight: 600, fontSize: '14px' }}>{fam.name}</div>
-                                                <div style={{ fontSize: '12px', color: '#64748b' }}>{fam.relation}</div>
-                                            </div>
-                                            <Button size="small" style={{ marginLeft: 'auto' }} onClick={() => navigate(`/members/details/${fam.id}`)}>View</Button>
-                                        </div>
-                                    ))}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h3 style={{ margin: 0 }}><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Involvement ({member.ministry_members?.length || 0})</h3>
                                 </div>
-                            </div>
 
-                            <div className="detail-section">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                    <h3 style={{ margin: 0, border: 'none', padding: 0 }}>Ministry Involvement</h3>
-                                    <Button type="primary" size="small" icon={<PlusOutlined />} style={{ background: '#1565c0' }}>Add to Ministry</Button>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label">Campus</span>
-                                    <span className="info-value">{member.campus}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label">Joined Date</span>
-                                    <span className="info-value">{member.joinedDate}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label">Baptized</span>
-                                    <span className="info-value">Yes (June 2010)</span>
+                                <div style={{ marginTop: '16px' }}>
+                                    <List
+                                        grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 2 }}
+                                        dataSource={member.ministry_members || []}
+                                        locale={{ emptyText: 'Not involved in any ministries.' }}
+                                        renderItem={(mm) => {
+                                            const isLeader = mm.ministry?.leader_id === member.id;
+                                            return (
+                                                <List.Item>
+                                                    <Card
+                                                        hoverable
+                                                        className="member-card-elegant"
+                                                        actions={[
+                                                            <Tooltip title="View Ministry">
+                                                                <Button
+                                                                    type="text"
+                                                                    icon={<InfoCircleOutlined style={{ color: '#1565c0', fontSize: '18px' }} />}
+                                                                    onClick={() => navigate(`/ministries/details/${mm.ministry_id}`)}
+                                                                />
+                                                            </Tooltip>
+                                                        ]}
+                                                        bodyStyle={{ padding: '20px', position: 'relative' }}
+                                                    >
+                                                        <Tooltip title="Remove from Ministry">
+                                                            <Button
+                                                                type="text"
+                                                                danger
+                                                                icon={<DeleteOutlined />}
+                                                                style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRemoveMinistry(mm.ministry_id, mm.ministry?.name);
+                                                                }}
+                                                            />
+                                                        </Tooltip>
+                                                        <Card.Meta
+                                                            avatar={<Avatar size={64} icon={<TeamOutlined />} style={{ border: '2px solid #f0f2f5', backgroundColor: '#e3f2fd', color: '#1565c0' }} />}
+                                                            title={<span style={{ fontWeight: 600, fontSize: '16px', color: 'var(--navy)' }}>{mm.ministry?.name}</span>}
+                                                            description={
+                                                                <div style={{ marginTop: '4px' }}>
+                                                                    {isLeader && (
+                                                                        <div style={{ marginBottom: '12px' }}>
+                                                                            <Tag
+                                                                                icon={<UserOutlined />}
+                                                                                color="#1565c0"
+                                                                                style={{
+                                                                                    fontWeight: 700,
+                                                                                    borderRadius: '4px',
+                                                                                    margin: '0 6px',
+                                                                                    padding: '2px 10px',
+                                                                                    fontSize: '11px',
+                                                                                    letterSpacing: '0.05em',
+                                                                                    textTransform: 'uppercase'
+                                                                                }}
+                                                                            >
+                                                                                Ministry Leader
+                                                                            </Tag>
+                                                                        </div>
+                                                                    )}
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                                                        <CalendarOutlined style={{ fontSize: '12px' }} />
+                                                                        <span>{mm.ministry?.schedule || 'No schedule set'}</span>
+                                                                    </div>
+                                                                    <div style={{ marginTop: '8px' }}>
+                                                                        <Tag color="blue" size="small" style={{ borderRadius: '4px', backgroundColor: '#e3f2fd', color: '#1565c0', borderColor: '#e3f2fd' }}>Joined: {mm.joined_at ? new Date(mm.joined_at).toLocaleDateString() : 'N/A'}</Tag>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        />
+                                                    </Card>
+                                                </List.Item>
+                                            );
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -136,57 +276,32 @@ const MemberDetail = () => {
                         {/* Right Column */}
                         <div className="right-column">
                             <div className="detail-section">
-                                <h3>Recent Activity</h3>
+                                <h3>Activity Timeline</h3>
                                 <Timeline
                                     items={[
                                         {
                                             color: 'green',
-                                            children: 'Attended Sunday Service - oct 22, 2025',
+                                            children: `Member registered on ${new Date(member.created_at).toLocaleDateString()}`,
                                         },
-                                        {
+                                        ...(member.ministry_members || []).map(mm => ({
                                             color: 'blue',
-                                            children: 'Joined "Worship Team" - Sep 15, 2025',
-                                        },
-                                        {
-                                            color: 'gray',
-                                            children: 'Updated contact information - Aug 01, 2025',
-                                        },
-                                        {
-                                            color: 'gray',
-                                            children: 'Registered as a member - Jan 15, 2023',
-                                        },
+                                            children: `Joined ${mm.ministry?.name || 'Ministry'} on ${new Date(mm.joined_at).toLocaleDateString()}`
+                                        }))
                                     ]}
                                 />
                             </div>
                             <div className="detail-section">
                                 <h3>Notes</h3>
-                                <p style={{ color: '#64748b', marginBottom: '16px' }}>No admin notes added yet.</p>
+                                <p style={{ color: '#64748b', marginBottom: '16px' }}>No internal notes for this member.</p>
                                 <Button type="dashed" block>Add Note</Button>
                             </div>
                         </div>
                     </div>
 
                     {/* Print Signature Section (Hidden on screen) */}
-                    <div className="print-signature-section">
-                        <div className="signature-line">
-                            <div className="signature-box">
-                                <span className="signature-label">Signature</span>
-                                <div className="signature-input"></div>
-                            </div>
-                            <div className="signature-box">
-                                <span className="signature-label">Name</span>
-                                <div className="signature-input"></div>
-                            </div>
-                            <div className="signature-box">
-                                <span className="signature-label">Date</span>
-                                <div className="signature-input"></div>
-                            </div>
-                        </div>
-                        <p className="signature-disclaimer">This document is an official record of the church membership system.</p>
-                    </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </DashboardLayout>
     );
 };
 
