@@ -1,0 +1,5 @@
+/* MinisterDetail uses the same MemberDetail styles */
+/* Import the shared styles from ../Members/MemberDetail.css */
+/* These classes are already defined there and are global */
+
+/* Additional minister-specific overrides if needed */

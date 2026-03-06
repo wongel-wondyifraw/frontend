@@ -36,12 +36,21 @@ const Sidebar = () => {
   const menuItems = [
     { label: 'Home', icon: <Home size={18} />, path: '/dashboard', type: 'link' },
     {
-      label: 'Members',
+      label: 'Manage Members',
       icon: <Users size={18} />,
       type: 'dropdown',
       subItems: [
         { label: 'Manage Members', path: '/members/manage' },
         { label: 'Home Groups', path: '/members/home-groups' }
+      ]
+    },
+    {
+      label: 'Manage Ministers',
+      icon: <Users size={18} />,
+      type: 'dropdown',
+      subItems: [
+        { label: 'Manage Ministers', path: '/ministers/manage' },
+        { label: 'Home Groups', path: '/ministers/home-groups' }
       ]
     },
     {
