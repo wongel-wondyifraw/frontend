@@ -155,7 +155,12 @@ export const getMemberById = async (id) => {
 
 export const createMember = async (memberData) => {
     try {
-        const response = await api.post('/members', memberData);
+        const response = await api.post('/members', memberData, {
+            headers: {
+                // This allows the browser to set the correct boundary for files
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         throw error.response?.data || { message: error.message };

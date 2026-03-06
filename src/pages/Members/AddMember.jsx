@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Row, Col } from 'antd';
+import { Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Row, Col,Radio } from 'antd';
 import {
     ArrowLeftOutlined,
     UserOutlined,
@@ -9,13 +9,15 @@ import {
     PhoneOutlined,
     HomeOutlined,
     CheckCircleOutlined,
-    GlobalOutlined
+    GlobalOutlined,
+    InboxOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import StepperWizard from '../../Components/common/StepperWizard';
 import { createMember } from '../../services/api';
 import './AddMember.css';
 
+const { Dragger } = Upload;
 const { Option } = Select;
 
 const STEPS = [
@@ -70,33 +72,47 @@ const AddMember = () => {
     };
 
     // Submit handler
-    const handleSubmit = async () => {
-        try {
-            const values = await form.validateFields();
-            setLoading(true);
+  const handleSubmit = async () => {
+    try {
+        const values = await form.validateFields();
+        setLoading(true);
 
-            const memberData = {
-                first_name: values.first_name,
-                last_name: values.last_name,
-                middle_name: values.middle_name || '',
-                email: values.email || '',
-                phone: values.phone || '',
-                address: values.address || '',
-                date_of_birth: values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : null,
-                marital_status: values.marital_status || '',
-                status: values.status || 'active',
-            };
+        const formData = new FormData();
+        
+        // Append text fields
+        Object.keys(values).forEach(key => {
+            // Skip files and dates for custom handling
+            if (!['avatar', 'church_letter', 'date_of_birth', 'joined_date'].includes(key)) {
+                formData.append(key, values[key] || '');
+            }
+        });
 
-            await createMember(memberData);
-            message.success('Member registered successfully!');
-            navigate('/members/manage');
-        } catch (error) {
-            console.error('Registration Error:', error);
-            message.error(error.message || 'Failed to register member');
-        } finally {
-            setLoading(false);
+        // Dates
+        if (values.date_of_birth) formData.append('date_of_birth', values.date_of_birth.format('YYYY-MM-DD'));
+        if (values.joined_date) formData.append('joined_date', values.joined_date.format('YYYY-MM-DD'));
+
+        // CRITICAL FIX: Extract the raw file from Ant Design's object
+        // For Avatar (Step 1)
+        if (avatarFile) {
+            formData.append('avatar', avatarFile); 
         }
-    };
+
+        // For Document (Step 3 - Dragger)
+        if (values.church_letter?.file) {
+            // Ant Design stores the raw file in originFileObj
+            formData.append('document', values.church_letter.file.originFileObj || values.church_letter.file);
+        }
+
+        await createMember(formData);
+        message.success('Member registered successfully!');
+        navigate('/members/manage');
+    } catch (error) {
+        console.error(error);
+        message.error('Registration failed. Check console for details.');
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <DashboardLayout>
@@ -234,45 +250,61 @@ const AddMember = () => {
                                 </Form.Item>
                             </div>
                             {/* =============== STEP 3: Membership Status =============== */}
-                              <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <GlobalOutlined style={{ color: '#1565c0' }} /> Church Details
-                                </h3>
+                             <div>
+    <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <GlobalOutlined style={{ color: '#1565c0' }} /> Church Details
+    </h3>
 
-                                <Row gutter={24}>
-                                   
-                                    <Col span={12}>
-                                        <Form.Item name="status" label="Membership Status">
-                                            <Select size="large">
-                                                <Option value="active">Active</Option>
-                                                <Option value="inactive">Inactive</Option>
-                                                <Option value="visitor">Visitor</Option>
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
+    <Row gutter={24}>
+        <Col span={12}>
+            <Form.Item name="status" label="Membership Status">
+                <Radio.Group buttonStyle="solid" size="large">
+                    <Radio.Button value="active">Active</Radio.Button>
+                    <Radio.Button value="inactive">Inactive</Radio.Button>
+                </Radio.Group>
+            </Form.Item>
+        </Col>
+        
+        <Col span={12}>
+            <Form.Item name="baptized" label="Baptized?">
+                <Radio.Group buttonStyle="solid" size="large">
+                    <Radio.Button value="yes">Yes</Radio.Button>
+                    <Radio.Button value="no">No</Radio.Button>
+                </Radio.Group>
+            </Form.Item>
+        </Col>
+    </Row>
 
-                                <Row gutter={24}>
-                                    <Col span={12}>
-                                        <Form.Item name="joinedDate" label="Joined Date">
-                                            <DatePicker style={{ width: '100%' }} size="large" />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item name="baptized" label="Baptized?">
-                                            <Select size="large">
-                                                <Option value="yes">Yes</Option>
-                                                <Option value="no">No</Option>
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
+    <Row gutter={24}>
+        <Col span={24}>
+            <Form.Item name="joined_date" label="Joined Date">
+                <DatePicker style={{ width: '100%' }} size="large" />
+            </Form.Item>
+        </Col>
+    </Row>
 
-                                
-                            </div>
+    {/* Drag and Drop File Upload */}
+    <Row gutter={24}>
+        <Col span={24}>
+            <Form.Item label="Church Letter (Optional)" name="church_letter">
+                <Dragger 
+                    name="file" 
+                    multiple={false} 
+                    beforeUpload={() => false} // Stops auto-upload to server
+                >
+                    <p className="ant-upload-drag-icon">
+                        <InboxOutlined />
+                    </p>
+                    <p className="ant-upload-text">Click or drag church letter to this area to upload</p>
+                    <p className="ant-upload-hint">Support for a single PDF or Image file.</p>
+                </Dragger>
+            </Form.Item>
+        </Col>
+    </Row>
+</div>
 
 
-                            {/* =============== STEP 3:Review =============== */}
+                            {/* =============== STEP 4:Review =============== */}
                             <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Membership Status
