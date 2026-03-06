@@ -169,7 +169,11 @@ export const createMember = async (memberData) => {
 
 export const updateMember = async (id, memberData) => {
     try {
-        const response = await api.patch(`/members/${id}`, memberData);
+        const response = await api.patch(`/members/${id}`, memberData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         throw error.response?.data || { message: error.message };
