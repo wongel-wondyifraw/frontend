@@ -88,6 +88,16 @@ const MemberDetail = () => {
 
     const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`;
 
+    const getMediaUrl = (url) => {
+        if (!url) return undefined;
+        if (url.startsWith('http')) return url;
+        const formattedUrl = url.startsWith('/') ? url : `/${url}`;
+        const finalUrl = `${API_BASE_URL}${formattedUrl}`;
+        // Debugging to ensure we're building the right URL dynamically
+        console.log("Resolved Media URL:", finalUrl);
+        return finalUrl;
+    };
+
     return (
         <DashboardLayout>
             <div className="member-detail-container">
@@ -105,7 +115,7 @@ const MemberDetail = () => {
                     <div className="member-header-section">
                         <Avatar
                             size={120}
-                            src={member.image_url ? (member.image_url.startsWith('http') ? member.image_url : `${API_BASE_URL}${member.image_url.startsWith('/') ? '' : '/'}${member.image_url}`) : undefined}
+                            src={getMediaUrl(member.image_url)}
                             icon={<UserOutlined />}
                             className="member-profile-image"
                             style={{ fontSize: '60px' }}
@@ -185,9 +195,7 @@ const MemberDetail = () => {
                                             <td>
                                                 {member.document_url ? (
                                                     <a
-                                                        href={member.document_url.startsWith('http')
-                                                            ? member.document_url
-                                                            : `${API_BASE_URL}${member.document_url.startsWith('/') ? '' : '/'}${member.document_url}`}
+                                                        href={getMediaUrl(member.document_url)}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         style={{ color: 'var(--blue)', fontWeight: 600 }}
