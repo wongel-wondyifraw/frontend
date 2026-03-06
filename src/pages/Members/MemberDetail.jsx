@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Button, Timeline, Spin, message, Avatar } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, List, Modal } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -13,10 +13,12 @@ import {
     PlusOutlined,
     PrinterOutlined,
     CheckCircleOutlined,
-    FilePdfOutlined
+    FilePdfOutlined,
+    TeamOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMemberById } from '../../services/api';
+import { getMemberById, deleteMember, removeMinistryMember } from '../../services/api';
 import './MemberDetail.css';
 
 const MemberDetail = () => {
@@ -40,6 +42,36 @@ const MemberDetail = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDelete = async () => {
+        try {
+            await deleteMember(id);
+            message.success('Member deleted successfully');
+            navigate('/members/manage');
+        } catch (error) {
+            message.error('Failed to delete member');
+        }
+    };
+
+    const handleRemoveMinistry = (ministryId, ministryName) => {
+        Modal.confirm({
+            title: 'Remove from Ministry',
+            icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+            content: `Are you sure you want to remove this member from "${ministryName}"?`,
+            okText: 'Remove',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: async () => {
+                try {
+                    await removeMinistryMember(ministryId, id);
+                    message.success(`Removed from ${ministryName}`);
+                    fetchMemberDetails();
+                } catch (error) {
+                    message.error(error.message || 'Failed to remove from ministry');
+                }
+            },
+        });
     };
 
     if (loading) {
@@ -81,17 +113,29 @@ const MemberDetail = () => {
                         <div className="member-header-info">
                             <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
-                                <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>Member</Tag>
-                                <Tag color={member.status === 'active' ? 'green' : 'orange'} style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}>
-                                    {member.status?.charAt(0).toUpperCase() + member.status?.slice(1)}
+                                <Tag
+                                    icon={member.status === 'active' ? <CheckCircleOutlined /> : <UserOutlined />}
+                                    color={member.status === 'active' ? 'success' : 'error'}
+                                    style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
+                                >
+                                    {member.status === 'active' ? 'Active Member' : 'Inactive Member'}
                                 </Tag>
-                                <span className="member-id">ID: #{member.id?.slice(0, 8)}</span>
+
                             </div>
                         </div>
-                        <div className="member-actions">
-                            <Button icon={<PrinterOutlined />} size="large" onClick={() => window.print()}>Print Info</Button>
-                            <Button icon={<EditOutlined />} size="large" onClick={() => navigate(`/members/edit/${id}`)}>Edit Profile</Button>
-                            <Button icon={<DeleteOutlined />} danger size="large">Delete</Button>
+                        <div className="member-actions-stacked">
+                            <Button type="primary" icon={<PrinterOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => window.print()}>Print</Button>
+                            <Button type="primary" icon={<EditOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => navigate(`/members/edit/${id}`)}>Edit</Button>
+                            <Popconfirm
+                                title="Delete Member"
+                                description="Are you sure you want to delete this member?"
+                                onConfirm={handleDelete}
+                                okText="Yes"
+                                cancelText="No"
+                                placement="bottomRight"
+                            >
+                                <Button type="primary" danger icon={<DeleteOutlined />} size="middle">Delete</Button>
+                            </Popconfirm>
                         </div>
                     </div>
 
@@ -125,7 +169,15 @@ const MemberDetail = () => {
                                         <tr>
                                             <th><CheckCircleOutlined /> Baptized</th>
                                             <td>
-                                                {member.baptized === true || member.baptized === 'true' ? <Tag color="cyan" style={{ borderColor: 'var(--cyan)', background: 'var(--white)', color: 'var(--cyan)' }}>Yes</Tag> : (member.baptized === false || member.baptized === 'false' ? <Tag color="blue" style={{ borderColor: 'var(--blue)', background: 'var(--white)', color: 'var(--blue)' }}>No</Tag> : 'N/A')}
+                                                {member.baptized === true || member.baptized === 'true' ? (
+                                                    <Tag icon={<CheckCircleOutlined />} color="success" style={{ padding: '2px 8px', borderRadius: '4px' }}>
+                                                        Yes
+                                                    </Tag>
+                                                ) : (
+                                                    <Tag color="default" style={{ padding: '2px 8px', borderRadius: '4px' }}>
+                                                        No
+                                                    </Tag>
+                                                )}
                                             </td>
                                         </tr>
                                         <tr>
@@ -139,23 +191,73 @@ const MemberDetail = () => {
                             </div>
 
                             <div className="detail-section">
-                                <h3>Ministry Involvement</h3>
-                                <div className="info-row">
-                                    <span className="info-label">Active Ministries</span>
-                                    <span className="info-value">
-                                        {member.ministry_members?.length || 0} ministries
-                                    </span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h3 style={{ margin: 0 }}><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Involvement ({member.ministry_members?.length || 0})</h3>
                                 </div>
-                                <div className="info-row">
-                                    <span className="info-label">Joined Date</span>
-                                    <span className="info-value">{new Date(member.created_at).toLocaleDateString()}</span>
-                                </div>
+
                                 <div style={{ marginTop: '16px' }}>
-                                    {member.ministry_members?.map(mm => (
-                                        <Tag key={mm.ministry_id} color="blue" style={{ marginBottom: '8px' }}>
-                                            {mm.ministry?.name}
-                                        </Tag>
-                                    ))}
+                                    <List
+                                        grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 2 }}
+                                        dataSource={member.ministry_members || []}
+                                        locale={{ emptyText: 'Not involved in any ministries.' }}
+                                        renderItem={(mm) => {
+                                            const isLeader = mm.ministry?.leader_id === member.id;
+                                            return (
+                                                <List.Item>
+                                                    <Card
+                                                        hoverable
+                                                        className="member-card-elegant"
+                                                        actions={[
+                                                            <Tooltip title="View Ministry">
+                                                                <Button
+                                                                    type="text"
+                                                                    icon={<InfoCircleOutlined style={{ color: '#1565c0', fontSize: '18px' }} />}
+                                                                    onClick={() => navigate(`/ministries/details/${mm.ministry_id}`)}
+                                                                />
+                                                            </Tooltip>
+                                                        ]}
+                                                        bodyStyle={{ padding: '20px', position: 'relative' }}
+                                                    >
+                                                        <Tooltip title="Remove from Ministry">
+                                                            <Button
+                                                                type="text"
+                                                                danger
+                                                                icon={<DeleteOutlined />}
+                                                                style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRemoveMinistry(mm.ministry_id, mm.ministry?.name);
+                                                                }}
+                                                            />
+                                                        </Tooltip>
+                                                        <Card.Meta
+                                                            avatar={<Avatar size={64} icon={<TeamOutlined />} style={{ border: '2px solid #f0f2f5', backgroundColor: '#e3f2fd', color: '#1565c0' }} />}
+                                                            title={<span style={{ fontWeight: 600, fontSize: '16px', color: 'var(--navy)' }}>{mm.ministry?.name}</span>}
+                                                            description={
+                                                                <div style={{ marginTop: '4px' }}>
+                                                                    {isLeader && (
+                                                                        <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                                                            <UserOutlined style={{ fontSize: '12px' }} />
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                                Ministry Leader
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
+                                                                        <CalendarOutlined style={{ fontSize: '12px' }} />
+                                                                        <span>{mm.ministry?.schedule || 'No schedule set'}</span>
+                                                                    </div>
+                                                                    <div style={{ marginTop: '8px' }}>
+                                                                        <Tag color="blue" size="small" style={{ borderRadius: '4px', backgroundColor: '#e3f2fd', color: '#1565c0', borderColor: '#e3f2fd' }}>Joined: {mm.joined_at ? new Date(mm.joined_at).toLocaleDateString() : 'N/A'}</Tag>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        />
+                                                    </Card>
+                                                </List.Item>
+                                            );
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -186,23 +288,6 @@ const MemberDetail = () => {
                     </div>
 
                     {/* Print Signature Section (Hidden on screen) */}
-                    <div className="print-signature-section">
-                        <div className="signature-line">
-                            <div className="signature-box">
-                                <span className="signature-label">Signature</span>
-                                <div className="signature-input"></div>
-                            </div>
-                            <div className="signature-box">
-                                <span className="signature-label">Name</span>
-                                <div className="signature-input"></div>
-                            </div>
-                            <div className="signature-box">
-                                <span className="signature-label">Date</span>
-                                <div className="signature-input"></div>
-                            </div>
-                        </div>
-                        <p className="signature-disclaimer">This document is an official record of the church membership system.</p>
-                    </div>
                 </div>
             </div>
         </DashboardLayout>
