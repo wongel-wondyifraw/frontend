@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, DatePicker, Button, Upload, message, Row, Col, Spin, Radio,Avatar } from 'antd';
+import { Form, Input, Select, DatePicker, Button, Upload, message, Row, Col, Spin, Radio, Avatar } from 'antd';
 import {
     ArrowLeftOutlined,
     UserOutlined,
@@ -9,7 +9,6 @@ import {
     PhoneOutlined,
     HomeOutlined,
     GlobalOutlined,
-    PaperClipOutlined,
     CheckCircleOutlined,
     InboxOutlined,
 } from '@ant-design/icons';
@@ -45,36 +44,54 @@ const EditMember = () => {
     const [currentStep, setCurrentStep] = useState(0);
 
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [documentFile, setDocumentFile] = useState(null);
+    const [existingDocumentUrl, setExistingDocumentUrl] = useState(null);
 
-// Function to handle image preview
-const handleAvatarChange = (info) => {
-    const file = info.file; // Since beforeUpload returns false, it's just the file object
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => setAvatarPreview(e.target.result);
-        reader.readAsDataURL(file);
-        
-        // Update the form field manually so onFinish gets it
-        form.setFieldsValue({ profileImage: [info.file] });
-    }
-};
+    // Handle new avatar selection
+    const handleAvatarChange = (info) => {
+        const file = info.file.originFileObj || info.file;
+        if (file) {
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setAvatarPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
+    };
 
+    // Fetch existing member data on mount
     useEffect(() => {
         const fetchMember = async () => {
             try {
                 const member = await getMemberById(id);
+
+                // Set the existing avatar preview from the database
+                if (member.image_url) {
+                    setAvatarPreview(`${API_BASE_URL}/${member.image_url.replace(/^\//, '')}`);
+                }
+
+                // Track existing document
+                if (member.document_url) {
+                    setExistingDocumentUrl(member.document_url);
+                }
+
+                // Convert baptized boolean to string for the Radio.Group
+                let baptizedValue = undefined;
+                if (member.baptized === true) baptizedValue = 'yes';
+                else if (member.baptized === false) baptizedValue = 'no';
+
                 form.setFieldsValue({
                     first_name: member.first_name,
-                    middle_name: member.middle_name,
+                    middle_name: member.middle_name || '',
                     last_name: member.last_name,
-                    email: member.email,
-                    phone: member.phone,
-                    address: member.address,
+                    email: member.email || '',
+                    phone: member.phone || '',
+                    address: member.address || '',
                     date_of_birth: member.date_of_birth ? dayjs(member.date_of_birth) : null,
-                    marital_status: member.marital_status,
-                    status: member.status,
+                    marital_status: member.marital_status || undefined,
+                    status: member.status || 'active',
                     joined_date: member.joined_date ? dayjs(member.joined_date) : null,
-                    baptized: member.baptized,
+                    baptized: baptizedValue,
                 });
             } catch (error) {
                 message.error(error.message || 'Failed to fetch member details');
@@ -86,18 +103,11 @@ const handleAvatarChange = (info) => {
         fetchMember();
     }, [id, form, navigate]);
 
-    const normFile = (e) => {
-        if (Array.isArray(e)) {
-            return e;
-        }
-        return e?.fileList;
-    };
-
     // Clickable step navigation with validation
     const handleStepClick = async (step) => {
         if (currentStep === 0 && step > 0) {
             try {
-                await form.validateFields(['first_name', 'last_name', 'phone']);
+                await form.validateFields(['first_name', 'last_name']);
             } catch {
                 message.error('Please correct the errors before proceeding.');
                 return;
@@ -109,7 +119,9 @@ const handleAvatarChange = (info) => {
     const next = async () => {
         try {
             if (currentStep === 0) {
-                await form.validateFields(['first_name', 'last_name', 'phone']);
+                await form.validateFields(['first_name', 'last_name']);
+            } else if (currentStep === 1) {
+                await form.validateFields(['phone']);
             }
             setCurrentStep(currentStep + 1);
         } catch (error) {
@@ -121,30 +133,42 @@ const handleAvatarChange = (info) => {
         setCurrentStep(currentStep - 1);
     };
 
-    const onFinish = async (values) => {
-        setLoading(true);
+    const handleSubmit = async () => {
         try {
-            const formData = new FormData();
-            formData.append('first_name', values.first_name);
-            formData.append('last_name', values.last_name);
-            formData.append('phone', values.phone);
-            formData.append('status', values.status);
-            formData.append('baptized', values.baptized);
+            const values = await form.validateFields();
+            setLoading(true);
 
-            // Handle Dates correctly
+            const formData = new FormData();
+
+            // Append all text fields (skip files and dates for custom handling)
+            const skipKeys = ['avatar', 'church_letter', 'date_of_birth', 'joined_date'];
+            Object.keys(values).forEach(key => {
+                if (!skipKeys.includes(key) && values[key] !== undefined && values[key] !== null) {
+                    formData.append(key, values[key]);
+                }
+            });
+
+            // Dates
             if (values.date_of_birth) formData.append('date_of_birth', values.date_of_birth.format('YYYY-MM-DD'));
             if (values.joined_date) formData.append('joined_date', values.joined_date.format('YYYY-MM-DD'));
 
-            // Handle Image (Ensure key matches your Multer @FileInterceptor)
-            if (values.profileImage?.[0]?.originFileObj) {
-                formData.append('file', values.profileImage[0].originFileObj);
+            // Avatar file (only if a new one was selected)
+            if (avatarFile) {
+                formData.append('avatar', avatarFile);
+            }
+
+            // Document file (only if a new one was selected)
+            if (documentFile) {
+                formData.append('document', documentFile);
+            } else if (values.church_letter?.file) {
+                formData.append('document', values.church_letter.file.originFileObj || values.church_letter.file);
             }
 
             await updateMember(id, formData);
-
             message.success('Member updated successfully');
             navigate('/members/manage');
         } catch (error) {
+            console.error(error);
             message.error(error.message || 'Failed to update member');
         } finally {
             setLoading(false);
@@ -160,6 +184,10 @@ const handleAvatarChange = (info) => {
             </DashboardLayout>
         );
     }
+
+    // Get the first letter for avatar fallback
+    const firstNameValue = form.getFieldValue('first_name') || '';
+    const initial = firstNameValue.charAt(0).toUpperCase() || '?';
 
     return (
         <DashboardLayout>
@@ -182,7 +210,7 @@ const handleAvatarChange = (info) => {
                     <Form
                         form={form}
                         layout="vertical"
-                        onFinish={onFinish}
+                        onFinish={handleSubmit}
                         initialValues={{ status: 'active' }}
                     >
                         <StepperWizard
@@ -208,9 +236,10 @@ const handleAvatarChange = (info) => {
                                         <Avatar
                                             size={100}
                                             src={avatarPreview}
-                                            icon={<UserOutlined />}
-                                            style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
-                                        />
+                                            style={{ backgroundColor: '#1565c0', fontWeight: 600, fontSize: '36px', border: '2px solid #d9d9d9' }}
+                                        >
+                                            {initial}
+                                        </Avatar>
                                         <div style={{ marginTop: '8px' }}>
                                             <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
                                                 <Button size="small" icon={<UploadOutlined />}>Photo</Button>
@@ -302,67 +331,71 @@ const handleAvatarChange = (info) => {
                                     />
                                 </Form.Item>
                             </div>
+
                             {/* =============== STEP 3: Membership Status =============== */}
-                             <div>
-    <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <GlobalOutlined style={{ color: '#1565c0' }} /> Church Details
-    </h3>
-
-    <Row gutter={24}>
-        <Col span={12}>
-            <Form.Item name="status" label="Membership Status">
-                <Radio.Group buttonStyle="solid" size="large">
-                    <Radio.Button value="active">Active</Radio.Button>
-                    <Radio.Button value="inactive">Inactive</Radio.Button>
-                </Radio.Group>
-            </Form.Item>
-        </Col>
-        
-        <Col span={12}>
-            <Form.Item name="baptized" label="Baptized?">
-                <Radio.Group buttonStyle="solid" size="large">
-                    <Radio.Button value="yes">Yes</Radio.Button>
-                    <Radio.Button value="no">No</Radio.Button>
-                </Radio.Group>
-            </Form.Item>
-        </Col>
-    </Row>
-
-    <Row gutter={24}>
-        <Col span={24}>
-            <Form.Item name="joined_date" label="Joined Date">
-                <DatePicker style={{ width: '100%' }} size="large" />
-            </Form.Item>
-        </Col>
-    </Row>
-
-    {/* Drag and Drop File Upload */}
-    <Row gutter={24}>
-        <Col span={24}>
-            <Form.Item label="Church Letter (Optional)" name="church_letter">
-                <Dragger 
-                    name="file" 
-                    multiple={false} 
-                    beforeUpload={() => false} // Stops auto-upload to server
-                >
-                    <p className="ant-upload-drag-icon">
-                        <InboxOutlined />
-                    </p>
-                    <p className="ant-upload-text">Click or drag church letter to this area to upload</p>
-                    <p className="ant-upload-hint">Support for a single PDF or Image file.</p>
-                </Dragger>
-            </Form.Item>
-        </Col>
-    </Row>
-</div>
-
-
-                            {/* =============== STEP 4:Review =============== */}
                             <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Membership Status
+                                    <GlobalOutlined style={{ color: '#1565c0' }} /> Church Details
                                 </h3>
 
+                                <Row gutter={24}>
+                                    <Col span={12}>
+                                        <Form.Item name="status" label="Membership Status">
+                                            <Radio.Group buttonStyle="solid" size="large">
+                                                <Radio.Button value="active">Active</Radio.Button>
+                                                <Radio.Button value="inactive">Inactive</Radio.Button>
+                                            </Radio.Group>
+                                        </Form.Item>
+                                    </Col>
+
+                                    <Col span={12}>
+                                        <Form.Item name="baptized" label="Baptized?">
+                                            <Radio.Group buttonStyle="solid" size="large">
+                                                <Radio.Button value="yes">Yes</Radio.Button>
+                                                <Radio.Button value="no">No</Radio.Button>
+                                            </Radio.Group>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+
+                                <Row gutter={24}>
+                                    <Col span={24}>
+                                        <Form.Item name="joined_date" label="Joined Date">
+                                            <DatePicker style={{ width: '100%' }} size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+
+                                {/* Drag and Drop File Upload */}
+                                <Row gutter={24}>
+                                    <Col span={24}>
+                                        <Form.Item label="Church Letter (Optional)" name="church_letter">
+                                            <Dragger
+                                                name="file"
+                                                multiple={false}
+                                                beforeUpload={() => false}
+                                            >
+                                                <p className="ant-upload-drag-icon">
+                                                    <InboxOutlined />
+                                                </p>
+                                                <p className="ant-upload-text">Click or drag church letter to this area to upload</p>
+                                                <p className="ant-upload-hint">Support for a single PDF or Image file.</p>
+                                            </Dragger>
+                                        </Form.Item>
+                                        {existingDocumentUrl && (
+                                            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '-16px' }}>
+                                                Existing document on file. Upload a new one to replace it.
+                                            </p>
+                                        )}
+                                    </Col>
+                                </Row>
+                            </div>
+
+                            {/* =============== STEP 4: Review =============== */}
+                            <div>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
+                                </h3>
 
                                 {/* Review Summary */}
                                 <div style={{
@@ -372,7 +405,7 @@ const handleAvatarChange = (info) => {
                                     border: '1px solid #e2e8f0',
                                     marginTop: '16px'
                                 }}>
-                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Registration Summary</h4>
+                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Update Summary</h4>
                                     <Form.Item noStyle shouldUpdate>
                                         {() => {
                                             const values = form.getFieldsValue();
@@ -385,6 +418,8 @@ const handleAvatarChange = (info) => {
                                                     <div><strong>Date of Birth:</strong> {values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : '—'}</div>
                                                     <div><strong>Marital Status:</strong> {values.marital_status || '—'}</div>
                                                     <div><strong>Status:</strong> {values.status || '—'}</div>
+                                                    <div><strong>Baptized:</strong> {values.baptized === 'yes' ? 'Yes' : values.baptized === 'no' ? 'No' : '—'}</div>
+                                                    <div><strong>Joined:</strong> {values.joined_date ? values.joined_date.format('YYYY-MM-DD') : '—'}</div>
                                                 </div>
                                             );
                                         }}

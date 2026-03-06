@@ -67,24 +67,29 @@ const ManageMembers = () => {
         {
             title: 'Name',
             key: 'name',
-            render: (_, record) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Avatar
-                        icon={<UserOutlined />}
-                        src={record.image_url ? `${API_BASE_URL}/${record.image_url.replace(/^\//, '')}` : null}
-                        style={{ backgroundColor: '#1565c0' }}
-                        crossOrigin="use-credentials"
-                    />
-                    <div>
-                        <span style={{ fontWeight: 600 }}>
-                            {record.first_name} {record.middle_name ? record.middle_name + ' ' : ''}{record.last_name}
-                        </span>
-                        {record.email && (
-                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>{record.email}</div>
-                        )}
+            render: (_, record) => {
+                const hasImage = record.image_url && record.image_url.trim() !== '';
+                const avatarSrc = hasImage ? `${API_BASE_URL}/${record.image_url.replace(/^\//, '')}` : null;
+                const initial = (record.first_name || '?').charAt(0).toUpperCase();
+                return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Avatar
+                            src={avatarSrc}
+                            style={{ backgroundColor: '#1565c0', fontWeight: 600, fontSize: '16px' }}
+                        >
+                            {initial}
+                        </Avatar>
+                        <div>
+                            <span style={{ fontWeight: 600 }}>
+                                {record.first_name} {record.middle_name ? record.middle_name + ' ' : ''}{record.last_name}
+                            </span>
+                            {record.email && (
+                                <div style={{ fontSize: '12px', color: '#94A3B8' }}>{record.email}</div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ),
+                );
+            },
         },
         {
             title: 'Phone',
