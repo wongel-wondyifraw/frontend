@@ -135,9 +135,10 @@ export const deleteUser = async (id) => {
 
 // ==================== Members Management ====================
 
-export const getMembers = async () => {
+export const getMembers = async (baptized = false) => {
     try {
-        const response = await api.get('/members');
+        const url = baptized ? '/members?baptized=true' : '/members';
+        const response = await api.get(url);
         return response.data;
     } catch (error) {
         throw error.response?.data || { message: error.message };
@@ -174,6 +175,46 @@ export const updateMember = async (id, memberData) => {
                 'Content-Type': 'multipart/form-data',
             },
         });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+// ========================
+// Ministers API
+// ========================
+
+export const getMinisters = async () => {
+    try {
+        const response = await api.get('/ministers');
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const getMinisterById = async (id) => {
+    try {
+        const response = await api.get(`/ministers/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const createMinister = async (ministerData) => {
+    try {
+        const response = await api.post('/ministers', ministerData);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
+export const deleteMinister = async (id) => {
+    try {
+        const response = await api.delete(`/ministers/${id}`);
         return response.data;
     } catch (error) {
         throw error.response?.data || { message: error.message };
