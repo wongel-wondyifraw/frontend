@@ -27,9 +27,9 @@ const STEPS = [
 
 const STEP_BACKGROUNDS = [
     { background: '#f8fafc', border: 'none' },
-    { background: '#f0f9ff', border: '1px solid #bae6fd' },
-    { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
 ];
 
 const EditMinistry = () => {
