@@ -4,7 +4,7 @@ import { Button, Modal, Card, Typography, Popover, List, Avatar, Badge } from 'a
 import { useDashboard } from '../../context/DashboardContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
-import { API_BASE_URL, getUsers, getProfile, getMembers, getMinistries } from '../../services/api';
+import { API_BASE_URL, getUsers, getProfile, getMembers, getMinistries, getMinisters } from '../../services/api';
 import { WidgetRegistry } from './WidgetRegistry';
 import { useNavigate } from 'react-router-dom';
 import './Topbar.css';
@@ -17,6 +17,8 @@ const PAGE_ITEMS = [
   { name: 'Home Groups', path: '/members/home-groups', icon: 'users', category: 'Pages' },
   { name: 'Manage Ministries', path: '/ministries/manage', icon: 'briefcase', category: 'Pages' },
   { name: 'Add Ministry', path: '/ministries/add', icon: 'briefcase', category: 'Pages' },
+  { name: 'Manage Ministers', path: '/ministers/manage', icon: 'users', category: 'Pages' },
+  { name: 'Add Minister', path: '/ministers/add', icon: 'users', category: 'Pages' },
   { name: 'Bible Study', path: '/bible-study', icon: 'book', category: 'Pages' },
   { name: 'Schedule Management', path: '/schedule', icon: 'calendar', category: 'Pages' },
   { name: 'Settings', path: '/settings', icon: 'settings', category: 'Pages' },
@@ -66,22 +68,25 @@ const Topbar = () => {
   const [cachedUsers, setCachedUsers] = useState([]);
   const [cachedMembers, setCachedMembers] = useState([]);
   const [cachedMinistries, setCachedMinistries] = useState([]);
+  const [cachedMinisters, setCachedMinisters] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch users, members, and ministries for search (cached)
+  // Fetch users, members, ministries, and ministers for search (cached)
   useEffect(() => {
     const fetchSearchData = async () => {
       try {
-        const [users, members, ministries] = await Promise.all([
+        const [users, members, ministries, ministers] = await Promise.all([
           user?.role === 'admin' ? getUsers().catch(() => []) : Promise.resolve([]),
           getMembers().catch(() => []),
           getMinistries().catch(() => []),
+          getMinisters().catch(() => []),
         ]);
         setCachedUsers(users || []);
         setCachedMembers(members || []);
         setCachedMinistries(ministries || []);
+        setCachedMinisters(ministers || []);
       } catch { }
     };
     fetchSearchData();
@@ -197,9 +202,30 @@ const Topbar = () => {
       }
     });
 
+    // Search ministers
+    cachedMinisters.forEach(minister => {
+      const u = minister.user || {};
+      const fullName = `${u.first_name || ''} ${u.middle_name || ''} ${u.last_name || ''}`.trim();
+      const title = u.title || 'Minister';
+      if (
+        fullName.toLowerCase().includes(q) ||
+        title.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q)
+      ) {
+        results.push({
+          id: `minister-${minister.minister_id}`,
+          label: fullName,
+          sublabel: `${title} · ${u.email || ''}`,
+          category: 'Ministers',
+          icon: <Users size={16} />,
+          action: () => navigate('/ministers/manage'), // Assuming details page is accessed from manage or via modal for now
+        });
+      }
+    });
+
     setSearchResults(results.slice(0, 15));
     setIsSearchOpen(results.length > 0);
-  }, [cachedUsers, cachedMembers, cachedMinistries, navigate]);
+  }, [cachedUsers, cachedMembers, cachedMinistries, cachedMinisters, navigate]);
 
   // Keyboard navigation in results
   const handleSearchKeyDown = (e) => {
