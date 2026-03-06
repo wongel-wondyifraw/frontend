@@ -11,7 +11,9 @@ import {
     ArrowLeftOutlined,
     UserOutlined,
     PlusOutlined,
-    PrinterOutlined
+    PrinterOutlined,
+    CheckCircleOutlined,
+    FilePdfOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import { getMemberById } from '../../services/api';
@@ -71,9 +73,10 @@ const MemberDetail = () => {
                     <div className="member-header-section">
                         <Avatar
                             size={120}
-                            src={member.image_url}
+                            src={member.image_url ? (member.image_url.startsWith('http') ? member.image_url : `http://localhost:3000${member.image_url.startsWith('/') ? '' : '/'}${member.image_url}`) : undefined}
                             icon={<UserOutlined />}
                             className="member-profile-image"
+                            style={{ fontSize: '60px' }}
                         />
                         <div className="member-header-info">
                             <h1 className="member-name">{fullName}</h1>
@@ -97,26 +100,42 @@ const MemberDetail = () => {
                         <div className="left-column">
                             <div className="detail-section">
                                 <h3>Personal Information</h3>
-                                <div className="info-row">
-                                    <span className="info-label"><MailOutlined /> Email</span>
-                                    <span className="info-value">{member.email || 'N/A'}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><PhoneOutlined /> Phone</span>
-                                    <span className="info-value">{member.phone || 'N/A'}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><EnvironmentOutlined /> Address</span>
-                                    <span className="info-value">{member.address || 'N/A'}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><CalendarOutlined /> Date of Birth</span>
-                                    <span className="info-value">{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="info-label"><UserOutlined /> Marital Status</span>
-                                    <span className="info-value">{member.marital_status || 'N/A'}</span>
-                                </div>
+                                <table className="elegant-info-table">
+                                    <tbody>
+                                        <tr>
+                                            <th><MailOutlined /> Email</th>
+                                            <td>{member.email || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><PhoneOutlined /> Phone</th>
+                                            <td>{member.phone || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><EnvironmentOutlined /> Address</th>
+                                            <td>{member.address || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CalendarOutlined /> Date of Birth</th>
+                                            <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><UserOutlined /> Marital Status</th>
+                                            <td>{member.marital_status || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CheckCircleOutlined /> Baptized</th>
+                                            <td>
+                                                {member.baptized === true || member.baptized === 'true' ? <Tag color="cyan" style={{ borderColor: 'var(--cyan)', background: 'var(--white)', color: 'var(--cyan)' }}>Yes</Tag> : (member.baptized === false || member.baptized === 'false' ? <Tag color="blue" style={{ borderColor: 'var(--blue)', background: 'var(--white)', color: 'var(--blue)' }}>No</Tag> : 'N/A')}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th><FilePdfOutlined /> Church Letter</th>
+                                            <td>
+                                                {member.document_url ? <a href={member.document_url.startsWith('http') ? member.document_url : `http://localhost:3000${member.document_url.startsWith('/') ? '' : '/'}${member.document_url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
 
                             <div className="detail-section">
