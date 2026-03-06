@@ -110,7 +110,7 @@ const HomeGroups = () => {
                     onCancel={() => setIsModalVisible(false)}
                     footer={null}
                 >
-                    <Form form={form} layout="vertical" onFinish={onFinish}>
+                    <Form autoComplete="off" form={form} layout="vertical" onFinish={onFinish}>
                         <Form.Item name="name" label="Group Name" rules={[{ required: true }]}>
                             <Input placeholder="e.g., North Hills Fellowship" />
                         </Form.Item>

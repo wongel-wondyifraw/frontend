@@ -396,7 +396,7 @@ const Settings = () => {
                     <Row gutter={[48, 24]}>
                         <Col xs={24} lg={16}>
                             <h3>Personal Information</h3>
-                            <Form layout="vertical" form={form} onFinish={handleProfileUpdate}>
+                            <Form autoComplete="off" layout="vertical" form={form} onFinish={handleProfileUpdate}>
                                 <Row gutter={16}>
                                     <Col span={12}>
                                         <Form.Item label="First Name" name="firstName" rules={[{ required: true }]}>
@@ -472,7 +472,7 @@ const Settings = () => {
             children: (
                 <div className="settings-section">
                     <h3>Change Password</h3>
-                    <Form layout="vertical" form={passwordForm} onFinish={handlePasswordChange}>
+                    <Form autoComplete="off" layout="vertical" form={passwordForm} onFinish={handlePasswordChange}>
                         <Form.Item
                             label="Current Password"
                             name="currentPassword"
@@ -571,7 +571,7 @@ const Settings = () => {
                 centered
             >
                 <div style={{ padding: '16px 0' }}>
-                    <Form form={userForm} layout="vertical" onFinish={handleUserSubmit}>
+                    <Form autoComplete="off" form={userForm} layout="vertical" onFinish={handleUserSubmit}>
                         <StepperWizard
                             steps={USER_WIZARD_STEPS}
                             currentStep={currentStep}

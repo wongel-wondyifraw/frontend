@@ -145,7 +145,7 @@ const AddMinister = () => {
                 </div>
 
                 <div className="content-card-unified">
-                    <Form form={form} layout="vertical">
+                    <Form autoComplete="off" form={form} layout="vertical">
                         {/* Hidden field to keep track of selected member */}
                         <Form.Item name="member_id" hidden><Input /></Form.Item>
 

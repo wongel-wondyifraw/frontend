@@ -35,7 +35,7 @@ const TodoList = () => {
             </div>
 
             {isAdding && (
-                <form className="add-todo-input-form" onSubmit={handleAdd}>
+                <form autoComplete="off" className="add-todo-input-form" onSubmit={handleAdd}>
                     <input
                         type="text"
                         className="add-todo-input"

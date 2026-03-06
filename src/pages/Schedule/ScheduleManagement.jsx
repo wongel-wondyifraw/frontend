@@ -78,7 +78,7 @@ const ScheduleManagement = () => {
                     onCancel={() => setIsModalVisible(false)}
                     footer={null}
                 >
-                    <Form form={form} layout="vertical" onFinish={onFinish}>
+                    <Form autoComplete="off" form={form} layout="vertical" onFinish={onFinish}>
                         <Form.Item
                             name="title"
                             label="Event Title"

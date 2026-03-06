@@ -120,7 +120,7 @@ const AddMinistry = () => {
                 </div>
 
                 <div className="content-card-unified">
-                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+                    <Form autoComplete="off" form={form} layout="vertical" onFinish={handleSubmit}>
                         <StepperWizard
                             steps={STEPS}
                             currentStep={currentStep}

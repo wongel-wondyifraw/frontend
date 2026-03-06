@@ -315,7 +315,7 @@ const MinistryDetail = () => {
                 footer={null}
                 destroyOnClose
             >
-                <Form form={form} layout="vertical" onFinish={handleAddMember}>
+                <Form autoComplete="off" form={form} layout="vertical" onFinish={handleAddMember}>
                     <Form.Item
                         name="member_id"
                         label="Select Member"

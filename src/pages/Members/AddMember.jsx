@@ -132,7 +132,7 @@ const AddMember = () => {
                 </div>
 
                 <div className="content-card-unified">
-                    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'active' }}>
+                    <Form autoComplete="off" form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'active' }}>
                         <StepperWizard
                             steps={STEPS}
                             currentStep={currentStep}

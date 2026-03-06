@@ -85,7 +85,7 @@ const BibleStudy = () => {
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
             >
-                <Form layout="vertical" onFinish={handleCreate} form={form}>
+                <Form autoComplete="off" layout="vertical" onFinish={handleCreate} form={form}>
                     <Form.Item label="Group Name" name="teamName">
                         <Input placeholder="e.g. Young Adults" />
                     </Form.Item>
