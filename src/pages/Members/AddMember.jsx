@@ -9,6 +9,7 @@ import {
     PhoneOutlined,
     HomeOutlined,
     CheckCircleOutlined,
+    GlobalOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
 import StepperWizard from '../../Components/common/StepperWizard';
@@ -20,13 +21,15 @@ const { Option } = Select;
 const STEPS = [
     { title: 'Personal Info' },
     { title: 'Contact & Address' },
-    { title: 'Status & Review' },
+    { title: 'Membership Details' },
+    { title: 'Review' },
 ];
 
 const STEP_BACKGROUNDS = [
     { background: '#f8fafc', border: 'none' },
-    { background: '#f0f9ff', border: '1px solid #bae6fd' },
-    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
+    { background: '#f8fafc', border: 'none' },
 ];
 
 const AddMember = () => {
@@ -230,19 +233,51 @@ const AddMember = () => {
                                     />
                                 </Form.Item>
                             </div>
+                            {/* =============== STEP 3: Membership Status =============== */}
+                              <div>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <GlobalOutlined style={{ color: '#1565c0' }} /> Church Details
+                                </h3>
 
-                            {/* =============== STEP 3: Status & Review =============== */}
+                                <Row gutter={24}>
+                                   
+                                    <Col span={12}>
+                                        <Form.Item name="status" label="Membership Status">
+                                            <Select size="large">
+                                                <Option value="active">Active</Option>
+                                                <Option value="inactive">Inactive</Option>
+                                                <Option value="visitor">Visitor</Option>
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+
+                                <Row gutter={24}>
+                                    <Col span={12}>
+                                        <Form.Item name="joinedDate" label="Joined Date">
+                                            <DatePicker style={{ width: '100%' }} size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item name="baptized" label="Baptized?">
+                                            <Select size="large">
+                                                <Option value="yes">Yes</Option>
+                                                <Option value="no">No</Option>
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+
+                                
+                            </div>
+
+
+                            {/* =============== STEP 3:Review =============== */}
                             <div>
                                 <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <CheckCircleOutlined style={{ color: '#1565c0' }} /> Membership Status
                                 </h3>
 
-                                <Form.Item label="Membership Status" name="status" rules={[{ required: true, message: 'Please select a status' }]}>
-                                    <Select size="large" placeholder="Select membership status">
-                                        <Option value="active">Active</Option>
-                                        <Option value="inactive">Inactive</Option>
-                                    </Select>
-                                </Form.Item>
 
                                 {/* Review Summary */}
                                 <div style={{

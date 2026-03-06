@@ -45,16 +45,17 @@ const EditMember = () => {
             try {
                 const member = await getMemberById(id);
                 form.setFieldsValue({
-                    firstName: member.first_name,
-                    middleName: member.middle_name,
-                    lastName: member.last_name,
+                    first_name: member.first_name,
+                    middle_name: member.middle_name,
+                    last_name: member.last_name,
                     email: member.email,
                     phone: member.phone,
                     address: member.address,
-                    dob: member.date_of_birth ? dayjs(member.date_of_birth) : null,
-                    maritalStatus: member.marital_status,
-                    role: member.role,
-                    status: member.status === 'ACTIVE' ? 'active' : 'inactive',
+                    date_of_birth: member.date_of_birth ? dayjs(member.date_of_birth) : null,
+                    marital_status: member.marital_status,
+                    status: member.status,
+                    joined_date: member.joined_date ? dayjs(member.joined_date) : null,
+                    baptized: member.baptized,
                 });
             } catch (error) {
                 message.error(error.message || 'Failed to fetch member details');
@@ -77,7 +78,7 @@ const EditMember = () => {
     const handleStepClick = async (step) => {
         if (currentStep === 0 && step > 0) {
             try {
-                await form.validateFields(['firstName', 'lastName', 'phone']);
+                await form.validateFields(['first_name', 'last_name', 'phone']);
             } catch {
                 message.error('Please correct the errors before proceeding.');
                 return;
@@ -89,7 +90,7 @@ const EditMember = () => {
     const next = async () => {
         try {
             if (currentStep === 0) {
-                await form.validateFields(['firstName', 'lastName', 'phone']);
+                await form.validateFields(['first_name', 'last_name', 'phone']);
             }
             setCurrentStep(currentStep + 1);
         } catch (error) {
@@ -105,18 +106,19 @@ const EditMember = () => {
         setLoading(true);
         try {
             const formData = new FormData();
-            formData.append('firstName', values.firstName);
-            formData.append('lastName', values.lastName);
+            formData.append('first_name', values.first_name);
+            formData.append('last_name', values.last_name);
             formData.append('phone', values.phone);
-            if (values.email) formData.append('email', values.email);
-            if (values.address) formData.append('address', values.address);
-            if (values.dob) formData.append('dob', values.dob.format('YYYY-MM-DD'));
-            if (values.maritalStatus) formData.append('maritalStatus', values.maritalStatus);
-            if (values.role) formData.append('role', values.role);
-            if (values.status) formData.append('status', values.status);
+            formData.append('status', values.status);
+            formData.append('baptized', values.baptized);
 
-            if (values.profileImage && values.profileImage.length > 0) {
-                formData.append('profileImage', values.profileImage[0].originFileObj);
+            // Handle Dates correctly
+            if (values.date_of_birth) formData.append('date_of_birth', values.date_of_birth.format('YYYY-MM-DD'));
+            if (values.joined_date) formData.append('joined_date', values.joined_date.format('YYYY-MM-DD'));
+
+            // Handle Image (Ensure key matches your Multer @FileInterceptor)
+            if (values.profileImage?.[0]?.originFileObj) {
+                formData.append('file', values.profileImage[0].originFileObj);
             }
 
             await updateMember(id, formData);
@@ -184,7 +186,7 @@ const EditMember = () => {
                                 <Row gutter={24}>
                                     <Col span={12}>
                                         <Form.Item
-                                            name="firstName"
+                                            name="first_name"
                                             label="First Name"
                                             rules={[{ required: true, message: 'Please enter first name' }]}
                                         >
@@ -192,7 +194,7 @@ const EditMember = () => {
                                         </Form.Item>
                                     </Col>
                                     <Col span={12}>
-                                        <Form.Item name="middleName" label="Middle Name">
+                                        <Form.Item name="middle_name" label="Middle Name">
                                             <Input placeholder="Optional" size="large" />
                                         </Form.Item>
                                     </Col>
@@ -349,7 +351,7 @@ const EditMember = () => {
                                             const values = form.getFieldsValue();
                                             return (
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
-                                                    <div><strong>Name:</strong> {values.firstName || '—'} {values.middleName || ''} {values.lastName || ''}</div>
+                                                    <div><strong>Name:</strong> {values.first_name || '—'} {values.middle_name || ''} {values.last_name || ''}</div>
                                                     <div><strong>Phone:</strong> {values.phone || '—'}</div>
                                                     <div><strong>Email:</strong> {values.email || '—'}</div>
                                                     <div><strong>Address:</strong> {values.address || '—'}</div>

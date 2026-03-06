@@ -73,6 +73,7 @@ const ManageMembers = () => {
                         icon={<UserOutlined />}
                         src={record.image_url ? `${API_BASE_URL}/${record.image_url.replace(/^\//, '')}` : null}
                         style={{ backgroundColor: '#1565c0' }}
+                        crossOrigin="use-credentials"
                     />
                     <div>
                         <span style={{ fontWeight: 600 }}>
