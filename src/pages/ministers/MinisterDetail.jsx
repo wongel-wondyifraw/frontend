@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Switch } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -13,81 +13,66 @@ import {
     PrinterOutlined,
     CheckCircleOutlined,
     TeamOutlined,
-    BookOutlined,
+    StopOutlined,
+    KeyOutlined,
+    ArrowUpOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
+import { getMinisterById, deleteMinister, updateUser, API_BASE_URL } from '../../services/api';
 import './MinisterDetail.css';
-
-// Hardcoded ministers data
-const MINISTERS_DATA = {
-    '1': {
-        id: '1', first_name: 'Pastor', middle_name: 'David', last_name: 'Bekele',
-        title: 'Senior Pastor', email: 'david.bekele@church.com',
-        phone: '+251 911 000 001', address: 'Addis Ababa, Ethiopia',
-        date_of_birth: '1980-03-15', marital_status: 'Married',
-        ordination_date: '2018-06-15', status: 'active', department: 'Pastoral',
-        bio: 'Senior pastor with 20 years of ministry experience. Committed to shepherding the congregation and community outreach.',
-        created_at: '2020-01-10',
-    },
-    '2': {
-        id: '2', first_name: 'Evangelist', middle_name: '', last_name: 'Almaz Tesfaye',
-        title: 'Youth Evangelist', email: 'almaz.t@church.com',
-        phone: '+251 922 000 002', address: 'Hawassa, Ethiopia',
-        date_of_birth: '1995-07-20', marital_status: 'Single',
-        ordination_date: '2021-03-20', status: 'active', department: 'Youth',
-        bio: 'Passionate about reaching the younger generation with the gospel.',
-        created_at: '2021-04-01',
-    },
-    '3': {
-        id: '3', first_name: 'Deacon', middle_name: 'Yohannes', last_name: 'Girma',
-        title: 'Deacon', email: 'yohannes.g@church.com',
-        phone: '+251 933 000 003', address: 'Bahir Dar, Ethiopia',
-        date_of_birth: '1975-11-10', marital_status: 'Married',
-        ordination_date: '2019-11-10', status: 'active', department: 'Administration',
-        bio: 'Dedicated to church administration and community service.',
-        created_at: '2019-12-01',
-    },
-    '4': {
-        id: '4', first_name: 'Pastor', middle_name: '', last_name: 'Meron Hailu',
-        title: 'Associate Pastor', email: 'meron.h@church.com',
-        phone: '+251 944 000 004', address: 'Adama, Ethiopia',
-        date_of_birth: '1988-01-05', marital_status: 'Married',
-        ordination_date: '2022-01-05', status: 'inactive', department: 'Worship',
-        bio: 'Leads worship ministry and music programs.',
-        created_at: '2022-02-01',
-    },
-    '5': {
-        id: '5', first_name: 'Elder', middle_name: 'Samuel', last_name: 'Habtamu',
-        title: 'Church Elder', email: 'samuel.h@church.com',
-        phone: '+251 955 000 005', address: 'Dire Dawa, Ethiopia',
-        date_of_birth: '1970-08-25', marital_status: 'Married',
-        ordination_date: '2017-08-25', status: 'active', department: 'Pastoral',
-        bio: 'Long-serving elder with deep community ties and a heart for discipleship.',
-        created_at: '2017-09-01',
-    },
-};
 
 const MinisterDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [minister, setMinister] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [statusLoading, setStatusLoading] = useState(false);
 
     useEffect(() => {
-        // Simulate fetching from backend
-        const data = MINISTERS_DATA[id];
-        if (data) {
-            setMinister(data);
-        } else {
-            message.error('Minister not found');
-            navigate('/ministers/manage');
-        }
-        setLoading(false);
-    }, [id, navigate]);
+        fetchMinisterDetails();
+    }, [id]);
 
-    const handleDelete = () => {
-        message.success('Minister deleted successfully');
-        navigate('/ministers/manage');
+    const fetchMinisterDetails = async () => {
+        try {
+            setLoading(true);
+            const data = await getMinisterById(id);
+            setMinister(data);
+        } catch (error) {
+            message.error('Failed to load minister details');
+            navigate('/ministers/manage');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        try {
+            await deleteMinister(minister.minister_id);
+            message.success('Minister deleted successfully');
+            navigate('/ministers/manage');
+        } catch (error) {
+            message.error('Failed to delete minister');
+        }
+    };
+
+    const toggleAccountStatus = async (checked) => {
+        if (!minister?.user_id) return;
+        try {
+            setStatusLoading(true);
+            await updateUser(minister.user_id, { is_active: checked });
+            message.success(`Account has been ${checked ? 'activated' : 'deactivated'}`);
+            setMinister(prev => ({
+                ...prev,
+                user: {
+                    ...prev.user,
+                    is_active: checked
+                }
+            }));
+        } catch (error) {
+            message.error('Failed to update account status');
+        } finally {
+            setStatusLoading(false);
+        }
     };
 
     if (loading) {
@@ -102,8 +87,10 @@ const MinisterDetail = () => {
 
     if (!minister) return null;
 
-    const fullName = `${minister.first_name} ${minister.middle_name ? minister.middle_name + ' ' : ''}${minister.last_name}`;
-    const initial = (minister.first_name || '?').charAt(0).toUpperCase();
+    const { user, member } = minister;
+    const fullName = `${user?.first_name || ''} ${user?.middle_name || ''} ${user?.last_name || ''}`.trim();
+    const initial = (user?.first_name || '?').charAt(0).toUpperCase();
+    const avatarUrl = user?.avatar_url ? `${API_BASE_URL}/${user.avatar_url.replace(/^\//, '')}` : null;
 
     return (
         <DashboardLayout>
@@ -111,7 +98,7 @@ const MinisterDetail = () => {
                 <Button
                     type="text"
                     icon={<ArrowLeftOutlined />}
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate('/ministers/manage')}
                     style={{ marginBottom: '16px', paddingLeft: 0, color: '#1565c0' }}
                 >
                     Back to Ministers
@@ -122,27 +109,28 @@ const MinisterDetail = () => {
                     <div className="member-header-section">
                         <Avatar
                             size={120}
+                            src={avatarUrl}
                             className="member-profile-image"
                             style={{ backgroundColor: '#1565c0', fontWeight: 600, fontSize: '48px' }}
                         >
-                            {initial}
+                            {!avatarUrl && initial}
                         </Avatar>
                         <div className="member-header-info">
                             <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
                                 <Tag
-                                    icon={minister.status === 'active' ? <CheckCircleOutlined /> : <UserOutlined />}
-                                    color={minister.status === 'active' ? 'success' : 'error'}
+                                    icon={user?.is_active ? <CheckCircleOutlined /> : <StopOutlined />}
+                                    color={user?.is_active ? 'success' : 'error'}
                                     style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
                                 >
-                                    {minister.status === 'active' ? 'Active' : 'Inactive'}
+                                    {user?.is_active ? 'Active Account' : 'Inactive Account'}
                                 </Tag>
                                 <Tag
                                     icon={<TeamOutlined />}
                                     color="blue"
                                     style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
                                 >
-                                    {minister.title}
+                                    {user?.title || 'Minister'}
                                 </Tag>
                             </div>
                         </div>
@@ -151,7 +139,7 @@ const MinisterDetail = () => {
                             <Button type="primary" icon={<EditOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => navigate(`/ministers/edit/${id}`)}>Edit</Button>
                             <Popconfirm
                                 title="Delete Minister"
-                                description="Are you sure you want to delete this minister?"
+                                description="Are you sure you want to delete this minister? This will also delete their user account."
                                 onConfirm={handleDelete}
                                 okText="Yes"
                                 cancelText="No"
@@ -166,63 +154,98 @@ const MinisterDetail = () => {
                         {/* Left Column */}
                         <div className="left-column">
                             <div className="detail-section">
-                                <h3>Personal Information</h3>
-                                <table className="elegant-info-table">
-                                    <tbody>
-                                        <tr>
-                                            <th><MailOutlined /> Email</th>
-                                            <td>{minister.email || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th><PhoneOutlined /> Phone</th>
-                                            <td>{minister.phone || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th><EnvironmentOutlined /> Address</th>
-                                            <td>{minister.address || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th><CalendarOutlined /> Date of Birth</th>
-                                            <td>{minister.date_of_birth ? new Date(minister.date_of_birth).toLocaleDateString() : 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th><UserOutlined /> Marital Status</th>
-                                            <td>{minister.marital_status || 'N/A'}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <h3>Account Configuration</h3>
+                                <div style={{
+                                    padding: '24px',
+                                    background: '#f8fafc',
+                                    borderRadius: '16px',
+                                    border: '1px solid #e2e8f0',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '24px'
+                                }}>
+                                    {/* Status Toggle */}
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        paddingBottom: '20px',
+                                        borderBottom: '1px solid #e2e8f0'
+                                    }}>
+                                        <div>
+                                            <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px', fontSize: '15px' }}>Minister Account Access</div>
+                                            <div style={{ fontSize: '13px', color: '#64748b' }}>
+                                                Enable or disable this minister's ability to log into the system.
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={user?.is_active}
+                                            onChange={toggleAccountStatus}
+                                            loading={statusLoading}
+                                        />
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', flexWrap: 'wrap' }}>
+                                        <Button
+                                            type="primary"
+                                            size="middle"
+                                            icon={<KeyOutlined />}
+                                            style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
+                                            onClick={() => message.info('Reset password modal will open')}
+                                        >
+                                            Reset Password
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            size="middle"
+                                            icon={<EditOutlined />}
+                                            style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
+                                            onClick={() => navigate(`/ministers/edit/${id}`)}
+                                        >
+                                            Edit Account
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            size="middle"
+                                            icon={<ArrowUpOutlined />}
+                                            style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
+                                            onClick={() => message.info('Promote minister modal will open')}
+                                        >
+                                            Promote
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="detail-section">
-                                <h3><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Information</h3>
+                                <h3>Personal & Contact Information</h3>
                                 <table className="elegant-info-table">
                                     <tbody>
                                         <tr>
-                                            <th><BookOutlined /> Title</th>
-                                            <td>{minister.title || 'N/A'}</td>
+                                            <th><MailOutlined /> Email (Login)</th>
+                                            <td>{user?.email || 'N/A'}</td>
                                         </tr>
                                         <tr>
-                                            <th><TeamOutlined /> Department</th>
-                                            <td>
-                                                {minister.department ? (
-                                                    <Tag color="blue" style={{ borderRadius: '12px' }}>{minister.department}</Tag>
-                                                ) : 'N/A'}
-                                            </td>
+                                            <th><PhoneOutlined /> Phone</th>
+                                            <td>{member?.phone || 'N/A'}</td>
                                         </tr>
                                         <tr>
-                                            <th><CalendarOutlined /> Ordained</th>
-                                            <td>{minister.ordination_date ? new Date(minister.ordination_date).toLocaleDateString() : 'N/A'}</td>
+                                            <th><EnvironmentOutlined /> Address</th>
+                                            <td>{member?.address || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CalendarOutlined /> Date of Birth</th>
+                                            <td>{member?.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><UserOutlined /> Marital Status</th>
+                                            <td>{member?.marital_status || 'N/A'}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            {minister.bio && (
-                                <div className="detail-section">
-                                    <h3><BookOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Biography</h3>
-                                    <p style={{ color: '#475569', lineHeight: '1.7', fontSize: '14px' }}>{minister.bio}</p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Right Column */}
@@ -231,18 +254,14 @@ const MinisterDetail = () => {
                                 <h3>Activity Timeline</h3>
                                 <Timeline
                                     items={[
-                                        {
+                                        ...((user?.created_at ? [{
                                             color: 'green',
-                                            children: `Registered on ${new Date(minister.created_at).toLocaleDateString()}`,
-                                        },
-                                        {
+                                            children: `User account created on ${new Date(user.created_at).toLocaleDateString()}`,
+                                        }] : [])),
+                                        ...((member?.created_at ? [{
                                             color: 'blue',
-                                            children: `Ordained on ${minister.ordination_date ? new Date(minister.ordination_date).toLocaleDateString() : 'N/A'}`,
-                                        },
-                                        {
-                                            color: 'purple',
-                                            children: `Assigned to ${minister.department || 'N/A'} department`,
-                                        },
+                                            children: `Member registered on ${new Date(member.created_at).toLocaleDateString()}`,
+                                        }] : []))
                                     ]}
                                 />
                             </div>

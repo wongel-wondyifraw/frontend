@@ -1,5 +1,245 @@
-/* MinisterDetail uses the same MemberDetail styles */
-/* Import the shared styles from ../Members/MemberDetail.css */
-/* These classes are already defined there and are global */
+:root {
+    --white: #ffffff;
+    --dark: #101828;
+    --navy: #101828;
+    --blue: #1565c0;
+    --cyan: #6200ea;
+    --light-blue-bg: #e3f2fd;
+}
 
-/* Additional minister-specific overrides if needed */
+.member-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--dark);
+    padding: 24px;
+}
+
+/* Unified Card Container */
+.content-card-unified {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 25px rgba(16, 24, 40, 0.05);
+    border: 1px solid var(--light-blue-bg);
+}
+
+/* Header Section within Unified Card */
+.member-header-section {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--light-blue-bg);
+}
+
+.member-profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--white);
+    background: var(--light-blue-bg);
+}
+
+.member-header-info {
+    flex: 1;
+}
+
+.member-name {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+}
+
+.member-role-tags {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.member-actions-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: auto;
+    align-items: flex-end;
+}
+
+/* Grid Layout for details */
+.member-details-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 40px;
+}
+
+/* Inner Sections */
+.detail-section {
+    margin-bottom: 32px;
+}
+
+.detail-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--light-blue-bg);
+    padding-bottom: 12px;
+}
+
+/* Elegant Info Table */
+.elegant-info-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--light-blue-bg);
+}
+
+.elegant-info-table th,
+.elegant-info-table td {
+    padding: 14px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--light-blue-bg);
+    font-size: 14px;
+}
+
+.elegant-info-table tr:last-child th,
+.elegant-info-table tr:last-child td {
+    border-bottom: none;
+}
+
+.elegant-info-table th {
+    background-color: var(--white);
+    color: var(--blue);
+    font-weight: 600;
+    width: 1%;
+    padding-right: 32px;
+    white-space: nowrap;
+    border-right: 1px solid var(--light-blue-bg);
+}
+
+.elegant-info-table th .anticon {
+    margin-right: 8px;
+    color: var(--blue);
+    font-size: 15px;
+}
+
+.elegant-info-table td {
+    background-color: var(--white);
+    color: var(--navy);
+    font-weight: 500;
+}
+
+.elegant-info-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+@media (max-width: 1024px) {
+    .member-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .member-header-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .member-role-tags {
+        justify-content: center;
+    }
+
+    .content-card-unified {
+        padding: 24px;
+    }
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+
+    .sidebar-container,
+    .ant-btn,
+    .ant-layout-sider,
+    button,
+    a[href],
+    .member-actions-stacked,
+    .ant-tag {
+        display: none !important;
+    }
+
+    body,
+    #root,
+    .dashboard-layout,
+    .sidebar-layout,
+    .main-content {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .member-detail-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .content-card-unified {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        position: relative;
+        z-index: 1;
+    }
+
+    .member-header-section {
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px;
+        padding: 20px !important;
+        margin-bottom: 24px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .member-profile-image {
+        width: 100px;
+        height: 100px;
+        border-color: #cbd5e1;
+    }
+
+    .member-details-grid {
+        display: block !important;
+    }
+
+    .left-column,
+    .right-column {
+        width: 100% !important;
+    }
+
+    .detail-section {
+        margin-bottom: 20px !important;
+        break-inside: avoid;
+    }
+
+    .detail-section h3 {
+        font-size: 16px !important;
+        margin-bottom: 12px !important;
+        border-bottom: 2px solid #a855f7 !important;
+        padding-bottom: 4px !important;
+    }
+}
