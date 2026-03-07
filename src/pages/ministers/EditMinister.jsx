@@ -46,7 +46,7 @@ const EditMinister = () => {
 
             // Prefill form
             form.setFieldsValue({
-                title: data.user.title || ''
+                email: data.user.email || ''
             });
         } catch (error) {
             message.error(error.message || 'Failed to fetch minister details');
@@ -59,7 +59,7 @@ const EditMinister = () => {
     const next = async () => {
         try {
             if (currentStep === 0) {
-                await form.validateFields(['title']);
+                await form.validateFields(['email']);
                 // Pass validation, submit the update
                 await submitUpdate();
                 return;
@@ -80,7 +80,7 @@ const EditMinister = () => {
             const values = form.getFieldsValue();
 
             const payload = {
-                title: values.title,
+                email: values.email,
             };
 
             if (values.password) {
@@ -120,7 +120,7 @@ const EditMinister = () => {
 
                 <div className="add-member-header">
                     <h1>Edit Minister Account</h1>
-                    <p>Update minister title and optionally reset their password.</p>
+                    <p>Update minister email and optionally reset their password.</p>
                 </div>
 
                 <div className="content-card-unified">
@@ -194,11 +194,14 @@ const EditMinister = () => {
                                     ) : (
                                         <>
                                             <Form.Item
-                                                name="title"
-                                                label="Minister Title"
-                                                rules={[{ required: true, message: 'Please enter a title' }]}
+                                                name="email"
+                                                label="Email Address (Login)"
+                                                rules={[
+                                                    { required: true, message: 'Please enter an email address' },
+                                                    { type: 'email', message: 'Please enter a valid email address' }
+                                                ]}
                                             >
-                                                <Input size="large" placeholder="e.g. Senior Pastor, Deacon, Worship Leader" />
+                                                <Input size="large" placeholder="e.g. minister@church.com" />
                                             </Form.Item>
 
                                             <Form.Item
@@ -236,8 +239,8 @@ const EditMinister = () => {
                                             <strong>{minister?.user?.first_name} {minister?.user?.last_name}</strong>
                                         </div>
                                         <div>
-                                            <span style={{ color: '#64748b', display: 'inline-block', width: '100px' }}>Title:</span>
-                                            <Tag color="blue">{updatedData?.user?.title || form.getFieldValue('title')}</Tag>
+                                            <span style={{ color: '#64748b', display: 'inline-block', width: '100px' }}>Email:</span>
+                                            <Tag color="blue">{updatedData?.user?.email || form.getFieldValue('email')}</Tag>
                                         </div>
                                     </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Switch } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Switch, Modal, Form, Input } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -18,7 +18,7 @@ import {
     ArrowUpOutlined
 } from '@ant-design/icons';
 import DashboardLayout from '../../Layouts/DashboardLayout';
-import { getMinisterById, deleteMinister, updateUser, API_BASE_URL } from '../../services/api';
+import { getMinisterById, deleteMinister, updateUser, updateMinister, API_BASE_URL } from '../../services/api';
 import './MinisterDetail.css';
 
 const MinisterDetail = () => {
@@ -27,6 +27,8 @@ const MinisterDetail = () => {
     const [minister, setMinister] = useState(null);
     const [loading, setLoading] = useState(true);
     const [statusLoading, setStatusLoading] = useState(false);
+    const [promoteModalVisible, setPromoteModalVisible] = useState(false);
+    const [promoteForm] = Form.useForm();
 
     useEffect(() => {
         fetchMinisterDetails();
@@ -52,6 +54,29 @@ const MinisterDetail = () => {
             navigate('/ministers/manage');
         } catch (error) {
             message.error('Failed to delete minister');
+        }
+    };
+
+    const handlePromote = async () => {
+        try {
+            const values = await promoteForm.validateFields();
+            setStatusLoading(true);
+            await updateMinister(id, { title: values.title });
+            message.success('Minister promoted successfully');
+            setMinister(prev => ({
+                ...prev,
+                user: {
+                    ...prev.user,
+                    title: values.title
+                }
+            }));
+            setPromoteModalVisible(false);
+            promoteForm.resetFields();
+        } catch (error) {
+            if (error.errorFields) return;
+            message.error(error.message || 'Failed to promote minister');
+        } finally {
+            setStatusLoading(false);
         }
     };
 
@@ -136,7 +161,7 @@ const MinisterDetail = () => {
                         </div>
                         <div className="member-actions-stacked">
                             <Button type="primary" icon={<PrinterOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => window.print()}>Print</Button>
-                            <Button type="primary" icon={<EditOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => navigate(`/ministers/edit/${id}`)}>Edit</Button>
+                            <Button type="primary" icon={<EditOutlined />} size="middle" style={{ backgroundColor: '#2c73c5' }} onClick={() => navigate(`/members/edit/${minister?.member_id}`)}>Edit Personal Info</Button>
                             <Popconfirm
                                 title="Delete Minister"
                                 description="Are you sure you want to delete this minister? This will also delete their user account."
@@ -190,15 +215,6 @@ const MinisterDetail = () => {
                                         <Button
                                             type="primary"
                                             size="middle"
-                                            icon={<KeyOutlined />}
-                                            style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
-                                            onClick={() => message.info('Reset password modal will open')}
-                                        >
-                                            Reset Password
-                                        </Button>
-                                        <Button
-                                            type="primary"
-                                            size="middle"
                                             icon={<EditOutlined />}
                                             style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
                                             onClick={() => navigate(`/ministers/edit/${id}`)}
@@ -210,7 +226,7 @@ const MinisterDetail = () => {
                                             size="middle"
                                             icon={<ArrowUpOutlined />}
                                             style={{ backgroundColor: '#1565c0', borderRadius: '6px', fontWeight: 500 }}
-                                            onClick={() => message.info('Promote minister modal will open')}
+                                            onClick={() => setPromoteModalVisible(true)}
                                         >
                                             Promote
                                         </Button>
@@ -274,6 +290,25 @@ const MinisterDetail = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                title="Promote Minister"
+                open={promoteModalVisible}
+                onOk={handlePromote}
+                onCancel={() => setPromoteModalVisible(false)}
+                confirmLoading={statusLoading}
+            >
+                <p>Current Title: <strong>{minister?.user?.title}</strong></p>
+                <Form form={promoteForm} layout="vertical">
+                    <Form.Item
+                        name="title"
+                        label="Promoted To"
+                        rules={[{ required: true, message: 'Please enter a new title' }]}
+                    >
+                        <Input placeholder="e.g. Senior Pastor, Deacon" />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </DashboardLayout>
     );
 };
