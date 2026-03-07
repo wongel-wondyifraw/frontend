@@ -212,6 +212,15 @@ export const createMinister = async (ministerData) => {
     }
 };
 
+export const updateMinister = async (id, ministerData) => {
+    try {
+        const response = await api.patch(`/ministers/${id}`, ministerData);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};
+
 export const deleteMinister = async (id) => {
     try {
         const response = await api.delete(`/ministers/${id}`);
