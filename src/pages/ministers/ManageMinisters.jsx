@@ -34,7 +34,7 @@ const ManageMinisters = () => {
         Modal.confirm({
             title: 'Delete Minister?',
             icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
-            content: `Are you sure you want to remove ${minister.user.first_name} ${minister.user.last_name} as a minister? This cannot be undone.`,
+            content: `Are you sure you want to remove ${minister.user.first_name} ${minister.user.last_name} as a minister? This will also delete their user account and cannot be undone.`,
             okText: 'Delete',
             okType: 'danger',
             cancelText: 'Cancel',
