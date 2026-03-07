@@ -11,7 +11,10 @@ import {
   X,
   Calendar,
   LogOut,
-  BookOpen
+  BookOpen,
+  Shield,
+  Contact,
+  Layers
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
@@ -46,16 +49,23 @@ const Sidebar = () => {
     },
     {
       label: 'Manage Ministers',
-      icon: <Users size={18} />,
+      icon: <Shield size={18} />,
       type: 'dropdown',
       subItems: [
         { label: 'Manage Ministers', path: '/ministers/manage' },
-        { label: 'Home Groups', path: '/ministers/home-groups' }
+      ]
+    },
+    {
+      label: 'Manage Staff',
+      icon: <Contact size={18} />,
+      type: 'dropdown',
+      subItems: [
+        { label: 'Manage Staff', path: '/staff/manage' },
       ]
     },
     {
       label: 'Ministries',
-      icon: <Briefcase size={18} />,
+      icon: <Layers size={18} />,
       type: 'dropdown',
       subItems: [
         { label: 'Manage Ministries', path: '/ministries/manage' }

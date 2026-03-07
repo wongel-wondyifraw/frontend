@@ -1,5 +1,5 @@
 .sidebar-container {
-  width: 220px;
+  width: 260px;
   height: 100vh;
   background: var(--bg-card);
   /* was #FFFFFF */
@@ -52,7 +52,7 @@
 }
 
 .profile-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-main);
   /* was #020617 */
@@ -110,9 +110,9 @@
   justify-content: space-between;
   padding: 10px 12px;
   border-radius: 8px;
-  color: var(--text-secondary);
-  /* was #64748B */
-  font-size: 13px;
+  color: var(--text-muted);
+  /* Lighter black */
+  font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
   text-decoration: none;
@@ -221,9 +221,9 @@
 .submenu-item {
   padding: 8px 12px 8px 24px;
   border-radius: 8px;
-  color: var(--text-secondary);
-  /* was #64748B */
-  font-size: 12px;
+  color: var(--text-muted);
+  /* Lighter black */
+  font-size: 13.5px;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s;
@@ -275,7 +275,7 @@
 }
 
 .nav-item.footer-item {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-weight: 600;
   justify-content: left;
 }

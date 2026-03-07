@@ -22,6 +22,8 @@
   /* Abyssal Black-Blue */
   --text-secondary: #94A3B8;
   /* Slate 400 */
+  --text-muted: #475569;
+  /* Slate 600 - Lighter black */
   --text-inverse: #FFFFFF;
 
   --border-color: #DBEAFE;
@@ -53,6 +55,8 @@
   /* Slate 50 */
   --text-secondary: #94A3B8;
   /* Slate 400 */
+  --text-muted: #CBD5E1;
+  /* Slate 300 */
   --text-inverse: #020617;
 
   --border-color: #1E293B;
