@@ -1,0 +1,71 @@
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.dashboard-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.widget-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 12px;
+}
+
+.widget-picker-card {
+  cursor: pointer;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.widget-picker-preview {
+  flex: 1;
+  padding: 12px;
+  pointer-events: none;
+  min-height: 140px;
+  max-height: 140px;
+  background: #F1F5F9;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.widget-picker-preview > div {
+  transform: scale(0.75);
+  transform-origin: top center;
+  width: 133%;
+  height: 133%;
+}
+
+.widget-picker-label {
+  padding: 12px;
+  border-top: 1px solid #E2E8F0;
+  background: #fff;
+  font-weight: 600;
+  color: #0F172A;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widget-skeleton {
+  min-height: 80px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: widget-shimmer 1.2s infinite;
+}
+
+@keyframes widget-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

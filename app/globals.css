@@ -1,0 +1,152 @@
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Default Light Mode (Shepard.One Monochromatic Blue) */
+  --bg-body: #F1F5F9;
+  /* Ghost Slate */
+  --bg-card: #FFFFFF;
+  /* White */
+  --bg-hover: #EFF6FF;
+  /* Ice Wash */
+
+  --primary-blue: #1E40AF;
+  /* Primary Action */
+  --exec-blue: #3B82F6;
+  /* Active/Trend */
+  --sapphire-deep: #1E3A8A;
+  /* Darker Blue */
+
+  --text-main: #020617;
+  /* Abyssal Black-Blue */
+  --text-secondary: #94A3B8;
+  /* Slate 400 */
+  --text-inverse: #FFFFFF;
+
+  --border-color: #DBEAFE;
+  /* Ice Blue */
+  --divider: #F1F5F9;
+
+  --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  /* Dark Mode Palette (Shepard.One Night) */
+  --bg-body: #020617;
+  /* Abyssal Black (Deepest Blue) */
+  --bg-card: #0F172A;
+  /* Dark Blue (Card Bg) */
+  --bg-hover: #1E293B;
+  /* Slate 800 */
+
+  --primary-blue: #3B82F6;
+  /* Lighter Blue for Dark Mode visibility */
+  --exec-blue: #60A5FA;
+  /* Brighter Blue for accents */
+  --sapphire-deep: #2563EB;
+
+  --text-main: #F8FAFC;
+  /* Slate 50 */
+  --text-secondary: #94A3B8;
+  /* Slate 400 */
+  --text-inverse: #020617;
+
+  --border-color: #1E293B;
+  /* Slate 800 */
+  --divider: #1E293B;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}
+
+/* Common Variables */
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+}
+
+html h1,
+html h2,
+html h3,
+html h4,
+html h5,
+html h6,
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  font-weight: 600;
+}
+
+html p,
+html button,
+html input,
+html select,
+html textarea,
+body p,
+body button,
+body input,
+body select,
+body textarea {
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+.page-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
