@@ -8,7 +8,7 @@ import { getMembers, deleteMember } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageMembersProps, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
-import { debounce } from '@/lib/debounce';
+import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
@@ -41,12 +41,9 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         }
     }, [page, pageSize, searchText]);
 
-    const debouncedSearch = useCallback(
-        debounce((value: string) => {
-            loadMembers(1, pageSize, value);
-        }, 300),
-        [loadMembers, pageSize],
-    );
+    const debouncedSearch = useDebouncedCallback((value: string) => {
+        loadMembers(1, pageSize, value);
+    }, 300);
 
     useEffect(() => {
         if (initialPage !== null) return;

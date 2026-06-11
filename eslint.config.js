@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
-export default [
+const eslintConfig = [
   { ignores: ['.next', 'dist', 'node_modules'] },
   ...compat.extends('next/core-web-vitals'),
   {
@@ -43,3 +43,5 @@ export default [
     },
   },
 ];
+
+export default eslintConfig;

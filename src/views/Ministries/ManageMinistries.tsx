@@ -8,7 +8,7 @@ import { getMinistries, deleteMinistry } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageMinistriesProps, Ministry } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
-import { debounce } from '@/lib/debounce';
+import { useDebouncedCallback } from '@/lib/debounce';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMinistries.css';
@@ -40,12 +40,9 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
         }
     }, [page, pageSize, searchText]);
 
-    const debouncedSearch = useCallback(
-        debounce((value: string) => {
-            loadMinistries(1, pageSize, value);
-        }, 300),
-        [loadMinistries, pageSize],
-    );
+    const debouncedSearch = useDebouncedCallback((value: string) => {
+        loadMinistries(1, pageSize, value);
+    }, 300);
 
     useEffect(() => {
         if (initialPage !== null) return;

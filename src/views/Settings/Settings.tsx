@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Tabs, Form, message, Modal } from 'antd';
 import type { UploadChangeParam } from 'antd/es/upload';
@@ -46,17 +46,7 @@ const Settings = () => {
     const [wizardAvatar, setWizardAvatar] = useState<File | null>(null);
     const [wizardAvatarPreview, setWizardAvatarPreview] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
-
-    useEffect(() => {
-        if (hasPermission(profile, 'users.read')) {
-            loadUsers();
-        }
-    }, [profile]);
-
-    const loadProfile = async () => {
+    const loadProfile = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getProfile();
@@ -74,16 +64,26 @@ const Settings = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [form]);
 
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         try {
             const data = await getUsers();
             setUsers(data);
         } catch (error) {
             message.error('Failed to load users list');
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    useEffect(() => {
+        if (hasPermission(profile, 'users.read')) {
+            loadUsers();
+        }
+    }, [profile, loadUsers]);
 
     const handleProfileUpdate = async (values: Record<string, string>) => {
         try {

@@ -1,9 +1,34 @@
 'use client';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import type { ThemeContextValue } from '@/types';
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+const themeListeners = new Set<() => void>();
+
+function subscribeToTheme(onStoreChange: () => void) {
+  themeListeners.add(onStoreChange);
+
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleMediaChange = () => onStoreChange();
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === 'theme') onStoreChange();
+  };
+
+  media.addEventListener('change', handleMediaChange);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    themeListeners.delete(onStoreChange);
+    media.removeEventListener('change', handleMediaChange);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
+
+function notifyThemeListeners() {
+  themeListeners.forEach((listener) => listener());
+}
 
 function readStoredTheme(): 'light' | 'dark' {
   const savedTheme = localStorage.getItem('theme');
@@ -13,25 +38,29 @@ function readStoredTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+function getServerThemeSnapshot(): 'light' | 'dark' {
+  return 'light';
+}
+
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  // Always start with 'light' so SSR and the first client render match.
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  useEffect(() => {
-    setTheme(readStoredTheme());
-  }, []);
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    readStoredTheme,
+    getServerThemeSnapshot,
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', nextTheme);
+    notifyThemeListeners();
   };
 
   return (

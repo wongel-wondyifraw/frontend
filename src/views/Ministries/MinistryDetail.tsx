@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, message, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, List, Card, Tooltip } from 'antd';
 import {
@@ -35,16 +35,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
     const [addingMember, setAddingMember] = useState(false);
     const [form] = Form.useForm();
 
-    useEffect(() => {
-        if (initialMinistry !== null) {
-            loadMinistryMembers();
-            return;
-        }
-        loadMinistry();
-        loadMinistryMembers();
-    }, [id, initialMinistry]);
-
-    const loadMinistry = async () => {
+    const loadMinistry = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getMinistry(id);
@@ -55,9 +46,9 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
 
-    const loadMinistryMembers = async () => {
+    const loadMinistryMembers = useCallback(async () => {
         try {
             setMembersLoading(true);
             const data = await getMinistryMembers(id);
@@ -67,7 +58,16 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
         } finally {
             setMembersLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (initialMinistry !== null) {
+            loadMinistryMembers();
+            return;
+        }
+        loadMinistry();
+        loadMinistryMembers();
+    }, [initialMinistry, loadMinistry, loadMinistryMembers]);
 
     const loadAllMembers = async () => {
         try {

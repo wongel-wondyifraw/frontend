@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, List, Modal } from 'antd';
 import {
@@ -30,12 +30,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const [member, setMember] = useState<Member | null>(initialMember);
     const [loading, setLoading] = useState(initialMember === null);
 
-    useEffect(() => {
-        if (initialMember !== null) return;
-        fetchMemberDetails();
-    }, [id, initialMember]);
-
-    const fetchMemberDetails = async () => {
+    const fetchMemberDetails = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getMemberById(id);
@@ -46,7 +41,12 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
+
+    useEffect(() => {
+        if (initialMember !== null) return;
+        fetchMemberDetails();
+    }, [initialMember, fetchMemberDetails]);
 
     const handleDelete = async () => {
         try {

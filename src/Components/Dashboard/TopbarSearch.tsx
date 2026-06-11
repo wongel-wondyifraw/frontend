@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Home, Users, Briefcase, User as UserIcon, FileText, BookOpen, Calendar, Settings as SettingsIcon, HelpCircle } from 'lucide-react';
 import { searchDashboard } from '@/services/api';
-import { debounce } from '@/lib/debounce';
+import { useDebouncedCallback } from '@/lib/debounce';
 import type { SearchResult } from '@/types';
 import './TopbarSearch.css';
 
@@ -73,13 +73,13 @@ export default function TopbarSearch() {
     }
   }, [router]);
 
-  const debouncedServerSearch = useCallback(
-    debounce(async (query: string, pageResults: SearchResult[]) => {
+  const debouncedServerSearch = useDebouncedCallback(
+    async (query: string, pageResults: SearchResult[]) => {
       const apiResults = await runServerSearch(query);
       setSearchResults([...pageResults, ...apiResults].slice(0, 15));
       setIsSearchOpen(pageResults.length + apiResults.length > 0);
-    }, 300),
-    [runServerSearch],
+    },
+    300,
   );
 
   const handleSearch = useCallback((query: string) => {
