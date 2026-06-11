@@ -9,10 +9,15 @@ import type { ColumnsType } from 'antd/es/table';
 import type { ManageMinistriesProps, Ministry } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { debounce } from '@/lib/debounce';
+import { PermissionGate } from '@/Components/auth/PermissionGate';
+import { useCan } from '@/Components/auth/Can';
 import './ManageMinistries.css';
 
-const ManageMinistries = ({ initialPage = null }: ManageMinistriesProps) => {
+const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) => {
     const router = useRouter();
+    const canCreate = useCan('ministries.create');
+    const canUpdate = useCan('ministries.update');
+    const canDelete = useCan('ministries.delete');
     const [ministries, setMinistries] = useState<Ministry[]>(initialPage?.data ?? []);
     const [loading, setLoading] = useState(initialPage === null);
     const [searchText, setSearchText] = useState('');
@@ -113,6 +118,7 @@ const ManageMinistries = ({ initialPage = null }: ManageMinistriesProps) => {
                             onClick={() => router.push(`/ministries/details/${record.id}`)}
                         />
                     </Tooltip>
+                    {canUpdate && (
                     <Tooltip title="Edit">
                         <Button
                             icon={<EditOutlined />}
@@ -121,6 +127,8 @@ const ManageMinistries = ({ initialPage = null }: ManageMinistriesProps) => {
                             onClick={() => router.push(`/ministries/edit/${record.id}`)}
                         />
                     </Tooltip>
+                    )}
+                    {canDelete && (
                     <Tooltip title="Delete">
                         <Button
                             icon={<DeleteOutlined />}
@@ -130,6 +138,7 @@ const ManageMinistries = ({ initialPage = null }: ManageMinistriesProps) => {
                             onClick={() => handleDelete(record)}
                         />
                     </Tooltip>
+                    )}
                 </div>
             ),
         },
@@ -152,15 +161,21 @@ const ManageMinistries = ({ initialPage = null }: ManageMinistriesProps) => {
                     total,
                     onChange: (nextPage, nextPageSize) => loadMinistries(nextPage, nextPageSize, searchText),
                 }}
-                actionButton={{
+                actionButton={canCreate ? {
                     label: 'Add Ministry',
                     icon: <PlusOutlined />,
                     onClick: () => router.push('/ministries/add'),
-                }}
+                } : undefined}
                 tableCardClassName="ministries-table-card"
             />
         </div>
     );
 };
+
+const ManageMinistries = (props: ManageMinistriesProps) => (
+    <PermissionGate permission="ministries.read" pageLabel="Ministries">
+        <ManageMinistriesContent {...props} />
+    </PermissionGate>
+);
 
 export default ManageMinistries;

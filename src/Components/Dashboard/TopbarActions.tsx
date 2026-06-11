@@ -1,51 +1,103 @@
 'use client';
 
 import { Bell, CheckCircle, AlertCircle, Moon, Sun } from 'lucide-react';
-import { Button, Popover, List, Avatar, Badge } from 'antd';
+import { Button, Popover, Avatar, Badge, Empty, Spin } from 'antd';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
+import { useNotifications } from '@/context/NotificationsContext';
+import { useUser } from '@/context/UserContext';
+import { hasPermission } from '@/types';
 import AppLogo from '../common/AppLogo';
 
-const notifications = [
-  { id: 1, title: 'New Member Added', desc: 'Sarah Jenkins joined the worship team.', time: '2 mins ago', type: 'success' },
-  { id: 2, title: 'Meeting Reminder', desc: 'Elders meeting starts in 1 hour.', time: '1 hour ago', type: 'info' },
-  { id: 3, title: 'Donation Received', desc: 'Anonymous donation of $500.', time: '3 hours ago', type: 'success' },
-  { id: 4, title: 'System Alert', desc: 'Backup scheduled for tonight.', time: '5 hours ago', type: 'warning' },
-];
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
 
 export default function TopbarActions() {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useUser();
+  const router = useRouter();
+  const canReadNotifications = hasPermission(user, 'notifications.read');
+  const { items, unreadCount, loading, markRead, markAllRead } = useNotifications();
 
   const notificationContent = (
-    <div style={{ width: 300 }}>
-      <div style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>Notifications</div>
-      <List
-        dataSource={notifications}
-        renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={(
-                <Avatar
-                  style={{ backgroundColor: item.type === 'success' ? '#f6ffed' : '#e6f7ff' }}
-                  icon={item.type === 'success'
-                    ? <CheckCircle size={16} color="#52c41a" />
-                    : <AlertCircle size={16} color="#1890ff" />}
-                />
-              )}
-              title={<span style={{ fontSize: '14px' }}>{item.title}</span>}
-              description={(
-                <div style={{ fontSize: '12px' }}>
-                  {item.desc}
-                  <br />
-                  <span style={{ color: '#aaa', fontSize: '10px' }}>{item.time}</span>
-                </div>
-              )}
-            />
-          </List.Item>
+    <div style={{ width: 320 }}>
+      <div style={{
+        padding: '8px 0',
+        borderBottom: '1px solid #f0f0f0',
+        fontWeight: 'bold',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <span>Notifications</span>
+        {unreadCount > 0 && (
+          <Button type="link" size="small" onClick={() => markAllRead()}>
+            Mark all read
+          </Button>
         )}
-      />
-      <div style={{ textAlign: 'center', paddingTop: '8px', borderTop: '1px solid #f0f0f0' }}>
-        <Button type="link" size="small">View All</Button>
       </div>
+      {loading && items.length === 0 ? (
+        <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>
+      ) : items.length === 0 ? (
+        <Empty description="No notifications" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 16 }} />
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 360, overflowY: 'auto' }}>
+          {items.map((item) => (
+            <li
+              key={item.id}
+              style={{
+                display: 'flex',
+                gap: 12,
+                padding: '12px 0',
+                borderBottom: '1px solid #f0f0f0',
+                opacity: item.read_at ? 0.65 : 1,
+                cursor: item.href ? 'pointer' : 'default',
+              }}
+              onClick={() => {
+                if (!item.read_at) markRead(item.id);
+                if (item.href) router.push(item.href);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && item.href) router.push(item.href);
+              }}
+              role={item.href ? 'button' : undefined}
+              tabIndex={item.href ? 0 : undefined}
+            >
+              <Avatar
+                style={{
+                  backgroundColor: item.severity === 'success' || item.severity === 'warning'
+                    ? '#f6ffed'
+                    : '#e6f7ff',
+                  flexShrink: 0,
+                }}
+                icon={
+                  item.severity === 'success' || item.severity === 'warning'
+                    ? <CheckCircle size={16} color="#52c41a" />
+                    : <AlertCircle size={16} color="#1890ff" />
+                }
+              />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '14px', fontWeight: 500 }}>{item.title}</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>
+                  {item.message}
+                  <br />
+                  <span style={{ color: '#aaa', fontSize: '10px' }}>
+                    {formatTimeAgo(item.created_at)}
+                  </span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 
@@ -60,13 +112,15 @@ export default function TopbarActions() {
         {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
       </button>
 
-      <Popover content={notificationContent} trigger="click" placement="bottomRight" arrow={false}>
-        <button type="button" className="icon-btn notification-btn" aria-label="Notifications">
-          <Badge dot offset={[-4, 4]}>
-            <Bell size={20} />
-          </Badge>
-        </button>
-      </Popover>
+      {canReadNotifications && (
+        <Popover content={notificationContent} trigger="click" placement="bottomRight" arrow={false}>
+          <button type="button" className="icon-btn notification-btn" aria-label="Notifications">
+            <Badge count={unreadCount} size="small" offset={[-4, 4]}>
+              <Bell size={20} />
+            </Badge>
+          </button>
+        </Popover>
+      )}
 
       <div className="logo-wrapper">
         <AppLogo variant="topbar" href="/dashboard" />

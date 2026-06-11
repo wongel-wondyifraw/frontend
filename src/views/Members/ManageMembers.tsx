@@ -10,10 +10,15 @@ import type { ManageMembersProps, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { debounce } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
+import { PermissionGate } from '@/Components/auth/PermissionGate';
+import { useCan } from '@/Components/auth/Can';
 import './ManageMembers.css';
 
-const ManageMembers = ({ initialPage = null }: ManageMembersProps) => {
+const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const router = useRouter();
+    const canCreate = useCan('members.create');
+    const canUpdate = useCan('members.update');
+    const canDelete = useCan('members.delete');
     const [members, setMembers] = useState<Member[]>(initialPage?.data ?? []);
     const [loading, setLoading] = useState(initialPage === null);
     const [searchText, setSearchText] = useState('');
@@ -154,6 +159,7 @@ const ManageMembers = ({ initialPage = null }: ManageMembersProps) => {
                         />
                     </Tooltip>
                     <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
+                    {canUpdate && (
                     <Tooltip title="Edit">
                         <Button
                             icon={<EditOutlined />}
@@ -162,6 +168,8 @@ const ManageMembers = ({ initialPage = null }: ManageMembersProps) => {
                             onClick={() => router.push(`/members/edit/${record.id}`)}
                         />
                     </Tooltip>
+                    )}
+                    {canDelete && (
                     <Tooltip title="Delete">
                         <Button
                             icon={<DeleteOutlined />}
@@ -171,6 +179,7 @@ const ManageMembers = ({ initialPage = null }: ManageMembersProps) => {
                             onClick={() => handleDelete(record)}
                         />
                     </Tooltip>
+                    )}
                 </div>
             ),
         },
@@ -193,15 +202,21 @@ const ManageMembers = ({ initialPage = null }: ManageMembersProps) => {
                     total,
                     onChange: (nextPage, nextPageSize) => loadMembers(nextPage, nextPageSize, searchText),
                 }}
-                actionButton={{
+                actionButton={canCreate ? {
                     label: 'Add Member',
                     icon: <PlusOutlined />,
                     onClick: () => router.push('/members/add'),
-                }}
+                } : undefined}
                 tableCardClassName="members-table-card"
             />
         </div>
     );
 };
+
+const ManageMembers = (props: ManageMembersProps) => (
+    <PermissionGate permission="members.read" pageLabel="Members">
+        <ManageMembersContent {...props} />
+    </PermissionGate>
+);
 
 export default ManageMembers;

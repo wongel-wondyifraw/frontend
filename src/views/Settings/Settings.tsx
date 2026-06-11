@@ -3,14 +3,18 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Tabs, Form, message, Modal } from 'antd';
 import type { UploadChangeParam } from 'antd/es/upload';
-import { UserOutlined, LockOutlined, TeamOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, TeamOutlined, DeleteOutlined, BellOutlined } from '@ant-design/icons';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar } from '../../services/api';
 import { useUser } from '../../context/UserContext';
 import type { User } from '@/types';
+import { hasPermission } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import ProfileTab from './components/ProfileTab';
 import SecurityTab from './components/SecurityTab';
+import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './Settings.css';
+
+const NotificationPreferencesTab = dynamic(() => import('./components/NotificationPreferencesTab'), { ssr: false });
 
 const ManageUsersTab = dynamic(() => import('./components/ManageUsersTab'), { ssr: false });
 const UserWizardModal = dynamic(() => import('./components/UserWizardModal'), { ssr: false });
@@ -18,7 +22,7 @@ const UserWizardModal = dynamic(() => import('./components/UserWizardModal'), { 
 const { confirm } = Modal;
 
 const Settings = () => {
-    const { refreshUser, bumpAvatarVersion } = useUser();
+    const { refreshUser, bumpAvatarVersion, user } = useUser();
     const [form] = Form.useForm();
     const [passwordForm] = Form.useForm();
     const [userForm] = Form.useForm();
@@ -46,7 +50,7 @@ const Settings = () => {
     }, []);
 
     useEffect(() => {
-        if (profile?.role === 'admin') {
+        if (hasPermission(profile, 'users.read')) {
             loadUsers();
         }
     }, [profile]);
@@ -294,7 +298,15 @@ const Settings = () => {
         },
     ];
 
-    if (profile?.role === 'admin') {
+    if (hasPermission(user, 'notifications.update')) {
+        items.push({
+            key: '3',
+            label: <span><BellOutlined /> Notifications</span>,
+            children: <NotificationPreferencesTab />,
+        });
+    }
+
+    if (hasPermission(profile, 'users.manage')) {
         items.push({
             key: 'ADMIN',
             label: <span><TeamOutlined /> Manage Users</span>,
@@ -319,6 +331,7 @@ const Settings = () => {
     }
 
     return (
+        <PermissionGate permission="settings.read" pageLabel="Settings">
         <>
             <div className="settings-container">
                 <div className="settings-header">
@@ -342,6 +355,7 @@ const Settings = () => {
                 onWizardAvatarChange={handleWizardAvatarChange}
             />
         </>
+        </PermissionGate>
     );
 };
 

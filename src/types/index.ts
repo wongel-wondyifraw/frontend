@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
 
+export interface Permission {
+  slug: string;
+  name: string;
+  category: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -12,6 +18,14 @@ export interface User {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  permissions?: Permission[];
+}
+
+export function hasPermission(
+  user: User | null | undefined,
+  slug: string,
+): boolean {
+  return user?.permissions?.some((p) => p.slug === slug) ?? false;
 }
 
 export interface Member {

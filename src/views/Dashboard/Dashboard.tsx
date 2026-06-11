@@ -7,6 +7,7 @@ import { DashboardStatsProvider } from '../../context/DashboardStatsContext';
 import { DashboardProvider } from '../../context/DashboardContext';
 import { useUser } from '../../context/UserContext';
 import DashboardToolbar from '../../Components/Dashboard/DashboardToolbar';
+import { PermissionGate } from '@/Components/auth/PermissionGate';
 import type { DashboardProps } from '@/types';
 import './Dashboard.css';
 
@@ -54,11 +55,13 @@ const DashboardContent = () => {
 
 const Dashboard = ({ initialStats = null }: DashboardProps) => {
   return (
-    <DashboardStatsProvider initialStats={initialStats}>
-      <DashboardProvider>
-        <DashboardContent />
-      </DashboardProvider>
-    </DashboardStatsProvider>
+    <PermissionGate permission="dashboard.read" pageLabel="Dashboard">
+      <DashboardStatsProvider initialStats={initialStats}>
+        <DashboardProvider>
+          <DashboardContent />
+        </DashboardProvider>
+      </DashboardStatsProvider>
+    </PermissionGate>
   );
 };
 

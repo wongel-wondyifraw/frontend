@@ -301,3 +301,122 @@ export const getMemberMinistries = async (memberId: string): Promise<Ministry[]>
 };
 
 export default api;
+
+export interface NotificationListResponse {
+  items: Array<{
+    id: string;
+    kind: string;
+    severity: string;
+    title: string;
+    message: string;
+    href?: string | null;
+    read_at?: string | null;
+    created_at: string;
+  }>;
+  unreadCount: number;
+}
+
+export interface NotificationPreferences {
+  id: string;
+  user_id: string;
+  enabled: boolean;
+  kinds: Record<string, boolean>;
+}
+
+export const getNotifications = async (): Promise<NotificationListResponse> => {
+  try {
+    const response = await api.get<NotificationListResponse>('/notifications');
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const markNotificationRead = async (id: string): Promise<void> => {
+  try {
+    await api.patch(`/notifications/${id}/read`);
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const markAllNotificationsRead = async (): Promise<void> => {
+  try {
+    await api.patch('/notifications/read-all');
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const dismissNotification = async (id: string): Promise<void> => {
+  try {
+    await api.patch(`/notifications/${id}/dismiss`);
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
+  try {
+    const response = await api.get<NotificationPreferences>('/notifications/preferences');
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const updateNotificationPreferences = async (
+  data: { enabled?: boolean; kinds?: Record<string, boolean> },
+): Promise<NotificationPreferences> => {
+  try {
+    const response = await api.patch<NotificationPreferences>('/notifications/preferences', data);
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export function subscribeNotificationStream(
+  onEvent: (event: { type: string; notification?: unknown }) => void,
+): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const token = localStorage.getItem('token');
+  if (!token) return () => {};
+
+  let es: EventSource | null = null;
+  let retryMs = 1000;
+  let closed = false;
+
+  const connect = () => {
+    if (closed) return;
+    const url = `${API_BASE_URL}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+    es = new EventSource(url);
+
+    es.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        onEvent(data);
+        retryMs = 1000;
+      } catch {
+        // ignore parse errors
+      }
+    };
+
+    es.onerror = () => {
+      es?.close();
+      es = null;
+      if (!closed) {
+        setTimeout(connect, retryMs);
+        retryMs = Math.min(retryMs * 2, 30000);
+      }
+    };
+  };
+
+  connect();
+
+  return () => {
+    closed = true;
+    es?.close();
+  };
+};

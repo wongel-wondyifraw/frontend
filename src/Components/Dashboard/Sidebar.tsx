@@ -17,6 +17,7 @@ import { useUser } from '../../context/UserContext';
 import { Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { getAvatarUrl } from '@/lib/media-url';
+import { hasPermission } from '@/types';
 import './Sidebar.css';
 
 interface SidebarSubItem {
@@ -29,6 +30,7 @@ interface SidebarLinkItem {
   icon: React.ReactNode;
   path: string;
   type: 'link';
+  permission?: string;
   badge?: string;
   badgeColor?: string;
 }
@@ -37,6 +39,7 @@ interface SidebarDropdownItem {
   label: string;
   icon: React.ReactNode;
   type: 'dropdown';
+  permission?: string;
   subItems: SidebarSubItem[];
   badge?: string;
   badgeColor?: string;
@@ -60,11 +63,12 @@ const Sidebar = () => {
   };
 
   const menuItems: SidebarMenuItem[] = [
-    { label: 'Home', icon: <Home size={18} />, path: '/dashboard', type: 'link' },
+    { label: 'Home', icon: <Home size={18} />, path: '/dashboard', type: 'link', permission: 'dashboard.read' },
     {
       label: 'Members',
       icon: <Users size={18} />,
       type: 'dropdown',
+      permission: 'members.read',
       subItems: [
         { label: 'Manage Members', path: '/members/manage' },
         { label: 'Home Groups', path: '/members/home-groups' }
@@ -74,22 +78,30 @@ const Sidebar = () => {
       label: 'Ministries',
       icon: <Briefcase size={18} />,
       type: 'dropdown',
+      permission: 'ministries.read',
       subItems: [
         { label: 'Manage Ministries', path: '/ministries/manage' }
       ]
     },
-    { label: 'Bible Study', icon: <BookOpen size={18} />, path: '/bible-study', type: 'link' },
-    { label: 'Schedule Management', icon: <Calendar size={18} />, path: '/schedule', type: 'link' },
+    { label: 'Bible Study', icon: <BookOpen size={18} />, path: '/bible-study', type: 'link', permission: 'dashboard.read' },
+    { label: 'Schedule Management', icon: <Calendar size={18} />, path: '/schedule', type: 'link', permission: 'dashboard.read' },
   ];
 
   const bottomItems = [
-    { label: 'Settings', icon: <Settings size={18} />, path: '/settings' },
-    { label: 'Help Center', icon: <HelpCircle size={18} />, path: '/help' },
-  ]
+    { label: 'Settings', icon: <Settings size={18} />, path: '/settings', permission: 'settings.read' },
+    { label: 'Help Center', icon: <HelpCircle size={18} />, path: '/help', permission: 'dashboard.read' },
+  ];
+
+  const visibleMenuItems = menuItems.filter(
+    (item) => !item.permission || hasPermission(user, item.permission),
+  );
+
+  const visibleBottomItems = bottomItems.filter(
+    (item) => !item.permission || hasPermission(user, item.permission),
+  );
 
   return (
     <div className="sidebar-container">
-      {/* Header Profile */}
       <div className="sidebar-header">
         <div className="sidebar-profile">
           <Avatar
@@ -121,9 +133,8 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Main Navigation */}
       <nav className="sidebar-nav">
-        {menuItems.map((item, index) => (
+        {visibleMenuItems.map((item, index) => (
           <div key={item.label} className="nav-group">
             {item.type === 'link' ? (
               <Link
@@ -136,7 +147,6 @@ const Sidebar = () => {
                 </div>
               </Link>
             ) : (
-              // Dropdown Parent
               <>
                 <div
                   className={`nav-item dropdown-parent ${expanded[index] ? 'expanded' : ''}`}
@@ -147,7 +157,7 @@ const Sidebar = () => {
                   aria-expanded={expanded[index] ? 'true' : 'false'}
                 >
                   <div className="nav-left">
-                    <span className="nav-icon">{item.icon}</span>
+                    <span className="nav-icon">{ item.icon }</span>
                     <span className="nav-label">{item.label}</span>
                   </div>
                   <div className="nav-right">
@@ -158,7 +168,6 @@ const Sidebar = () => {
                   </div>
                 </div>
 
-                {/* Submenu */}
                 {expanded[index] && (
                   <div className="submenu-container">
                     {item.subItems?.map((sub) => (
@@ -179,7 +188,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer-links">
-        {bottomItems.map((item) => (
+        {visibleBottomItems.map((item) => (
           <Link
             key={item.path}
             href={item.path}

@@ -1,15 +1,14 @@
 'use client';
 import React from 'react';
 import { NotificationOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Empty, Spin } from 'antd';
+import { useNotifications } from '@/context/NotificationsContext';
 import './AnnouncementsWidget.css';
 
-const announcements = [
-    { id: 1, title: 'Annual General Meeting', date: 'Oct 25, 2025', priority: 'high' },
-    { id: 2, title: 'New Building Fundraiser', date: 'Oct 28, 2025', priority: 'medium' },
-    { id: 3, title: 'Youth Camp Registration', date: 'Nov 01, 2025', priority: 'normal' },
-];
-
 const AnnouncementsWidget = () => {
+    const { items, loading } = useNotifications();
+    const systemItems = items.filter((n) => n.kind === 'system' || n.kind === 'member' || n.kind === 'ministry').slice(0, 5);
+
     return (
         <div className="announcements-widget">
             <div className="announcements-header">
@@ -20,23 +19,29 @@ const AnnouncementsWidget = () => {
             </div>
 
             <div className="announcements-list">
-                {announcements.map((item) => (
-                    <div key={item.id} className="announcement-item">
-                        <div className={`priority-indicator ${item.priority}`}></div>
-                        <div className="announcement-content">
-                            <span className="announcement-title">{item.title}</span>
-                            <span className="announcement-date">{item.date}</span>
-                        </div>
-                        {item.priority === 'high' && (
-                            <div className="priority-badge">
-                                <ExclamationCircleOutlined style={{ fontSize: 12 }} />
+                {loading && systemItems.length === 0 ? (
+                    <div style={{ padding: 16, textAlign: 'center' }}><Spin size="small" /></div>
+                ) : systemItems.length === 0 ? (
+                    <Empty description="No recent announcements" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ) : (
+                    systemItems.map((item) => (
+                        <div key={item.id} className="announcement-item">
+                            <div className={`priority-indicator ${item.severity === 'warning' ? 'high' : item.severity === 'success' ? 'medium' : 'normal'}`} />
+                            <div className="announcement-content">
+                                <span className="announcement-title">{item.title}</span>
+                                <span className="announcement-date">
+                                    {new Date(item.created_at).toLocaleDateString()}
+                                </span>
                             </div>
-                        )}
-                    </div>
-                ))}
+                            {item.severity === 'warning' && (
+                                <div className="priority-badge">
+                                    <ExclamationCircleOutlined style={{ fontSize: 12 }} />
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
-
-            <button className="view-all-btn">View All</button>
         </div>
     );
 };
