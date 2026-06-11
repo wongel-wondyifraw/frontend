@@ -1,9 +1,22 @@
 import type { ReactNode } from 'react';
 
 export interface Permission {
+  id?: string;
   slug: string;
   name: string;
   category: string;
+  description?: string | null;
+}
+
+export interface Role {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  is_system: boolean;
+  permissions: Permission[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface User {

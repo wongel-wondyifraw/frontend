@@ -5,21 +5,25 @@ import type { ThemeContextValue } from '@/types';
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+function readStoredTheme(): 'light' | 'dark' {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const getInitialTheme = (): 'light' | 'dark' => {
-    if (typeof window === 'undefined') return 'light';
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      return savedTheme;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
+  // Always start with 'light' so SSR and the first client render match.
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+  useEffect(() => {
+    setTheme(readStoredTheme());
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

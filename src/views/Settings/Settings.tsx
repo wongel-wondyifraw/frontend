@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Tabs, Form, message, Modal } from 'antd';
 import type { UploadChangeParam } from 'antd/es/upload';
-import { UserOutlined, LockOutlined, TeamOutlined, DeleteOutlined, BellOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, TeamOutlined, DeleteOutlined, BellOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { getProfile, updateProfile, getUsers, createUser, updateUser, changePassword, deleteUser, uploadAvatar } from '../../services/api';
 import { useUser } from '../../context/UserContext';
 import type { User } from '@/types';
@@ -15,6 +15,7 @@ import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './Settings.css';
 
 const NotificationPreferencesTab = dynamic(() => import('./components/NotificationPreferencesTab'), { ssr: false });
+const RoleManagementPanel = dynamic(() => import('./components/RoleManagementPanel'), { ssr: false });
 
 const ManageUsersTab = dynamic(() => import('./components/ManageUsersTab'), { ssr: false });
 const UserWizardModal = dynamic(() => import('./components/UserWizardModal'), { ssr: false });
@@ -303,6 +304,14 @@ const Settings = () => {
             key: '3',
             label: <span><BellOutlined /> Notifications</span>,
             children: <NotificationPreferencesTab />,
+        });
+    }
+
+    if (hasPermission(user, 'roles.read')) {
+        items.push({
+            key: 'roles',
+            label: <span><SafetyCertificateOutlined /> Roles & Permissions</span>,
+            children: <RoleManagementPanel />,
         });
     }
 

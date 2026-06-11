@@ -8,6 +8,8 @@ import type {
   MinistryMember,
   PaginatedResponse,
   PaginationParams,
+  Permission,
+  Role,
   User,
 } from '@/types';
 
@@ -294,6 +296,76 @@ export const removeMinistryMember = async (ministryId: string, memberId: string)
 export const getMemberMinistries = async (memberId: string): Promise<Ministry[]> => {
   try {
     const response = await api.get<Ministry[]>(`/members/${memberId}/ministries`);
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const getRoles = async (): Promise<Role[]> => {
+  try {
+    const response = await api.get<Role[]>('/access/roles');
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const getRole = async (id: string): Promise<Role> => {
+  try {
+    const response = await api.get<Role>(`/access/roles/${id}`);
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const createRole = async (data: {
+  key: string;
+  name: string;
+  description?: string;
+  permissionSlugs: string[];
+}): Promise<Role> => {
+  try {
+    const response = await api.post<Role>('/access/roles', data);
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const updateRole = async (
+  id: string,
+  data: { name?: string; description?: string; permissionSlugs?: string[] },
+): Promise<Role> => {
+  try {
+    const response = await api.patch<Role>(`/access/roles/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const deleteRole = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/access/roles/${id}`);
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const getPermissions = async (): Promise<Permission[]> => {
+  try {
+    const response = await api.get<Permission[]>('/access/permissions');
+    return response.data;
+  } catch (error) {
+    throw getErrorMessage(error);
+  }
+};
+
+export const getPermissionsGrouped = async (): Promise<Record<string, Permission[]>> => {
+  try {
+    const response = await api.get<Record<string, Permission[]>>('/access/permissions/grouped');
     return response.data;
   } catch (error) {
     throw getErrorMessage(error);
