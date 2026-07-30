@@ -29,7 +29,10 @@ const DashboardGrid = () => {
             enabled: isEditMode,
           }}
           onLayoutChange={(currentLayout, allLayouts) => {
-            onLayoutChange(currentLayout, allLayouts);
+            const normalizedLayouts = Object.fromEntries(
+              Object.entries(allLayouts).map(([key, value]) => [key, [...value]]),
+            );
+            onLayoutChange([...currentLayout], normalizedLayouts);
           }}
         >
           {widgets.map((widget) => (
