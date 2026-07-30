@@ -2,7 +2,7 @@ import MemberDetail from '@/views/Members/MemberDetail';
 import { getMemberServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Member Details — Shepherd.One',
+  title: 'Member Details — Goro Full Gospel Church',
 };
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {

@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
 export const metadata = {
-  title: 'Settings — Shepherd.One',
+  title: 'Settings — Goro Full Gospel Church',
 };
 
 const SettingsClient = dynamic(() => import('@/views/Settings/Settings'), {

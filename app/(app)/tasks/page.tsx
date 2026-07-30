@@ -1,7 +1,7 @@
 import ManageTasks from '@/views/Tasks/ManageTasks';
 
 export const metadata = {
-  title: 'Task Management — Shepherd.One',
+  title: 'Task Management — Goro Full Gospel Church',
 };
 
 export default function TasksPage() {

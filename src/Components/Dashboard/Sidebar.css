@@ -288,3 +288,12 @@
 .nav-icon {
   margin-right: 10px;
 }
+
+.sidebar-tenant-name {
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary-blue);
+}

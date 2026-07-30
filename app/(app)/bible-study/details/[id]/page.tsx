@@ -2,7 +2,7 @@ import BibleStudyDetail from '@/views/BibleStudy/BibleStudyDetail';
 import { getBibleStudyServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Bible Study Details — Shepherd.One',
+  title: 'Bible Study Details — Goro Full Gospel Church',
 };
 
 export default async function BibleStudyDetailPage({ params }: { params: Promise<{ id: string }> }) {

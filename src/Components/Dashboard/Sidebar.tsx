@@ -20,6 +20,7 @@ import { Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { getAvatarUrl } from '@/lib/media-url';
 import { hasPermission } from '@/types';
+import { TENANT } from '@/lib/tenant';
 import './Sidebar.css';
 
 interface SidebarSubItem {
@@ -124,6 +125,7 @@ const Sidebar = () => {
             }}
           />
           <div className="sidebar-profile-info">
+            <p className="sidebar-tenant-name">{TENANT.shortName}</p>
             <h3 className="profile-name">
               {user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Loading...'}
             </h3>

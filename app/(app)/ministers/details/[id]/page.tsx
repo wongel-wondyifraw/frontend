@@ -2,7 +2,7 @@ import MinisterDetail from '@/views/Ministers/MinisterDetail';
 import { getMinisterServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Minister Details — Shepherd.One',
+  title: 'Minister Details — Goro Full Gospel Church',
 };
 
 export default async function MinisterDetailPage({ params }: { params: Promise<{ id: string }> }) {

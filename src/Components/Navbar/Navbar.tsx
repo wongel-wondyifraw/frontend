@@ -1,8 +1,8 @@
 'use client';
 import React from "react";
-import Image from "next/image";
 import { Layout, Menu, Button } from "antd";
 import type { MenuProps } from "antd";
+import AppLogo from "../common/AppLogo";
 import "./Navbar.css";
 
 const { Header } = Layout;
@@ -34,15 +34,7 @@ const Navbar = () => {
   return (
     <Header className="navbar">
       <div className="navbar-inner">
-        <Image
-          src="/Logo.svg"
-          alt="Shepherd.One"
-          width={140}
-          height={36}
-          className="logo-icon"
-          priority
-          unoptimized
-        />
+        <AppLogo variant="navbar" href="/" priority />
 
         <Menu
           mode="horizontal"

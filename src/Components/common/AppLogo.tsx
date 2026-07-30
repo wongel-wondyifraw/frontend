@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { TENANT } from '@/lib/tenant';
+import PoweredByShepherd from './PoweredByShepherd';
 import './AppLogo.css';
 
 const LOGO_SIZES = {
-  full: { src: '/Logo.svg', width: 160, height: 40, className: 'brand-logo' },
-  navbar: { src: '/Logo.svg', width: 140, height: 36, className: 'logo-icon' },
-  topbar: { src: '/Logo-Half-Dark.svg', width: 120, height: 32, className: 'topbar-logo' },
+  full: { width: 160, height: 40, className: 'brand-logo' },
+  navbar: { width: 140, height: 36, className: 'logo-icon' },
+  topbar: { width: 120, height: 32, className: 'topbar-logo' },
 } as const;
 
 type LogoVariant = keyof typeof LOGO_SIZES;
@@ -17,15 +19,23 @@ interface AppLogoProps {
   href?: string;
   priority?: boolean;
   onClick?: () => void;
+  /** Show “Powered by Shepherd.One” beside the tenant logo */
+  showPoweredBy?: boolean;
 }
 
-export default function AppLogo({ variant = 'full', href, priority = false, onClick }: AppLogoProps) {
+export default function AppLogo({
+  variant = 'full',
+  href,
+  priority = false,
+  onClick,
+  showPoweredBy = false,
+}: AppLogoProps) {
   const config = LOGO_SIZES[variant] || LOGO_SIZES.full;
 
   const image = (
     <Image
-      src={config.src}
-      alt="Shepherd.One"
+      src={TENANT.logoSrc}
+      alt={TENANT.name}
       width={config.width}
       height={config.height}
       className={config.className}
@@ -34,21 +44,30 @@ export default function AppLogo({ variant = 'full', href, priority = false, onCl
     />
   );
 
+  const mark = showPoweredBy ? (
+    <span className="app-logo-stack app-logo-stack--inline">
+      {image}
+      <PoweredByShepherd compact />
+    </span>
+  ) : (
+    image
+  );
+
   if (href) {
     return (
-      <Link href={href} className="app-logo-link" aria-label="Shepherd.One home">
-        {image}
+      <Link href={href} className="app-logo-link" aria-label={`${TENANT.name} home`}>
+        {mark}
       </Link>
     );
   }
 
   if (onClick) {
     return (
-      <button type="button" className="app-logo-link" onClick={onClick} aria-label="Shepherd.One home">
-        {image}
+      <button type="button" className="app-logo-link" onClick={onClick} aria-label={`${TENANT.name} home`}>
+        {mark}
       </button>
     );
   }
 
-  return image;
+  return mark;
 }

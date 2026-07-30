@@ -2,7 +2,7 @@ import ManageMinistries from '@/views/Ministries/ManageMinistries';
 import { getMinistriesServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Manage Ministries — Shepherd.One',
+  title: 'Manage Ministries — Goro Full Gospel Church',
 };
 
 export default async function ManageMinistriesPage() {

@@ -13,3 +13,31 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+.app-logo-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo-stack--inline {
+  flex-direction: row;
+}
+
+.app-logo-stack .brand-logo,
+.app-logo-stack .logo-icon,
+.app-logo-stack .topbar-logo {
+  object-fit: contain;
+  object-position: left center;
+  flex-shrink: 0;
+}
+
+.app-logo-stack .powered-by-shepherd {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  text-align: left;
+}

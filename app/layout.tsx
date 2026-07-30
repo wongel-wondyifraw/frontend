@@ -3,8 +3,8 @@ import Providers from './providers';
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'CMS',
-  description: 'Church Management System',
+  title: 'Goro Full Gospel Church',
+  description: 'Church management for Goro Full Gospel Church — powered by Shepherd.One',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

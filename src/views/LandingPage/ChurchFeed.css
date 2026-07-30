@@ -135,7 +135,7 @@
 .landing-hero-copy {
   position: absolute;
   left: 5%;
-  top: 50%;
+  top: 38%;
   transform: translateY(-50%);
   max-width: 640px;
   z-index: 2;
@@ -147,9 +147,19 @@
   color: #ffffff;
 }
 
+.landing-hero-copy .landing-kicker {
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.05;
+  margin: 0;
+}
+
 .landing-hero-copy h1 {
   font-size: clamp(2.6rem, 6vw, 4.6rem);
-  margin-bottom: 1rem;
+  line-height: 1.05;
+  margin: 0 0 1rem;
 }
 
 .landing-text-link--light {
@@ -324,11 +334,17 @@
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   padding: 1rem 1.5rem 1.5rem;
   background: #ffffff;
   border-top: 1px solid var(--lp-blue-border);
+}
+
+.landing-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 @media (max-width: 900px) {

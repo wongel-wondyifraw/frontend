@@ -2,7 +2,7 @@ import ManageBibleStudies from '@/views/BibleStudy/ManageBibleStudies';
 import { getBibleStudiesServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Bible Studies — Shepherd.One',
+  title: 'Bible Studies — Goro Full Gospel Church',
 };
 
 export default async function BibleStudyPage() {

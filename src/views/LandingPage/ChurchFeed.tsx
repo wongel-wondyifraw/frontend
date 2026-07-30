@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import AppLogo from '@/Components/common/AppLogo';
+import { TENANT } from '@/lib/tenant';
 import './ChurchFeed.css';
 
 const HIGHLIGHTS = [
@@ -56,7 +57,7 @@ export default function ChurchFeed() {
   return (
     <div className="landing-shell">
       <header className="landing-header">
-        <AppLogo variant="full" href="/" priority />
+        <AppLogo variant="full" href="/" priority showPoweredBy />
         <Link href="/login" className="landing-login-btn">
           Log in
         </Link>
@@ -76,10 +77,10 @@ export default function ChurchFeed() {
             />
             <div className="landing-hero-overlay" />
             <div className="landing-hero-copy">
-              <p className="landing-kicker">Grace Community Church</p>
-              <h1>Shepherd.One</h1>
+              <p className="landing-kicker">Welcome</p>
+              <h1>{TENANT.name}</h1>
               <p className="landing-lede">
-                Worship updates, Scripture, and weekend life for a growing church community.
+                {TENANT.tagline} Worship updates, Scripture, and weekend life for our church family.
               </p>
               <div className="landing-hero-actions">
                 <Link href="/login" className="landing-login-btn landing-login-btn--solid">
@@ -147,10 +148,11 @@ export default function ChurchFeed() {
       </main>
 
       <footer className="landing-footer">
-        <AppLogo variant="navbar" href="/" />
-        <Link href="/login" className="landing-login-btn landing-login-btn--solid">
-          Log in
-        </Link>
+        <div className="landing-footer-actions">
+          <Link href="/login" className="landing-login-btn landing-login-btn--solid">
+            Log in
+          </Link>
+        </div>
       </footer>
     </div>
   );

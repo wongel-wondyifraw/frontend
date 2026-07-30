@@ -2,7 +2,7 @@ import ManageHomeGroups from '@/views/HomeGroups/ManageHomeGroups';
 import { getHomeGroupsServer } from '@/lib/api-server';
 
 export const metadata = {
-  title: 'Home Groups — Shepherd.One',
+  title: 'Home Groups — Goro Full Gospel Church',
 };
 
 export default async function HomeGroupsPage() {

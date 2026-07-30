@@ -61,6 +61,7 @@
   width: auto;
   /* ✅ critical */
   display: block;
+  object-fit: contain;
 }
 
 /* Brand text */

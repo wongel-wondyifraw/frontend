@@ -13,6 +13,8 @@ import { loginUser } from "../../services/api";
 import { setAuthCookie } from "../../lib/auth-cookies";
 import { getApiErrorMessage } from "../../lib/errors";
 import AppLogo from "../../Components/common/AppLogo";
+import PoweredByShepherd from "../../Components/common/PoweredByShepherd";
+import { TENANT } from "@/lib/tenant";
 import "./LoginPage.css";
 import { useUser } from "../../context/UserContext";
 
@@ -67,6 +69,9 @@ const LoginPage = () => {
       <main className="login-container">
         <div className="login-card">
           <div className="card-header">
+            <Text type="secondary" className="login-tenant-name">
+              {TENANT.name}
+            </Text>
             <Title level={2} className="card-title">
               Welcome back
             </Title>
@@ -135,7 +140,7 @@ const LoginPage = () => {
             </Button>
 
             <div className="footer-text">
-
+              <PoweredByShepherd />
             </div>
           </Form>
         </div>

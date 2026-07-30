@@ -1,7 +1,7 @@
 import EditMinister from '@/views/Ministers/EditMinister';
 
 export const metadata = {
-  title: 'Edit Minister — Shepherd.One',
+  title: 'Edit Minister — Goro Full Gospel Church',
 };
 
 export default EditMinister;

@@ -43,6 +43,7 @@
 .brand-logo {
   height: 2.25rem;
   width: auto;
+  object-fit: contain;
   filter: none;
 }
 
@@ -72,6 +73,16 @@
   margin-bottom: 1.5rem;
   text-align: left;
   margin-top: 0;
+}
+
+.login-tenant-name {
+  display: block;
+  margin-bottom: 0.35rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1565c0 !important;
 }
 
 .card-title {
