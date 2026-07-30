@@ -32,10 +32,10 @@ function notifyThemeListeners() {
 
 function readStoredTheme(): 'light' | 'dark' {
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light' || savedTheme === 'dark') {
-    return savedTheme;
+  if (savedTheme === 'light') {
+    return 'light';
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'light';
 }
 
 function getServerThemeSnapshot(): 'light' | 'dark' {
@@ -54,11 +54,12 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   );
 
   useEffect(() => {
+    localStorage.setItem('theme', 'light');
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    const nextTheme = 'light';
     localStorage.setItem('theme', nextTheme);
     notifyThemeListeners();
   };
