@@ -20,6 +20,7 @@ import {
 import { getMemberById, deleteMember, removeMinistryMember, getFamilyByMember } from '../../services/api';
 import type { MemberDetailProps, Member, Family } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
+import { getImageUrl } from '@/lib/media-url';
 import { LeaderNameWithTag, leaderDisplayName } from '../../Components/common/LeaderLabel';
 import './MemberDetail.css';
 
@@ -116,7 +117,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                     <div className="member-header-section">
                         <Avatar
                             size={120}
-                            src={member.image_url ? (member.image_url.startsWith('http') ? member.image_url : `http://localhost:3000${member.image_url.startsWith('/') ? '' : '/'}${member.image_url}`) : undefined}
+                            src={getImageUrl(member.image_url) ?? undefined}
                             icon={<UserOutlined />}
                             className="member-profile-image"
                             style={{ fontSize: '60px' }}
@@ -198,7 +199,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                         <tr>
                                             <th><FilePdfOutlined /> Church Letter</th>
                                             <td>
-                                                {member.document_url ? <a href={member.document_url.startsWith('http') ? member.document_url : `http://localhost:3000${member.document_url.startsWith('/') ? '' : '/'}${member.document_url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
+                                                {member.document_url ? <a href={getImageUrl(member.document_url) ?? undefined} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
                                             </td>
                                         </tr>
                                     </tbody>

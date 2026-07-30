@@ -150,3 +150,11 @@ button {
     transform: rotate(360deg);
   }
 }
+
+/* Ensure profile/member photos fill circular Ant Design avatars correctly */
+.ant-avatar > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center;
+}

@@ -12,6 +12,7 @@ import StepperWizard from '../../Components/common/StepperWizard';
 import { updateMinister, getMinisterById, uploadMemberImage } from '../../services/api';
 import { buildMinisterPayload } from '@/lib/minister-payload';
 import { getApiErrorMessage } from '@/lib/errors';
+import { getImageUrl } from '@/lib/media-url';
 import type { UploadChangeParam } from 'antd/es/upload';
 import type { Minister } from '@/types';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -86,7 +87,7 @@ const EditMinister = () => {
       title: ministerData.title,
       joined_date: ministerData.joined_date ? dayjs(ministerData.joined_date) : null,
     });
-    if (ministerData.image_url) setAvatarPreview(ministerData.image_url);
+    if (ministerData.image_url) setAvatarPreview(getImageUrl(ministerData.image_url));
   }, [initialLoading, ministerData, form]);
 
   const next = async () => {

@@ -18,6 +18,7 @@ import StepperWizard from '../../Components/common/StepperWizard';
 import { updateMember, getMemberById, uploadMemberImage } from '../../services/api';
 import { buildMemberPayload } from '@/lib/member-payload';
 import { getApiErrorMessage } from '@/lib/errors';
+import { getImageUrl } from '@/lib/media-url';
 import type { UploadChangeParam } from 'antd/es/upload';
 import dayjs, { type Dayjs } from 'dayjs';
 import './AddMember.css';
@@ -95,7 +96,7 @@ const handleAvatarChange = (info: UploadChangeParam) => {
             baptized: memberData.baptized === true || memberData.baptized === 'true' ? 'yes' : memberData.baptized === false || memberData.baptized === 'false' ? 'no' : memberData.baptized,
         });
         if (memberData.image_url) {
-            setAvatarPreview(memberData.image_url.startsWith('http') ? memberData.image_url : memberData.image_url);
+            setAvatarPreview(getImageUrl(memberData.image_url));
         }
     }, [initialLoading, memberData, form]);
 

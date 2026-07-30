@@ -36,13 +36,21 @@
 }
 
 .sidebar-profile-img {
-  width: 80px;
-  height: 80px;
+  width: 80px !important;
+  height: 80px !important;
   border-radius: 50%;
-  object-fit: cover;
   border: 3px solid var(--border-color);
   /* was #DBEAFE */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.sidebar-profile-img img,
+.ant-avatar.sidebar-profile-img > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center;
 }
 
 .sidebar-profile-info {

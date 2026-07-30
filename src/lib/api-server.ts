@@ -1,7 +1,10 @@
 import { cookies } from 'next/headers';
 import type { BibleStudy, DashboardStats, HomeGroup, Member, Minister, Ministry, PaginatedResponse, User } from '@/types';
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
+  .replace(/\/$/, '')
+  .trim()
+  .replace(/\/api\/v1$/i, '');
 
 class ServerApiError extends Error {
   status: number;
