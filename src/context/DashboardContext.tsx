@@ -17,9 +17,9 @@ const TODO_WIDGET: DashboardWidget = { id: 'w-todo', type: 'todo', settings: { t
 const TODO_LAYOUT: DashboardLayoutItem = { i: 'w-todo', x: 0, y: 13, w: 8, h: 10, minW: 6, minH: 6 };
 
 const INITIAL_WIDGETS: DashboardWidget[] = [
-  { id: 'w1', type: 'memberOverview', settings: { title: 'Total Members', count: '1000', totalLabel: 'Total Members', trend: '+12 this month', icon: 'group', data: [{ name: 'Active', value: 850 }, { name: 'Inactive', value: 150 }], legend: ['Active', 'Inactive'] } },
-  { id: 'w2', type: 'ministers', settings: { title: 'Total Ministers', count: '20', totalLabel: 'Total Ministers', trend: '+2 this month', icon: 'church', data: [{ name: 'Licensed', value: 15 }, { name: 'Ordained', value: 5 }], legend: ['Licensed', 'Ordained'] } },
-  { id: 'w3', type: 'ministries', settings: { title: 'Total Ministries', count: '6', totalLabel: 'Active Ministries', trend: 'Stable', icon: 'volunteer', data: [{ name: 'Active', value: 5 }, { name: 'Hiatus', value: 1 }], legend: ['Active', 'Hiatus'] } },
+  { id: 'w1', type: 'memberOverview', settings: { title: 'Total Members', totalLabel: 'Total Members', icon: 'group', metric: 'members' } },
+  { id: 'w2', type: 'ministers', settings: { title: 'Total Ministers', totalLabel: 'Total Ministers', icon: 'church', metric: 'ministers' } },
+  { id: 'w3', type: 'ministries', settings: { title: 'Total Ministries', totalLabel: 'Active Ministries', icon: 'volunteer', metric: 'ministries' } },
   { id: 'w7', type: 'calendar', settings: {} },
   { id: 'w10', type: 'announcements', settings: {} },
   TODO_WIDGET,
@@ -34,7 +34,7 @@ const DEFAULT_LAYOUT: DashboardLayoutItem[] = [
   TODO_LAYOUT,
 ];
 
-const STORAGE_KEY = 'cms_dashboard_config_v2';
+const STORAGE_KEY = 'cms_dashboard_config_v3';
 
 function ensureMandatoryWidgets(
   widgets: DashboardWidget[],

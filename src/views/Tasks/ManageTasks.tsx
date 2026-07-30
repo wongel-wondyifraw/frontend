@@ -179,12 +179,16 @@ const ManageTasksContent = () => {
   };
 
   const openAssign = () => {
+    setAssignOpen(true);
+  };
+
+  const syncAssignForm = (open: boolean) => {
+    if (!open) return;
     assignForm.resetFields();
     const homeVisit = definitions.find((d) => d.code === 'HOME_VISIT' && d.is_active);
     if (homeVisit) {
       assignForm.setFieldsValue({ definition_id: homeVisit.id });
     }
-    setAssignOpen(true);
   };
 
   const submitAssign = async () => {
@@ -202,7 +206,6 @@ const ManageTasksContent = () => {
       });
       message.success('Task assigned');
       setAssignOpen(false);
-      assignForm.resetFields();
       loadTasks(1, pageSize, searchText, status);
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
@@ -250,18 +253,37 @@ const ManageTasksContent = () => {
 
   const openCreateDefinition = () => {
     setEditingDef(null);
-    defForm.resetFields();
-    defForm.setFieldsValue({ is_active: true, requires_visit_target: false });
+    if (defsOpen) {
+      defForm.resetFields();
+      defForm.setFieldsValue({ is_active: true, requires_visit_target: false });
+    }
   };
 
   const openEditDefinition = (def: TaskDefinition) => {
     setEditingDef(def);
-    defForm.setFieldsValue({
-      name: def.name,
-      description: def.description || '',
-      requires_visit_target: def.requires_visit_target,
-      is_active: def.is_active,
-    });
+    if (defsOpen) {
+      defForm.setFieldsValue({
+        name: def.name,
+        description: def.description || '',
+        requires_visit_target: def.requires_visit_target,
+        is_active: def.is_active,
+      });
+    }
+  };
+
+  const syncDefinitionForm = (open: boolean) => {
+    if (!open) return;
+    if (editingDef) {
+      defForm.setFieldsValue({
+        name: editingDef.name,
+        description: editingDef.description || '',
+        requires_visit_target: editingDef.requires_visit_target,
+        is_active: editingDef.is_active,
+      });
+    } else {
+      defForm.resetFields();
+      defForm.setFieldsValue({ is_active: true, requires_visit_target: false });
+    }
   };
 
   const submitDefinition = async () => {
@@ -418,7 +440,7 @@ const ManageTasksContent = () => {
         <h2>Task Management</h2>
         <Space wrap>
           {canCreate && (
-            <Button icon={<SettingOutlined />} onClick={() => { setDefsOpen(true); openCreateDefinition(); }}>
+            <Button icon={<SettingOutlined />} onClick={() => { setEditingDef(null); setDefsOpen(true); }}>
               Definitions
             </Button>
           )}
@@ -456,6 +478,7 @@ const ManageTasksContent = () => {
         confirmLoading={assignSubmitting}
         okText="Assign"
         destroyOnHidden
+        afterOpenChange={syncAssignForm}
         width={560}
       >
         <Form form={assignForm} layout="vertical" style={{ marginTop: 8 }}>
@@ -529,6 +552,7 @@ const ManageTasksContent = () => {
         onClose={() => setDefsOpen(false)}
         size={440}
         destroyOnHidden
+        afterOpenChange={syncDefinitionForm}
       >
         <Form form={defForm} layout="vertical" onFinish={submitDefinition}>
           <Form.Item

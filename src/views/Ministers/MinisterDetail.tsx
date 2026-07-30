@@ -216,6 +216,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
                   <tr><th><PhoneOutlined /> Phone</th><td>{minister.phone || 'N/A'}</td></tr>
                   <tr><th><EnvironmentOutlined /> Address</th><td>{minister.address || 'N/A'}</td></tr>
                   <tr><th><CalendarOutlined /> Date of Birth</th><td>{minister.date_of_birth ? new Date(minister.date_of_birth).toLocaleDateString() : 'N/A'}</td></tr>
+                  <tr><th><UserOutlined /> Gender</th><td style={{ textTransform: 'capitalize' }}>{minister.gender || 'N/A'}</td></tr>
                   <tr><th><UserOutlined /> Marital Status</th><td>{minister.marital_status || 'N/A'}</td></tr>
                   <tr><th><UserOutlined /> Title</th><td>{minister.title || 'N/A'}</td></tr>
                 </tbody>

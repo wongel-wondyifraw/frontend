@@ -14,6 +14,9 @@ import type {
   BibleStudyMember,
   TaskAssignment,
   TaskDefinition,
+  Family,
+  FamilyChild,
+  FamilyStats,
   PaginatedResponse,
   PaginationParams,
   Permission,
@@ -630,6 +633,101 @@ export const updateTask = async (id: string, data: Record<string, unknown>): Pro
 export const deleteTask = async (id: string): Promise<void> => {
   try {
     await api.delete(`/tasks/${id}`);
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getFamilyStats = async (): Promise<FamilyStats> => {
+  try {
+    const response = await api.get<FamilyStats>('/families/stats');
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getFamilies = async (params: PaginationParams = {}): Promise<PaginatedResponse<Family>> => {
+  try {
+    const response = await api.get<PaginatedResponse<Family>>('/families', { params });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getFamilyById = async (id: string): Promise<Family> => {
+  try {
+    const response = await api.get<Family>(`/families/${id}`);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getFamilyByMember = async (memberId: string): Promise<Family | null> => {
+  try {
+    const response = await api.get<{ family: Family | null }>(`/families/by-member/${memberId}`);
+    return response.data?.family ?? null;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const createFamily = async (data: Record<string, unknown>): Promise<Family> => {
+  try {
+    const response = await api.post<Family>('/families', data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateFamily = async (id: string, data: Record<string, unknown>): Promise<Family> => {
+  try {
+    const response = await api.patch<Family>(`/families/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deleteFamily = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/families/${id}`);
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const addFamilyChild = async (
+  familyId: string,
+  data: { name: string; age: number },
+): Promise<FamilyChild> => {
+  try {
+    const response = await api.post<FamilyChild>(`/families/${familyId}/children`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateFamilyChild = async (
+  familyId: string,
+  childId: string,
+  data: Record<string, unknown>,
+): Promise<FamilyChild> => {
+  try {
+    const response = await api.patch<FamilyChild>(`/families/${familyId}/children/${childId}`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deleteFamilyChild = async (familyId: string, childId: string): Promise<void> => {
+  try {
+    await api.delete(`/families/${familyId}/children/${childId}`);
   } catch (error) {
     throw toApiError(error);
   }

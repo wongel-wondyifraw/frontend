@@ -8,6 +8,7 @@ type MemberFormValues = {
   phone?: string;
   address?: string;
   marital_status?: string;
+  gender?: string;
   status?: string;
   baptized?: string | boolean;
   date_of_birth?: Dayjs;
@@ -39,6 +40,7 @@ export function buildMemberPayload(
   if (address) payload.address = address;
 
   if (values.marital_status) payload.marital_status = values.marital_status;
+  if (values.gender) payload.gender = values.gender;
   if (values.status) payload.status = values.status;
 
   if (values.date_of_birth) {

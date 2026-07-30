@@ -11,9 +11,10 @@ const PROTECTED_PREFIXES = [
   '/ministers',
   '/ministries',
   '/settings',
-  '/schedule',
   '/bible-study',
   '/tasks',
+  '/families',
+  '/schedule',
   '/help',
   '/subscription',
 ];

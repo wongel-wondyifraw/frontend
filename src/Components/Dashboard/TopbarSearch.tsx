@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Home, Users, Briefcase, User as UserIcon, FileText, BookOpen, Calendar, Settings as SettingsIcon, HelpCircle, ListTodo } from 'lucide-react';
+import { Search, Home, Users, Briefcase, User as UserIcon, FileText, BookOpen, Calendar, Settings as SettingsIcon, HelpCircle, ListTodo, UsersRound } from 'lucide-react';
 import { searchDashboard } from '@/services/api';
 import { useDebouncedCallback } from '@/lib/debounce';
 import type { SearchResult } from '@/types';
@@ -20,7 +20,8 @@ const PAGE_ITEMS = [
   { name: 'Bible Study', path: '/bible-study', icon: 'book', category: 'Pages' },
   { name: 'Add Bible Study', path: '/bible-study/add', icon: 'book', category: 'Pages' },
   { name: 'Task Management', path: '/tasks', icon: 'tasks', category: 'Pages' },
-  { name: 'Schedule Management', path: '/schedule', icon: 'calendar', category: 'Pages' },
+  { name: 'Family Management', path: '/families', icon: 'families', category: 'Pages' },
+  { name: 'Create Family', path: '/families/add', icon: 'families', category: 'Pages' },
   { name: 'Settings', path: '/settings', icon: 'settings', category: 'Pages' },
   { name: 'Help Center', path: '/help', icon: 'help', category: 'Pages' },
   { name: 'Subscription', path: '/subscription', icon: 'file', category: 'Pages' },
@@ -34,6 +35,7 @@ function getPageIcon(iconName: string) {
     case 'briefcase': return <Briefcase size={size} />;
     case 'book': return <BookOpen size={size} />;
     case 'tasks': return <ListTodo size={size} />;
+    case 'families': return <UsersRound size={size} />;
     case 'calendar': return <Calendar size={size} />;
     case 'settings': return <SettingsIcon size={size} />;
     case 'help': return <HelpCircle size={size} />;

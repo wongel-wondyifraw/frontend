@@ -7,11 +7,11 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
-  Calendar,
   LogOut,
   BookOpen,
   Church,
   ListTodo,
+  UsersRound,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -92,7 +92,7 @@ const Sidebar = () => {
     },
     { label: 'Bible Study', icon: <BookOpen size={18} />, path: '/bible-study', type: 'link', permission: 'bible_studies.read' },
     { label: 'Task Management', icon: <ListTodo size={18} />, path: '/tasks', type: 'link', permission: 'tasks.read' },
-    { label: 'Schedule Management', icon: <Calendar size={18} />, path: '/schedule', type: 'link', permission: 'dashboard.read' },
+    { label: 'Family Management', icon: <UsersRound size={18} />, path: '/families', type: 'link', permission: 'families.read' },
   ];
 
   const bottomItems = [

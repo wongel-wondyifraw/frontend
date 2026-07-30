@@ -54,6 +54,7 @@ export interface Member {
   document_url?: string;
   date_of_birth?: string;
   marital_status?: string;
+  gender?: string | null;
   baptized?: boolean | string;
   joined_date?: string;
   created_at?: string;
@@ -83,6 +84,7 @@ export interface Minister {
   image_url?: string;
   date_of_birth?: string;
   marital_status?: string;
+  gender?: string | null;
   title?: string;
   joined_date?: string;
   created_at?: string;
@@ -200,6 +202,36 @@ export interface TaskAssignment {
   created_at?: string;
 }
 
+export interface FamilyChild {
+  id: string;
+  family_id: string;
+  name: string;
+  age: number;
+  created_at?: string;
+}
+
+export interface Family {
+  id: string;
+  name?: string | null;
+  husband_id: string;
+  husband_type: LeaderType;
+  wife_id: string;
+  wife_type: LeaderType;
+  husband?: LeaderSummary | null;
+  wife?: LeaderSummary | null;
+  notes?: string | null;
+  children?: FamilyChild[];
+  created_at?: string;
+}
+
+export interface FamilyStats {
+  familyCount: number;
+  childrenCount: number;
+  childrenBelow10: number;
+  childrenTeenage: number;
+  childrenAbove20: number;
+}
+
 export interface LoginResponse {
   access_token: string;
   user: User;
@@ -215,7 +247,14 @@ export interface DashboardStats {
   memberCount: number;
   activeMembers: number;
   inactiveMembers: number;
+  membersThisMonth: number;
+  ministerCount: number;
+  activeMinisters: number;
+  inactiveMinisters: number;
+  ministersThisMonth: number;
   ministryCount: number;
+  ministriesWithLeader: number;
+  ministriesWithoutLeader: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -296,6 +335,11 @@ export interface MinistryDetailProps {
 export interface HomeGroupDetailProps {
   homeGroupId?: string;
   initialHomeGroup?: HomeGroup | null;
+}
+
+export interface FamilyDetailProps {
+  familyId?: string;
+  initialFamily?: Family | null;
 }
 
 export interface BibleStudyDetailProps {

@@ -159,6 +159,20 @@ const AddMinister = () => {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
+                  <Form.Item
+                    label="Gender"
+                    name="gender"
+                    rules={[{ required: true, message: 'Gender is required' }]}
+                  >
+                    <Select placeholder="Select gender" size="large">
+                      <Option value="male">Male</Option>
+                      <Option value="female">Female</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
                   <Form.Item label="Marital Status" name="marital_status">
                     <Select placeholder="Select status" size="large" allowClear>
                       <Option value="single">Single</Option>

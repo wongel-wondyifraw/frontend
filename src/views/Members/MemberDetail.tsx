@@ -17,9 +17,10 @@ import {
     TeamOutlined,
     InfoCircleOutlined
 } from '@ant-design/icons';
-import { getMemberById, deleteMember, removeMinistryMember } from '../../services/api';
-import type { MemberDetailProps, Member } from '@/types';
+import { getMemberById, deleteMember, removeMinistryMember, getFamilyByMember } from '../../services/api';
+import type { MemberDetailProps, Member, Family } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
+import { LeaderNameWithTag, leaderDisplayName } from '../../Components/common/LeaderLabel';
 import './MemberDetail.css';
 
 const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDetailProps) => {
@@ -27,13 +28,18 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const id = (memberIdProp || params?.id) as string;
     const router = useRouter();
     const [member, setMember] = useState<Member | null>(initialMember);
+    const [family, setFamily] = useState<Family | null>(null);
     const [loading, setLoading] = useState(initialMember === null);
 
     const fetchMemberDetails = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await getMemberById(id);
+            const [data, familyData] = await Promise.all([
+                getMemberById(id),
+                getFamilyByMember(id).catch(() => null),
+            ]);
             setMember(data);
+            setFamily(familyData);
         } catch (error) {
             message.error('Failed to load member details');
             router.push('/members/manage');
@@ -43,9 +49,14 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     }, [id, router]);
 
     useEffect(() => {
-        if (initialMember !== null) return;
+        if (initialMember !== null) {
+            getFamilyByMember(id)
+                .then(setFamily)
+                .catch(() => setFamily(null));
+            return;
+        }
         fetchMemberDetails();
-    }, [initialMember, fetchMemberDetails]);
+    }, [initialMember, fetchMemberDetails, id]);
 
     const handleDelete = async () => {
         try {
@@ -163,6 +174,10 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                             <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
                                         </tr>
                                         <tr>
+                                            <th><UserOutlined /> Gender</th>
+                                            <td style={{ textTransform: 'capitalize' }}>{member.gender || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
                                             <th><UserOutlined /> Marital Status</th>
                                             <td>{member.marital_status || 'N/A'}</td>
                                         </tr>
@@ -188,6 +203,65 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3><TeamOutlined style={{ marginRight: 8, color: '#1565c0' }} />Family</h3>
+                                {!family ? (
+                                    <Empty description="Not linked to a family yet." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                ) : (
+                                    <>
+                                        <table className="elegant-info-table" style={{ marginBottom: 16 }}>
+                                            <tbody>
+                                                <tr>
+                                                    <th><UserOutlined /> Family</th>
+                                                    <td>{family.name || 'Family'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th><UserOutlined /> Spouse</th>
+                                                    <td>
+                                                        {(() => {
+                                                            const isHusband = family.husband_id === member.id && (family.husband_type || 'member') === 'member';
+                                                            const spouse = isHusband ? family.wife : family.husband;
+                                                            const spouseId = isHusband ? family.wife_id : family.husband_id;
+                                                            const spouseType = isHusband ? family.wife_type : family.husband_type;
+                                                            if (!spouse) return 'N/A';
+                                                            const path = spouseType === 'minister'
+                                                              ? `/ministers/details/${spouseId}`
+                                                              : `/members/details/${spouseId}`;
+                                                            return (
+                                                                <a
+                                                                    onClick={() => router.push(path)}
+                                                                    style={{ color: '#1565c0', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                                                                >
+                                                                    {leaderDisplayName(spouse)}
+                                                                    <Tag color={spouse.type === 'minister' ? 'purple' : 'blue'}>
+                                                                      {spouse.type === 'minister' ? 'Minister' : 'Member'}
+                                                                    </Tag>
+                                                                    <Tag>{isHusband ? 'Wife' : 'Husband'}</Tag>
+                                                                </a>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <h4 style={{ margin: '0 0 12px', fontSize: 14, color: '#475569' }}>
+                                            Children ({family.children?.length ?? 0})
+                                        </h4>
+                                        {(family.children?.length ?? 0) === 0 ? (
+                                            <Empty description="No children recorded." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                        ) : (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                                {(family.children || []).map((child) => (
+                                                    <Tag key={child.id} color="blue" style={{ padding: '4px 10px', fontSize: 13 }}>
+                                                        {child.name} · {child.age} yrs
+                                                    </Tag>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
 
                             <div className="detail-section">

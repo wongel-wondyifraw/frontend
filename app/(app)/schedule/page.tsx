@@ -1,3 +1,5 @@
-import ScheduleManagement from '@/views/Schedule/ScheduleManagement';
+import { redirect } from 'next/navigation';
 
-export default ScheduleManagement;
+export default function ScheduleRedirectPage() {
+  redirect('/families');
+}

@@ -81,6 +81,7 @@ const EditMinister = () => {
       address: ministerData.address,
       date_of_birth: ministerData.date_of_birth ? dayjs(ministerData.date_of_birth) : null,
       marital_status: ministerData.marital_status,
+      gender: ministerData.gender || undefined,
       status: ministerData.status,
       title: ministerData.title,
       joined_date: ministerData.joined_date ? dayjs(ministerData.joined_date) : null,
@@ -185,6 +186,20 @@ const EditMinister = () => {
                     <DatePicker style={{ width: '100%' }} size="large" />
                   </Form.Item>
                 </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="Gender"
+                    name="gender"
+                    rules={[{ required: true, message: 'Gender is required' }]}
+                  >
+                    <Select placeholder="Select gender" size="large">
+                      <Option value="male">Male</Option>
+                      <Option value="female">Female</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item label="Marital Status" name="marital_status">
                     <Select allowClear size="large">

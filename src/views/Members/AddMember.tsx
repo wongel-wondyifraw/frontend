@@ -176,6 +176,20 @@ const AddMember = () => {
                                         </Form.Item>
                                     </Col>
                                     <Col span={12}>
+                                        <Form.Item
+                                            label="Gender"
+                                            name="gender"
+                                            rules={[{ required: true, message: 'Gender is required' }]}
+                                        >
+                                            <Select placeholder="Select gender" size="large">
+                                                <Option value="male">Male</Option>
+                                                <Option value="female">Female</Option>
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Row gutter={16}>
+                                    <Col span={12}>
                                         <Form.Item label="Marital Status" name="marital_status">
                                             <Select placeholder="Select status" size="large" allowClear>
                                                 <Option value="single">Single</Option>
@@ -318,6 +332,7 @@ const AddMember = () => {
                                                     <div><strong>Address:</strong> {values.address || '—'}</div>
                                                     <div><strong>Date of Birth:</strong> {values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : '—'}</div>
                                                     <div><strong>Marital Status:</strong> {values.marital_status || '—'}</div>
+                                                    <div><strong>Gender:</strong> {values.gender || '—'}</div>
                                                     <div><strong>Status:</strong> {values.status || '—'}</div>
                                                 </div>
                                             );
