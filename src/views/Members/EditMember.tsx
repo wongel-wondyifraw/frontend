@@ -15,7 +15,8 @@ import {
     InboxOutlined,
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
-import { updateMember, getMemberById, API_BASE_URL } from '../../services/api';
+import { updateMember, getMemberById, uploadMemberImage } from '../../services/api';
+import { buildMemberPayload } from '@/lib/member-payload';
 import { getApiErrorMessage } from '@/lib/errors';
 import type { UploadChangeParam } from 'antd/es/upload';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -48,17 +49,17 @@ const EditMember = () => {
     const [currentStep, setCurrentStep] = useState(0);
 
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [memberData, setMemberData] = useState<Awaited<ReturnType<typeof getMemberById>> | null>(null);
 
 // Function to handle image preview
 const handleAvatarChange = (info: UploadChangeParam) => {
-    const file = info.file;
+    const file = info.file.originFileObj || info.file;
     if (file) {
+        setAvatarFile(file as File);
         const reader = new FileReader();
         reader.onload = (e) => setAvatarPreview(e.target?.result as string);
-        reader.readAsDataURL(file as unknown as Blob);
-        
-        // Update the form field manually so onFinish gets it
-        form.setFieldsValue({ profileImage: [info.file] });
+        reader.readAsDataURL(file as Blob);
     }
 };
 
@@ -66,19 +67,7 @@ const handleAvatarChange = (info: UploadChangeParam) => {
         const fetchMember = async () => {
             try {
                 const member = await getMemberById(id);
-                form.setFieldsValue({
-                    first_name: member.first_name,
-                    middle_name: member.middle_name,
-                    last_name: member.last_name,
-                    email: member.email,
-                    phone: member.phone,
-                    address: member.address,
-                    date_of_birth: member.date_of_birth ? dayjs(member.date_of_birth) : null,
-                    marital_status: member.marital_status,
-                    status: member.status,
-                    joined_date: member.joined_date ? dayjs(member.joined_date) : null,
-                    baptized: member.baptized,
-                });
+                setMemberData(member);
             } catch (error: unknown) {
                 message.error(getApiErrorMessage(error, 'Failed to fetch member details'));
                 router.push('/members/manage');
@@ -87,7 +76,27 @@ const handleAvatarChange = (info: UploadChangeParam) => {
             }
         };
         fetchMember();
-    }, [id, form, router]);
+    }, [id, router]);
+
+    useEffect(() => {
+        if (initialLoading || !memberData) return;
+        form.setFieldsValue({
+            first_name: memberData.first_name,
+            middle_name: memberData.middle_name,
+            last_name: memberData.last_name,
+            email: memberData.email,
+            phone: memberData.phone,
+            address: memberData.address,
+            date_of_birth: memberData.date_of_birth ? dayjs(memberData.date_of_birth) : null,
+            marital_status: memberData.marital_status,
+            status: memberData.status,
+            joined_date: memberData.joined_date ? dayjs(memberData.joined_date) : null,
+            baptized: memberData.baptized === true || memberData.baptized === 'true' ? 'yes' : memberData.baptized === false || memberData.baptized === 'false' ? 'no' : memberData.baptized,
+        });
+        if (memberData.image_url) {
+            setAvatarPreview(memberData.image_url.startsWith('http') ? memberData.image_url : memberData.image_url);
+        }
+    }, [initialLoading, memberData, form]);
 
     const normFile = (e: { fileList?: unknown[] } | unknown[]) => {
         if (Array.isArray(e)) {
@@ -127,27 +136,16 @@ const handleAvatarChange = (info: UploadChangeParam) => {
     const onFinish = async (values: Record<string, unknown> & {
         date_of_birth?: Dayjs;
         joined_date?: Dayjs;
-        profileImage?: { originFileObj?: File }[];
     }) => {
         setLoading(true);
         try {
-            const formData = new FormData();
-            formData.append('first_name', values.first_name as string);
-            formData.append('last_name', values.last_name as string);
-            formData.append('phone', values.phone as string);
-            formData.append('status', values.status as string);
-            formData.append('baptized', values.baptized as string);
-
-            // Handle Dates correctly
-            if (values.date_of_birth) formData.append('date_of_birth', values.date_of_birth.format('YYYY-MM-DD'));
-            if (values.joined_date) formData.append('joined_date', values.joined_date.format('YYYY-MM-DD'));
-
-            // Handle Image (Ensure key matches your Multer @FileInterceptor)
-            if (values.profileImage?.[0]?.originFileObj) {
-                formData.append('file', values.profileImage[0].originFileObj);
+            let imageUrl: string | undefined;
+            if (avatarFile) {
+                imageUrl = await uploadMemberImage(avatarFile);
             }
 
-            await updateMember(id, formData);
+            const payload = buildMemberPayload(values, imageUrl ? { image_url: imageUrl } : {});
+            await updateMember(id, payload);
 
             message.success('Member updated successfully');
             router.push('/members/manage');

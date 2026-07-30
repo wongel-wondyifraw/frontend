@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Form, Input, Button, Avatar, Upload, Row, Col, Space } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import { UserOutlined, LockOutlined, UploadOutlined } from '@ant-design/icons';
@@ -27,6 +27,18 @@ const ProfileTab = ({
     onAvatarUpload,
 }: ProfileTabProps) => {
     const { avatarVersion } = useUser();
+
+    useEffect(() => {
+        if (!profile) return;
+        form.setFieldsValue({
+            firstName: profile.first_name,
+            middleName: profile.middle_name,
+            lastName: profile.last_name,
+            email: profile.email,
+            role: profile.role,
+            bio: 'Administrator for Kangaroo Inc.',
+        });
+    }, [profile, form]);
 
     return (
         <div className="settings-section">

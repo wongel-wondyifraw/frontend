@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import type { DashboardStats, Member, Ministry, PaginatedResponse, User } from '@/types';
+import type { BibleStudy, DashboardStats, HomeGroup, Member, Minister, Ministry, PaginatedResponse, User } from '@/types';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -49,6 +49,18 @@ export async function getMemberServer(id: string): Promise<Member> {
   return serverFetch<Member>(`/members/${id}`);
 }
 
+export async function getMinistersServer(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedResponse<Minister>> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', String(params.page ?? 1));
+  searchParams.set('limit', String(params.limit ?? 20));
+  if (params.search) searchParams.set('search', params.search);
+  return serverFetch<PaginatedResponse<Minister>>(`/ministers?${searchParams.toString()}`);
+}
+
+export async function getMinisterServer(id: string): Promise<Minister> {
+  return serverFetch<Minister>(`/ministers/${id}`);
+}
+
 export async function getMinistriesServer(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedResponse<Ministry>> {
   const searchParams = new URLSearchParams();
   searchParams.set('page', String(params.page ?? 1));
@@ -59,6 +71,30 @@ export async function getMinistriesServer(params: { page?: number; limit?: numbe
 
 export async function getMinistryServer(id: string): Promise<Ministry> {
   return serverFetch<Ministry>(`/ministries/${id}`);
+}
+
+export async function getHomeGroupsServer(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedResponse<HomeGroup>> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', String(params.page ?? 1));
+  searchParams.set('limit', String(params.limit ?? 20));
+  if (params.search) searchParams.set('search', params.search);
+  return serverFetch<PaginatedResponse<HomeGroup>>(`/home-groups?${searchParams.toString()}`);
+}
+
+export async function getHomeGroupServer(id: string): Promise<HomeGroup> {
+  return serverFetch<HomeGroup>(`/home-groups/${id}`);
+}
+
+export async function getBibleStudiesServer(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedResponse<BibleStudy>> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', String(params.page ?? 1));
+  searchParams.set('limit', String(params.limit ?? 20));
+  if (params.search) searchParams.set('search', params.search);
+  return serverFetch<PaginatedResponse<BibleStudy>>(`/bible-studies?${searchParams.toString()}`);
+}
+
+export async function getBibleStudyServer(id: string): Promise<BibleStudy> {
+  return serverFetch<BibleStudy>(`/bible-studies/${id}`);
 }
 
 export async function getUsersServer(): Promise<User[]> {

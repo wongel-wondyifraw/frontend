@@ -7,8 +7,10 @@ import { useDashboard } from '../../context/DashboardContext';
 import type { DashboardWidget } from '@/types';
 
 const WidgetRenderer = ({ id, type, settings = {} }: DashboardWidget) => {
-    const { isEditMode, removeWidget } = useDashboard();
+    const { isEditMode, removeWidget, widgets } = useDashboard();
     const WidgetComponent = WidgetRegistry[type as keyof typeof WidgetRegistry];
+    const todoCount = widgets.filter((w) => w.type === 'todo').length;
+    const canRemove = !(type === 'todo' && todoCount <= 1);
 
     if (!WidgetComponent) {
         return <div>Unknown Widget Type: {type}</div>;
@@ -18,14 +20,16 @@ const WidgetRenderer = ({ id, type, settings = {} }: DashboardWidget) => {
         <div className={`widget-wrapper ${isEditMode ? 'edit-mode' : ''}`} style={{ position: 'relative' }}>
             {isEditMode && (
                 <div className="widget-overlay">
-                    <Button
-                        type="primary"
-                        danger
-                        shape="circle"
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeWidget(id)}
-                        style={{ position: 'absolute', top: -10, right: -10, zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
-                    />
+                    {canRemove && (
+                        <Button
+                            type="primary"
+                            danger
+                            shape="circle"
+                            icon={<DeleteOutlined />}
+                            onClick={() => removeWidget(id)}
+                            style={{ position: 'absolute', top: -10, right: -10, zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
+                        />
+                    )}
                     <div className="widget-drag-handle" style={{
                         position: 'absolute',
                         top: 0, left: 0, right: 0, bottom: 0,

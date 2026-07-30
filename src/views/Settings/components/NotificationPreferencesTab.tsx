@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '@/lib/errors';
 const KIND_LABELS: Record<string, string> = {
   member: 'Member updates',
   ministry: 'Ministry updates',
+  home_group: 'Home group updates',
   system: 'System announcements',
   user: 'User account changes',
 };

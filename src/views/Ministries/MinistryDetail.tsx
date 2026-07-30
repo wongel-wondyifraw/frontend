@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, message, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, List, Card, Tooltip } from 'antd';
+import { Button, message, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, Card, Tooltip, Empty } from 'antd';
 import {
     TeamOutlined,
     CalendarOutlined,
@@ -16,6 +16,7 @@ import {
 import { getMinistry, deleteMinistry, getMinistryMembers, getMembersList, addMinistryMember } from '../../services/api';
 import type { MinistryDetailProps, Ministry, MinistryMember, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
+import { LeaderNameWithTag } from '../../Components/common/LeaderLabel';
 import './MinistryDetail.css';
 
 const { Option } = Select;
@@ -110,9 +111,9 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
             setAddingMember(true);
             await addMinistryMember(id, values.member_id);
             message.success('Member added successfully');
-            setIsAddModalVisible(false);
             form.resetFields();
-            loadMinistryMembers(); // Refresh members list
+            setIsAddModalVisible(false);
+            loadMinistryMembers();
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to add member to ministry'));
         } finally {
@@ -120,19 +121,11 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
         }
     };
 
-    const getLeaderName = () => {
-        if (ministry?.leader) {
-            const { first_name, middle_name, last_name } = ministry.leader;
-            return `${first_name || ''} ${middle_name ? middle_name + ' ' : ''}${last_name || ''}`.trim();
-        }
-        return 'Not assigned';
-    };
-
     if (loading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                    <Spin size="large" />
-                </div>
+                <Spin size="large" />
+            </div>
         );
     }
 
@@ -170,7 +163,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                             <div className="ministry-meta-simple">
                                 <span>
                                     <UserOutlined /> Leader:{' '}
-                                    <strong style={{ color: '#1565c0', fontWeight: 600 }}>{getLeaderName()}</strong>
+                                    <LeaderNameWithTag leader={ministry.leader} />
                                 </span>
                                 {ministry.schedule && (
                                     <span><CalendarOutlined /> {ministry.schedule}</span>
@@ -211,7 +204,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                                 <h3>Details</h3>
                                 <div className="info-row">
                                     <span className="info-label"><UserOutlined /> Leader</span>
-                                    <span className="info-value" style={{ color: '#1565c0', fontWeight: 600 }}>{getLeaderName()}</span>
+                                    <span className="info-value"><LeaderNameWithTag leader={ministry.leader} /></span>
                                 </div>
                                 {ministry.leader?.email && (
                                     <div className="info-row">
@@ -253,25 +246,20 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                             </Button>
                         </div>
 
-                        <List
-                            grid={{
-                                gutter: 20,
-                                xs: 1,
-                                sm: 2,
-                                md: 2,
-                                lg: 3,
-                                xl: 3,
-                                xxl: 4,
-                            }}
-                            dataSource={ministryMembers}
-                            loading={membersLoading}
-                            locale={{ emptyText: 'No members assigned to this ministry yet.' }}
-                            renderItem={(record) => {
-                                const member = record.member;
-                                if (!member) return null;
-                                return (
-                                    <List.Item>
+                        {membersLoading ? (
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                                <Spin />
+                            </div>
+                        ) : ministryMembers.length === 0 ? (
+                            <Empty description="No members assigned to this ministry yet." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        ) : (
+                            <div className="ministry-members-grid">
+                                {ministryMembers.map((record) => {
+                                    const member = record.member;
+                                    if (!member) return null;
+                                    return (
                                         <Card
+                                            key={record.member_id || member.id}
                                             hoverable
                                             className="member-card-elegant"
                                             actions={[
@@ -283,7 +271,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                                                     />
                                                 </Tooltip>
                                             ]}
-                                            bodyStyle={{ padding: '20px' }}
+                                            styles={{ body: { padding: '20px' } }}
                                         >
                                             <Card.Meta
                                                 avatar={<Avatar size={64} src={member.image_url} icon={<UserOutlined />} style={{ border: '2px solid #f0f2f5' }} />}
@@ -307,10 +295,10 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                                                 }
                                             />
                                         </Card>
-                                    </List.Item>
-                                );
-                            }}
-                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -319,12 +307,9 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
             <Modal
                 title="Add Member to Ministry"
                 open={isAddModalVisible}
-                onCancel={() => {
-                    setIsAddModalVisible(false);
-                    form.resetFields();
-                }}
+                onCancel={() => setIsAddModalVisible(false)}
                 footer={null}
-                destroyOnClose
+                forceRender
             >
                 <Form form={form} layout="vertical" onFinish={handleAddMember}>
                     <Form.Item
@@ -350,10 +335,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                         </Select>
                     </Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-                        <Button onClick={() => {
-                            setIsAddModalVisible(false);
-                            form.resetFields();
-                        }}>
+                        <Button onClick={() => setIsAddModalVisible(false)}>
                             Cancel
                         </Button>
                         <Button type="primary" htmlType="submit" loading={addingMember} style={{ background: '#1565c0', borderColor: '#1565c0' }}>

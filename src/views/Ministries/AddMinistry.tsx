@@ -15,6 +15,7 @@ import MemberTransferList from '../../Components/common/MemberTransferList';
 import { createMinistry, getMembersList, addMinistryMember } from '../../services/api';
 import type { Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
+import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
 import './AddMinistry.css';
 
 const { Option } = Select;
@@ -23,7 +24,7 @@ const { TextArea } = Input;
 const STEPS = [
     { title: 'Ministry Info' },
     { title: 'Leadership & Schedule' },
-    { title: 'Add Members', description: 'Optional' },
+    { title: 'Add Members', content: 'Optional' },
     { title: 'Review & Create' },
 ];
 
@@ -75,11 +76,13 @@ const AddMinistry = () => {
             const values = await form.validateFields();
             setLoading(true);
 
+            const leader = decodeLeaderValue(values.leader_key);
             const ministryData = {
                 name: values.name,
                 about: values.about || '',
                 schedule: values.schedule || '',
-                leader_id: values.leader_id || null,
+                leader_id: leader.leader_id,
+                leader_type: leader.leader_type,
             };
 
             const createdMinistry = await createMinistry(ministryData);
@@ -161,23 +164,8 @@ const AddMinistry = () => {
                                 </h3>
                                 <Row gutter={24}>
                                     <Col span={12}>
-                                        <Form.Item name="leader_id" label="Assign Leader">
-                                            <Select
-                                                placeholder="Select a member as leader"
-                                                size="large"
-                                                showSearch
-                                                allowClear
-                                                optionFilterProp="children"
-                                                filterOption={(input, option) =>
-                                                    String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                                                }
-                                            >
-                                                {members.map(member => (
-                                                    <Option key={member.id} value={member.id}>
-                                                        {member.first_name} {member.middle_name ? member.middle_name + ' ' : ''}{member.last_name}
-                                                    </Option>
-                                                ))}
-                                            </Select>
+                                        <Form.Item name="leader_key" label="Assign Leader">
+                                            <LeaderSelect />
                                         </Form.Item>
                                     </Col>
                                     <Col span={12}>
@@ -216,9 +204,9 @@ const AddMinistry = () => {
                                     <Form.Item noStyle shouldUpdate>
                                         {() => {
                                             const values = form.getFieldsValue();
-                                            const leader = members.find(m => m.id === values.leader_id);
-                                            const leaderName = leader
-                                                ? `${leader.first_name} ${leader.middle_name ? leader.middle_name + ' ' : ''}${leader.last_name}`
+                                            const leader = decodeLeaderValue(values.leader_key);
+                                            const leaderLabel = leader.leader_id
+                                                ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                                                 : 'Not assigned';
                                             const selectedNames = selectedMemberKeys.map(key => {
                                                 const m = members.find(mem => mem.id === key);
@@ -227,7 +215,7 @@ const AddMinistry = () => {
                                             return (
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
                                                     <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
-                                                    <div><strong>Leader:</strong> {leaderName}</div>
+                                                    <div><strong>Leader:</strong> {leaderLabel}</div>
                                                     <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
                                                     <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
                                                     <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>

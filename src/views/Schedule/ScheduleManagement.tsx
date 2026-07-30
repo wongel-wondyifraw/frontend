@@ -48,8 +48,8 @@ const ScheduleManagement = () => {
             date: values.date.format('YYYY-MM-DD'),
         };
         setEvents([...events, newEvent]);
-        setIsModalVisible(false);
         form.resetFields();
+        setIsModalVisible(false);
     };
 
     return (
@@ -74,12 +74,9 @@ const ScheduleManagement = () => {
             <Modal
                 title="Add New Event"
                 open={isModalVisible}
-                onCancel={() => {
-                    setIsModalVisible(false);
-                    form.resetFields();
-                }}
+                onCancel={() => setIsModalVisible(false)}
                 footer={null}
-                destroyOnClose
+                forceRender
             >
                 <Form form={form} layout="vertical" onFinish={onFinish}>
                     <Form.Item
@@ -130,10 +127,7 @@ const ScheduleManagement = () => {
                     </Form.Item>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                        <Button onClick={() => {
-                            setIsModalVisible(false);
-                            form.resetFields();
-                        }}>
+                        <Button onClick={() => setIsModalVisible(false)}>
                             Cancel
                         </Button>
                         <Button type="primary" htmlType="submit" style={{ background: '#1565c0' }}>

@@ -60,10 +60,53 @@ export interface Member {
   ministry_members?: MinistryMemberLink[];
 }
 
+export interface MinisterAccount {
+  id: string;
+  email: string;
+  role?: string;
+  is_active?: boolean;
+  title?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Minister {
+  id: string;
+  user_id: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  status?: string;
+  image_url?: string;
+  date_of_birth?: string;
+  marital_status?: string;
+  title?: string;
+  joined_date?: string;
+  created_at?: string;
+  temporary_password?: string;
+  user?: MinisterAccount;
+}
+
 export interface MinistryMemberLink {
   ministry_id: string;
   joined_at?: string;
   ministry?: Ministry;
+}
+
+export type LeaderType = 'member' | 'minister';
+
+export interface LeaderSummary {
+  id: string;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  type: LeaderType;
 }
 
 export interface Ministry {
@@ -72,7 +115,8 @@ export interface Ministry {
   about?: string;
   schedule?: string;
   leader_id?: string | null;
-  leader?: Pick<Member, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email' | 'phone'>;
+  leader_type?: LeaderType | null;
+  leader?: LeaderSummary | null;
   created_at?: string;
 }
 
@@ -81,6 +125,79 @@ export interface MinistryMember {
   ministry_id?: string;
   joined_at?: string;
   member?: Member;
+}
+
+export interface HomeGroup {
+  id: string;
+  name: string;
+  about?: string;
+  schedule?: string;
+  location: string;
+  leader_id?: string | null;
+  leader_type?: LeaderType | null;
+  leader?: LeaderSummary | null;
+  created_at?: string;
+}
+
+export interface HomeGroupMember {
+  member_id: string;
+  home_group_id?: string;
+  joined_at?: string;
+  member?: Member;
+}
+
+export type BibleStudyContentType = 'book' | 'study_material';
+
+export interface BibleStudy {
+  id: string;
+  name: string;
+  about?: string;
+  schedule?: string;
+  location: string;
+  content_type: BibleStudyContentType;
+  bible_book?: string | null;
+  material_url?: string | null;
+  leader_id?: string | null;
+  leader_type?: LeaderType | null;
+  leader?: LeaderSummary | null;
+  created_at?: string;
+}
+
+export interface BibleStudyMember {
+  member_id: string;
+  bible_study_id?: string;
+  joined_at?: string;
+  member?: Member;
+}
+
+export type TaskStatus = 'pending' | 'completed' | 'cancelled';
+
+export interface TaskDefinition {
+  id: string;
+  name: string;
+  description?: string | null;
+  code?: string | null;
+  requires_visit_target: boolean;
+  is_system: boolean;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface TaskAssignment {
+  id: string;
+  definition_id: string;
+  definition?: TaskDefinition;
+  minister_id: string;
+  minister?: Pick<Minister, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email'>;
+  assigned_by_user_id?: string | null;
+  target_member_id?: string | null;
+  target_member?: Pick<Member, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email' | 'phone'>;
+  start_date: string;
+  end_date: string;
+  status: TaskStatus;
+  notes?: string | null;
+  completed_at?: string | null;
+  created_at?: string;
 }
 
 export interface LoginResponse {
@@ -145,8 +262,20 @@ export interface ManageMembersProps {
   initialPage?: PaginatedResponse<Member> | null;
 }
 
+export interface ManageMinistersProps {
+  initialPage?: PaginatedResponse<Minister> | null;
+}
+
 export interface ManageMinistriesProps {
   initialPage?: PaginatedResponse<Ministry> | null;
+}
+
+export interface ManageHomeGroupsProps {
+  initialPage?: PaginatedResponse<HomeGroup> | null;
+}
+
+export interface ManageBibleStudiesProps {
+  initialPage?: PaginatedResponse<BibleStudy> | null;
 }
 
 export interface MemberDetailProps {
@@ -154,9 +283,24 @@ export interface MemberDetailProps {
   initialMember?: Member | null;
 }
 
+export interface MinisterDetailProps {
+  ministerId?: string;
+  initialMinister?: Minister | null;
+}
+
 export interface MinistryDetailProps {
   ministryId?: string;
   initialMinistry?: Ministry | null;
+}
+
+export interface HomeGroupDetailProps {
+  homeGroupId?: string;
+  initialHomeGroup?: HomeGroup | null;
+}
+
+export interface BibleStudyDetailProps {
+  bibleStudyId?: string;
+  initialBibleStudy?: BibleStudy | null;
 }
 
 export interface DashboardWidget {

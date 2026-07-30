@@ -11,6 +11,7 @@ import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
+import { LeaderNameWithTag } from '../../Components/common/LeaderLabel';
 import './ManageMinistries.css';
 
 const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) => {
@@ -93,10 +94,9 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
         {
             title: 'Leader',
             key: 'leader',
-            render: (_: unknown, record: Ministry) => {
-                if (!record.leader) return '-';
-                return `${record.leader.first_name} ${record.leader.last_name || ''}`.trim();
-            },
+            render: (_: unknown, record: Ministry) => (
+                record.leader ? <LeaderNameWithTag leader={record.leader} /> : '-'
+            ),
         },
         {
             title: 'Created',

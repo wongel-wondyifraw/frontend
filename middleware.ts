@@ -8,10 +8,12 @@ const PUBLIC_PATHS = ['/', '/login'];
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/members',
+  '/ministers',
   '/ministries',
   '/settings',
   '/schedule',
   '/bible-study',
+  '/tasks',
   '/help',
   '/subscription',
 ];

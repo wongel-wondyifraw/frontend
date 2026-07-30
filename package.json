@@ -14,7 +14,7 @@
     "axios": "^1.13.4",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
-    "next": "^15.5.0",
+    "next": "^16.2.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-grid-layout": "^2.2.2",
@@ -27,10 +27,13 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
-    "eslint-config-next": "^15.5.0",
+    "eslint-config-next": "^16.2.9",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^16.5.0",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

@@ -82,21 +82,28 @@ const RoleManagementPanel = () => {
 
   const openCreate = () => {
     setEditingRole(null);
-    form.resetFields();
-    form.setFieldsValue({ permissionSlugs: [] });
     setModalOpen(true);
   };
 
   const openEdit = (role: Role) => {
     setEditingRole(role);
-    form.setFieldsValue({
-      key: role.key,
-      name: role.name,
-      description: role.description ?? '',
-      permissionSlugs: role.permissions.map((p) => p.slug),
-    });
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    if (editingRole) {
+      form.setFieldsValue({
+        key: editingRole.key,
+        name: editingRole.name,
+        description: editingRole.description ?? '',
+        permissionSlugs: editingRole.permissions.map((p) => p.slug),
+      });
+      return;
+    }
+    form.resetFields();
+    form.setFieldsValue({ permissionSlugs: [] });
+  }, [modalOpen, editingRole, form]);
 
   const handleSave = async () => {
     try {
@@ -251,7 +258,7 @@ const RoleManagementPanel = () => {
         confirmLoading={saving}
         okText={editingRole ? 'Save changes' : 'Create role'}
         width={720}
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           {!editingRole && (

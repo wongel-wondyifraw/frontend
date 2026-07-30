@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Home, Users, Briefcase, User as UserIcon, FileText, BookOpen, Calendar, Settings as SettingsIcon, HelpCircle } from 'lucide-react';
+import { Search, Home, Users, Briefcase, User as UserIcon, FileText, BookOpen, Calendar, Settings as SettingsIcon, HelpCircle, ListTodo } from 'lucide-react';
 import { searchDashboard } from '@/services/api';
 import { useDebouncedCallback } from '@/lib/debounce';
 import type { SearchResult } from '@/types';
@@ -13,9 +13,13 @@ const PAGE_ITEMS = [
   { name: 'Manage Members', path: '/members/manage', icon: 'users', category: 'Pages' },
   { name: 'Add Member', path: '/members/add', icon: 'users', category: 'Pages' },
   { name: 'Home Groups', path: '/members/home-groups', icon: 'users', category: 'Pages' },
+  { name: 'Add Home Group', path: '/members/home-groups/add', icon: 'users', category: 'Pages' },
+  { name: 'Manage Ministers', path: '/ministers/manage', icon: 'users', category: 'Pages' },
   { name: 'Manage Ministries', path: '/ministries/manage', icon: 'briefcase', category: 'Pages' },
   { name: 'Add Ministry', path: '/ministries/add', icon: 'briefcase', category: 'Pages' },
   { name: 'Bible Study', path: '/bible-study', icon: 'book', category: 'Pages' },
+  { name: 'Add Bible Study', path: '/bible-study/add', icon: 'book', category: 'Pages' },
+  { name: 'Task Management', path: '/tasks', icon: 'tasks', category: 'Pages' },
   { name: 'Schedule Management', path: '/schedule', icon: 'calendar', category: 'Pages' },
   { name: 'Settings', path: '/settings', icon: 'settings', category: 'Pages' },
   { name: 'Help Center', path: '/help', icon: 'help', category: 'Pages' },
@@ -29,6 +33,7 @@ function getPageIcon(iconName: string) {
     case 'users': return <Users size={size} />;
     case 'briefcase': return <Briefcase size={size} />;
     case 'book': return <BookOpen size={size} />;
+    case 'tasks': return <ListTodo size={size} />;
     case 'calendar': return <Calendar size={size} />;
     case 'settings': return <SettingsIcon size={size} />;
     case 'help': return <HelpCircle size={size} />;

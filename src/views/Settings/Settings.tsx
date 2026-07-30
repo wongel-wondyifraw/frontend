@@ -51,20 +51,12 @@ const Settings = () => {
             setLoading(true);
             const data = await getProfile();
             setProfile(data);
-            form.setFieldsValue({
-                firstName: data.first_name,
-                middleName: data.middle_name,
-                lastName: data.last_name,
-                email: data.email,
-                role: data.role,
-                bio: 'Administrator for Kangaroo Inc.',
-            });
         } catch (error) {
             message.error('Failed to load profile');
         } finally {
             setLoading(false);
         }
-    }, [form]);
+    }, []);
 
     const loadUsers = useCallback(async () => {
         try {
@@ -181,7 +173,6 @@ const Settings = () => {
             setCurrentStep(0);
             setWizardAvatar(null);
             setWizardAvatarPreview(null);
-            userForm.resetFields();
             loadUsers();
         } catch (error: unknown) {
             console.error('Registration Error:', error);
@@ -196,7 +187,9 @@ const Settings = () => {
             if (currentStep === 0) {
                 await userForm.validateFields(['first_name', 'last_name']);
             } else if (currentStep === 1) {
-                await userForm.validateFields(['email', 'password']);
+                await userForm.validateFields(
+                    editingUser ? ['email'] : ['email', 'password'],
+                );
             } else if (currentStep === 2) {
                 await userForm.validateFields(['role']);
             }
@@ -245,15 +238,6 @@ const Settings = () => {
         setCurrentStep(0);
         setWizardAvatar(null);
         setWizardAvatarPreview(null);
-        if (user) {
-            userForm.setFieldsValue({
-                ...user,
-                is_active: user.is_active !== undefined ? user.is_active : true
-            });
-        } else {
-            userForm.resetFields();
-            userForm.setFieldsValue({ is_active: true });
-        }
         setIsModalVisible(true);
     };
 

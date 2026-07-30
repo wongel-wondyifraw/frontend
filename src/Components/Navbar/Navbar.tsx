@@ -1,28 +1,39 @@
 'use client';
-// Navbar.jsx
 import React from "react";
 import Image from "next/image";
-import { Layout, Menu, Button, Dropdown, Space } from "antd";
-import { DownOutlined } from "@ant-design/icons";
+import { Layout, Menu, Button } from "antd";
+import type { MenuProps } from "antd";
 import "./Navbar.css";
 
 const { Header } = Layout;
 
-const servicesItems = [
-  { key: "1", label: "Counseling" },
-  { key: "2", label: "Community Service" },
-];
-
-const offeringsItems = [
-  { key: "1", label: "Donations" },
-  { key: "2", label: "Tithes" },
+const menuItems: MenuProps["items"] = [
+  { key: "home", label: "Home" },
+  { key: "branches", label: "Branches" },
+  { key: "about", label: "About" },
+  {
+    key: "services",
+    label: "Services",
+    children: [
+      { key: "counseling", label: "Counseling" },
+      { key: "community-service", label: "Community Service" },
+    ],
+  },
+  { key: "programs", label: "Programs" },
+  {
+    key: "offerings",
+    label: "Offerings",
+    children: [
+      { key: "donations", label: "Donations" },
+      { key: "tithes", label: "Tithes" },
+    ],
+  },
 ];
 
 const Navbar = () => {
   return (
     <Header className="navbar">
-      <Space className="navbar-inner" align="center">
-        {/* Logo */}
+      <div className="navbar-inner">
         <Image
           src="/Logo.svg"
           alt="Shepherd.One"
@@ -33,46 +44,18 @@ const Navbar = () => {
           unoptimized
         />
 
-
-
-        {/* Menu */}
         <Menu
           mode="horizontal"
           selectable={false}
           className="navbar-menu"
-          items={[
-            { key: "home", label: "Home" },
-            { key: "branches", label: "Branches" },
-            { key: "about", label: "About" },
-            {
-              key: "services",
-              label: (
-                <Dropdown menu={{ items: servicesItems }}>
-                  <Space>
-                    Services <DownOutlined />
-                  </Space>
-                </Dropdown>
-              ),
-            },
-            { key: "programs", label: "Programs" },
-            {
-              key: "offerings",
-              label: (
-                <Dropdown menu={{ items: offeringsItems }}>
-                  <Space>
-                    Offerings <DownOutlined />
-                  </Space>
-                </Dropdown>
-              ),
-            },
-          ]}
+          items={menuItems}
+          disabledOverflow
         />
 
-        {/* Action */}
         <Button type="primary" className="navbar-btn" href="/subscription">
           Register
         </Button>
-      </Space>
+      </div>
     </Header>
   );
 };

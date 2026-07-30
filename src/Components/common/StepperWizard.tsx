@@ -4,7 +4,9 @@ import { Steps, Card, Button } from 'antd';
 
 interface StepDefinition {
   title: string;
+  /** @deprecated Prefer `content` — mapped for Ant Design v6 Steps. */
   description?: string;
+  content?: string;
 }
 
 interface StepBackground {
@@ -56,6 +58,11 @@ const StepperWizard = ({
 
   const panels = React.Children.toArray(children);
 
+  const stepItems = steps.map(({ title, description, content }) => ({
+    title,
+    ...(content || description ? { content: content ?? description } : {}),
+  }));
+
   const getNextLabel = () => {
     if (currentStep === lastStepIndex - 1 && lastStepLabel) {
       return lastStepLabel;
@@ -81,7 +88,7 @@ const StepperWizard = ({
             marginBottom: '32px',
             ...(onStepClick ? { cursor: 'pointer' } : {}),
           }}
-          items={steps}
+          items={stepItems}
         />
 
         {panels.map((panel, index) => (

@@ -36,7 +36,9 @@
   width: 100%;
   padding: 0.75rem 1.5rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 /* =========================
@@ -86,7 +88,9 @@
   background: transparent !important;
   border-bottom: none !important;
   flex: 1;
+  min-width: 0;
   justify-content: center;
+  line-height: inherit;
 }
 
 .navbar-menu .ant-menu-item,

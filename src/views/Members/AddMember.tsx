@@ -14,7 +14,9 @@ import {
     InboxOutlined,
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
-import { createMember } from '../../services/api';
+import { createMember, uploadMemberImage } from '../../services/api';
+import { buildMemberPayload } from '@/lib/member-payload';
+import { getApiErrorMessage } from '@/lib/errors';
 import type { UploadChangeParam } from 'antd/es/upload';
 import './AddMember.css';
 
@@ -78,38 +80,18 @@ const AddMember = () => {
         const values = await form.validateFields();
         setLoading(true);
 
-        const formData = new FormData();
-        
-        // Append text fields
-        Object.keys(values).forEach(key => {
-            // Skip files and dates for custom handling
-            if (!['avatar', 'church_letter', 'date_of_birth', 'joined_date'].includes(key)) {
-                formData.append(key, values[key] || '');
-            }
-        });
-
-        // Dates
-        if (values.date_of_birth) formData.append('date_of_birth', values.date_of_birth.format('YYYY-MM-DD'));
-        if (values.joined_date) formData.append('joined_date', values.joined_date.format('YYYY-MM-DD'));
-
-        // CRITICAL FIX: Extract the raw file from Ant Design's object
-        // For Avatar (Step 1)
+        let imageUrl: string | undefined;
         if (avatarFile) {
-            formData.append('avatar', avatarFile); 
+            imageUrl = await uploadMemberImage(avatarFile);
         }
 
-        // For Document (Step 3 - Dragger)
-        if (values.church_letter?.length > 0) {
-            const fileItem = values.church_letter[0];
-            formData.append('document', fileItem.originFileObj || fileItem);
-        }
-
-        await createMember(formData);
+        const payload = buildMemberPayload(values, imageUrl ? { image_url: imageUrl } : {});
+        await createMember(payload);
         message.success('Member registered successfully!');
         router.push('/members/manage');
     } catch (error) {
         console.error(error);
-        message.error('Registration failed. Check console for details.');
+        message.error(getApiErrorMessage(error, 'Registration failed. Please try again.'));
     } finally {
         setLoading(false);
     }

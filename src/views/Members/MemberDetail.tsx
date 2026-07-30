@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, List, Modal } from 'antd';
+import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, Modal, Empty } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -11,7 +11,6 @@ import {
     CalendarOutlined,
     ArrowLeftOutlined,
     UserOutlined,
-    PlusOutlined,
     PrinterOutlined,
     CheckCircleOutlined,
     FilePdfOutlined,
@@ -197,15 +196,15 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                 </div>
 
                                 <div style={{ marginTop: '16px' }}>
-                                    <List
-                                        grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 2 }}
-                                        dataSource={member.ministry_members || []}
-                                        locale={{ emptyText: 'Not involved in any ministries.' }}
-                                        renderItem={(mm) => {
-                                            const isLeader = mm.ministry?.leader_id === member.id;
-                                            return (
-                                                <List.Item>
+                                    {(member.ministry_members?.length ?? 0) === 0 ? (
+                                        <Empty description="Not involved in any ministries." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                    ) : (
+                                        <div className="ministry-involvement-grid">
+                                            {(member.ministry_members || []).map((mm) => {
+                                                const isLeader = mm.ministry?.leader_id === member.id;
+                                                return (
                                                     <Card
+                                                        key={mm.ministry_id}
                                                         hoverable
                                                         className="member-card-elegant"
                                                         actions={[
@@ -217,7 +216,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                                                 />
                                                             </Tooltip>
                                                         ]}
-                                                        bodyStyle={{ padding: '20px', position: 'relative' }}
+                                                        styles={{ body: { padding: '20px', position: 'relative' } }}
                                                     >
                                                         <Tooltip title="Remove from Ministry">
                                                             <Button
@@ -266,10 +265,10 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                                             }
                                                         />
                                                     </Card>
-                                                </List.Item>
-                                            );
-                                        }}
-                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -282,12 +281,12 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                     items={[
                                         {
                                             color: 'green',
-                                            children: `Member registered on ${member.created_at ? new Date(member.created_at).toLocaleDateString() : 'Unknown'}`,
+                                            content: `Member registered on ${member.created_at ? new Date(member.created_at).toLocaleDateString() : 'Unknown'}`,
                                         },
                                         ...(member.ministry_members || []).map(mm => ({
                                             color: 'blue' as const,
-                                            children: `Joined ${mm.ministry?.name || 'Ministry'} on ${mm.joined_at ? new Date(mm.joined_at).toLocaleDateString() : 'Unknown'}`
-                                        }))
+                                            content: `Joined ${mm.ministry?.name || 'Ministry'} on ${mm.joined_at ? new Date(mm.joined_at).toLocaleDateString() : 'Unknown'}`,
+                                        })),
                                     ]}
                                 />
                             </div>

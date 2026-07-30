@@ -142,6 +142,24 @@
     box-shadow: var(--shadow-sm);
 }
 
+.ministry-members-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .ministry-members-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .ministry-members-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .member-card-elegant {
     border-radius: 16px;
     border: 1px solid var(--border-color);

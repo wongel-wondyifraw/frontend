@@ -9,7 +9,9 @@ import {
   ChevronDown,
   Calendar,
   LogOut,
-  BookOpen
+  BookOpen,
+  Church,
+  ListTodo,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -75,15 +77,21 @@ const Sidebar = () => {
       ]
     },
     {
+      label: 'Ministers',
+      icon: <Church size={18} />,
+      path: '/ministers/manage',
+      type: 'link',
+      permission: 'ministers.read',
+    },
+    {
       label: 'Ministries',
       icon: <Briefcase size={18} />,
-      type: 'dropdown',
+      path: '/ministries/manage',
+      type: 'link',
       permission: 'ministries.read',
-      subItems: [
-        { label: 'Manage Ministries', path: '/ministries/manage' }
-      ]
     },
-    { label: 'Bible Study', icon: <BookOpen size={18} />, path: '/bible-study', type: 'link', permission: 'dashboard.read' },
+    { label: 'Bible Study', icon: <BookOpen size={18} />, path: '/bible-study', type: 'link', permission: 'bible_studies.read' },
+    { label: 'Task Management', icon: <ListTodo size={18} />, path: '/tasks', type: 'link', permission: 'tasks.read' },
     { label: 'Schedule Management', icon: <Calendar size={18} />, path: '/schedule', type: 'link', permission: 'dashboard.read' },
   ];
 

@@ -43,7 +43,7 @@ const MemberTransferList = ({
           option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
           option.description.toLowerCase().includes(inputValue.toLowerCase())
         }
-        listStyle={{ width: '100%', height: listHeight }}
+        styles={{ section: { width: '100%', height: listHeight } }}
         titles={titles}
         style={{ width: '100%' }}
       />

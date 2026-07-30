@@ -40,8 +40,9 @@ const LoginPage = () => {
       message.success("Login successful!");
       router.push("/dashboard");
     } catch (error: unknown) {
-      console.error("Login failed:", error);
-      message.error(getApiErrorMessage(error, "Invalid email or password"));
+      const errorMessage = getApiErrorMessage(error, "Invalid email or password");
+      console.error("Login failed:", errorMessage, error);
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
