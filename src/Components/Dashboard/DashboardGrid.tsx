@@ -30,7 +30,7 @@ const DashboardGrid = () => {
           }}
           onLayoutChange={(currentLayout, allLayouts) => {
             const normalizedLayouts = Object.fromEntries(
-              Object.entries(allLayouts).map(([key, value]) => [key, [...value]]),
+              Object.entries(allLayouts).map(([key, value]) => [key, value ? [...value] : []]),
             );
             onLayoutChange([...currentLayout], normalizedLayouts);
           }}
