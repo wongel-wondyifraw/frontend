@@ -14,8 +14,12 @@ import SecurityTab from './components/SecurityTab';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './Settings.css';
 
+const LocationManagementTab = dynamic(() => import('./components/LocationManagementTab'), { ssr: false });
+
+
 const NotificationPreferencesTab = dynamic(() => import('./components/NotificationPreferencesTab'), { ssr: false });
 const RoleManagementPanel = dynamic(() => import('./components/RoleManagementPanel'), { ssr: false });
+const WebsiteManagementTab = dynamic(() => import('./components/WebsiteManagementTab'), { ssr: false });
 
 const ManageUsersTab = dynamic(() => import('./components/ManageUsersTab'), { ssr: false });
 const UserWizardModal = dynamic(() => import('./components/UserWizardModal'), { ssr: false });
@@ -291,11 +295,29 @@ const Settings = () => {
         });
     }
 
+    if (hasPermission(user, 'locations.read') || hasPermission(user, 'locations.manage')) {
+        // Use an icon like 'EnvironmentOutlined' but I don't have it imported. Let's just use string label or import it.
+        // I will just use string label for simplicity if I can't import easily.
+        items.push({
+            key: 'locations',
+            label: <span>Locations</span>,
+            children: <LocationManagementTab />,
+        });
+    }
+
     if (hasPermission(user, 'roles.read')) {
         items.push({
             key: 'roles',
             label: <span><SafetyCertificateOutlined /> Roles & Permissions</span>,
             children: <RoleManagementPanel />,
+        });
+    }
+
+    if (hasPermission(user, 'website.manage') || hasPermission(user, 'projects.manage')) {
+        items.push({
+            key: 'website',
+            label: <span>Website UI</span>,
+            children: <WebsiteManagementTab />,
         });
     }
 

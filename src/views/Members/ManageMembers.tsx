@@ -4,7 +4,7 @@ import { Tag, Button, Avatar, message, Modal, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
-import { getMembers, deleteMember } from '../../services/api';
+import { getMembers, deleteMember, updateMember } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageMembersProps, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -19,6 +19,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const canCreate = useCan('members.create');
     const canUpdate = useCan('members.update');
     const canDelete = useCan('members.delete');
+    const canApprove = useCan('members.approve');
     const [members, setMembers] = useState<Member[]>(initialPage?.data ?? []);
     const [loading, setLoading] = useState(initialPage === null);
     const [searchText, setSearchText] = useState('');
@@ -73,6 +74,26 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 }
             },
         });
+    };
+
+    const handleApprove = async (member: Member) => {
+        try {
+            await updateMember(member.id, { status: 'active' });
+            message.success('Member approved successfully');
+            loadMembers(page, pageSize, searchText);
+        } catch (error: unknown) {
+            message.error(getApiErrorMessage(error, 'Failed to approve member'));
+        }
+    };
+
+    const handleReject = async (member: Member) => {
+        try {
+            await updateMember(member.id, { status: 'rejected' });
+            message.success('Member rejected');
+            loadMembers(page, pageSize, searchText);
+        } catch (error: unknown) {
+            message.error(getApiErrorMessage(error, 'Failed to reject member'));
+        }
     };
 
     const columns: ColumnsType<Member> = [
@@ -130,7 +151,12 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             dataIndex: 'status',
             render: (status: string | undefined) => {
                 const s = (status || 'active').toLowerCase();
-                const color = s === 'active' ? '#10b981' : '#ef4444';
+                let color = '#94A3B8';
+                if (s === 'active') color = '#10b981';
+                else if (s === 'pending') color = '#f59e0b';
+                else if (s === 'rejected') color = '#ef4444';
+                else if (s === 'inactive') color = '#ef4444';
+
                 return (
                     <Tag color={color} style={{ borderRadius: '20px', padding: '0 12px', fontWeight: 600 }}>
                         {s.toUpperCase()}
@@ -155,6 +181,33 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                             onClick={() => router.push(`/members/details/${record.id}`)}
                         />
                     </Tooltip>
+                    
+                    {record.status === 'pending' && canApprove && (
+                        <>
+                            <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
+                            <Tooltip title="Approve">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    style={{ color: '#10b981' }}
+                                    onClick={() => handleApprove(record)}
+                                >
+                                    Approve
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Reject">
+                                <Button
+                                    type="text"
+                                    danger
+                                    size="small"
+                                    onClick={() => handleReject(record)}
+                                >
+                                    Reject
+                                </Button>
+                            </Tooltip>
+                        </>
+                    )}
+
                     <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
                     {canUpdate && (
                     <Tooltip title="Edit">

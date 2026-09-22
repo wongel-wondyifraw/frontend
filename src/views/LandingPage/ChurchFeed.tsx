@@ -57,7 +57,15 @@ export default function ChurchFeed() {
   return (
     <div className="landing-shell">
       <header className="landing-header">
-        <AppLogo variant="full" href="/" priority showPoweredBy />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <AppLogo variant="full" href="/" priority showPoweredBy />
+          <nav style={{ display: 'flex', gap: 16 }}>
+            <Link href="/about" className="landing-text-link">About</Link>
+            <Link href="/vision" className="landing-text-link">Vision</Link>
+            <Link href="/projects" className="landing-text-link">Projects</Link>
+            <Link href="/contact" className="landing-text-link">Contact</Link>
+          </nav>
+        </div>
         <Link href="/login" className="landing-login-btn">
           Log in
         </Link>

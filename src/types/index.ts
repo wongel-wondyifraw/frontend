@@ -34,6 +34,33 @@ export interface User {
   permissions?: Permission[];
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  status: string;
+  parent_id?: string | null;
+  created_at?: string;
+}
+
+export interface PageContent {
+  page_slug: string;
+  content: any;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CommunityProject {
+  id: string;
+  title: string;
+  description: string;
+  image_url?: string | null;
+  status: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export function hasPermission(
   user: User | null | undefined,
   slug: string,
@@ -59,6 +86,7 @@ export interface Member {
   joined_date?: string;
   created_at?: string;
   ministry_members?: MinistryMemberLink[];
+  visit_count?: number;
 }
 
 export interface MinisterAccount {
@@ -198,6 +226,7 @@ export interface TaskAssignment {
   end_date: string;
   status: TaskStatus;
   notes?: string | null;
+  visitation_methods?: string[] | null;
   completed_at?: string | null;
   created_at?: string;
 }
@@ -206,17 +235,20 @@ export interface FamilyChild {
   id: string;
   family_id: string;
   name: string;
-  age: number;
+  age?: number | null;
+  date_of_birth?: string | null;
   created_at?: string;
 }
 
 export interface Family {
   id: string;
   name?: string | null;
-  husband_id: string;
-  husband_type: LeaderType;
-  wife_id: string;
-  wife_type: LeaderType;
+  husband_id?: string | null;
+  husband_type?: LeaderType | null;
+  husband_status?: string | null;
+  wife_id?: string | null;
+  wife_type?: LeaderType | null;
+  wife_status?: string | null;
   husband?: LeaderSummary | null;
   wife?: LeaderSummary | null;
   notes?: string | null;

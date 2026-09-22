@@ -115,7 +115,11 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   const syncChildForm = (open: boolean) => {
     if (!open) return;
     if (editingChild) {
-      childForm.setFieldsValue({ name: editingChild.name, age: editingChild.age });
+      childForm.setFieldsValue({ 
+        name: editingChild.name, 
+        age: editingChild.age, 
+        date_of_birth: editingChild.date_of_birth ? editingChild.date_of_birth.substring(0, 10) : undefined 
+      });
     } else {
       childForm.resetFields();
     }
@@ -181,14 +185,26 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
     },
     {
       title: 'Age',
-      dataIndex: 'age',
       key: 'age',
-      render: (age: number) => (
-        <Space>
-          <span>{age}</span>
-          <Tag>{ageGroupLabel(age)}</Tag>
-        </Space>
-      ),
+      render: (record: FamilyChild) => {
+        let displayAge = record.age ?? 0;
+        if (record.date_of_birth) {
+            const birthDate = new Date(record.date_of_birth);
+            const today = new Date();
+            let ageNum = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                ageNum--;
+            }
+            displayAge = ageNum;
+        }
+        return (
+          <Space>
+            <span>{displayAge}</span>
+            <Tag>{ageGroupLabel(displayAge)}</Tag>
+          </Space>
+        );
+      },
     },
     {
       title: 'Action',
@@ -382,7 +398,10 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
           <Form.Item name="name" label="Child name" rules={[{ required: true, message: 'Name is required' }]}>
             <Input placeholder="Full name" />
           </Form.Item>
-          <Form.Item name="age" label="Age" rules={[{ required: true, message: 'Age is required' }]}>
+          <Form.Item name="date_of_birth" label="Date of Birth (Dynamic Age)">
+            <Input type="date" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="age" label="Age (Static fallback)">
             <InputNumber min={0} max={120} style={{ width: '100%' }} placeholder="Age in years" />
           </Form.Item>
         </Form>

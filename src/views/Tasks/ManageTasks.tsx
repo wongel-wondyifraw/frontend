@@ -15,6 +15,7 @@ import {
   Tag,
   Tooltip,
   message,
+  Checkbox,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -203,6 +204,7 @@ const ManageTasksContent = () => {
         start_date: range[0].format('YYYY-MM-DD'),
         end_date: range[1].format('YYYY-MM-DD'),
         notes: values.notes || undefined,
+        visitation_methods: values.visitation_methods || [],
       });
       message.success('Task assigned');
       setAssignOpen(false);
@@ -375,12 +377,21 @@ const ManageTasksContent = () => {
         record.definition?.requires_visit_target ? personName(record.target_member) : '—',
     },
     {
-      title: 'Date range',
+      title: 'Date range & Methods',
       key: 'dates',
       render: (_: unknown, record: TaskAssignment) => (
-        <span>
-          {dayjs(record.start_date).format('MMM D, YYYY')} → {dayjs(record.end_date).format('MMM D, YYYY')}
-        </span>
+        <div>
+          <span>
+            {dayjs(record.start_date).format('MMM D, YYYY')} → {dayjs(record.end_date).format('MMM D, YYYY')}
+          </span>
+          {record.visitation_methods && record.visitation_methods.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+                {record.visitation_methods.map(m => (
+                    <Tag key={m} color="blue" size="small">{m}</Tag>
+                ))}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -508,10 +519,13 @@ const ManageTasksContent = () => {
                 showSearch
                 placeholder="Select member to visit"
                 optionFilterProp="label"
-                options={members.map((m) => ({
-                  value: m.id,
-                  label: personName(m),
-                }))}
+                options={members
+                  .slice()
+                  .sort((a, b) => (a.visit_count || 0) - (b.visit_count || 0))
+                  .map((m) => ({
+                    value: m.id,
+                    label: `${personName(m)} (Visits: ${m.visit_count || 0})`,
+                  }))}
               />
             </Form.Item>
           )}
@@ -542,6 +556,10 @@ const ManageTasksContent = () => {
 
           <Form.Item name="notes" label="Notes">
             <TextArea rows={3} placeholder="Optional notes" />
+          </Form.Item>
+
+          <Form.Item name="visitation_methods" label="Visitation Method(s)">
+              <Checkbox.Group options={['In-person', 'Phone', 'Email', 'Virtual']} />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,67 +1,98 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Form, Input, Button, message, Spin } from 'antd';
+import { useRouter, useParams } from 'next/navigation';
+import { Form, Input, Button, message, Spin, Select, Row, Col } from 'antd';
 import { ArrowLeftOutlined, TeamOutlined } from '@ant-design/icons';
-import { getFamilyById, updateFamily } from '../../services/api';
+import { updateFamily, getFamilyById } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
-import SpouseSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/SpouseSelect';
+import SpouseSelect, { encodeLeaderValue, decodeLeaderValue } from '../../Components/common/SpouseSelect';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
+import type { Family } from '@/types';
 import './AddFamily.css';
+
+const { Option } = Select;
 
 const EditFamilyContent = () => {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const husbandStatus = Form.useWatch('husband_status', form);
+  const wifeStatus = Form.useWatch('wife_status', form);
+
+  const loadFamily = useCallback(async () => {
     try {
-      setLoading(true);
+      setInitialLoading(true);
       const family = await getFamilyById(id);
+      
       form.setFieldsValue({
-        name: family.name || '',
-        notes: family.notes || '',
-        husband: encodeLeaderValue(family.husband_id, family.husband_type || 'member'),
-        wife: encodeLeaderValue(family.wife_id, family.wife_type || 'member'),
+        name: family.name,
+        notes: family.notes,
+        husband_status: (family as any).husband_status || 'registered',
+        wife_status: (family as any).wife_status || 'registered',
+        husband: family.husband_id && family.husband_type ? encodeLeaderValue(family.husband_id, family.husband_type) : undefined,
+        wife: family.wife_id && family.wife_type ? encodeLeaderValue(family.wife_id, family.wife_type) : undefined,
       });
-    } catch {
-      message.error('Failed to load family');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Failed to load family'));
       router.push('/families');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
-  }, [form, id, router]);
+  }, [id, form, router]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    loadFamily();
+  }, [loadFamily]);
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const husband = decodeLeaderValue(values.husband);
-      const wife = decodeLeaderValue(values.wife);
-      if (!husband.leader_id || !husband.leader_type || !wife.leader_id || !wife.leader_type) {
-        message.error('Select both husband and wife');
-        return;
+      
+      let husbandId: string | null = null;
+      let husbandType: string | null = null;
+      let wifeId: string | null = null;
+      let wifeType: string | null = null;
+
+      if (values.husband_status === 'registered') {
+        const husband = decodeLeaderValue(values.husband);
+        if (!husband.leader_id || !husband.leader_type) {
+            message.error('Select registered husband');
+            return;
+        }
+        husbandId = husband.leader_id;
+        husbandType = husband.leader_type;
       }
-      if (husband.leader_id === wife.leader_id && husband.leader_type === wife.leader_type) {
+
+      if (values.wife_status === 'registered') {
+        const wife = decodeLeaderValue(values.wife);
+        if (!wife.leader_id || !wife.leader_type) {
+            message.error('Select registered wife');
+            return;
+        }
+        wifeId = wife.leader_id;
+        wifeType = wife.leader_type;
+      }
+
+      if (husbandId && wifeId && husbandId === wifeId && husbandType === wifeType) {
         message.error('Husband and wife must be different people');
         return;
       }
 
-      setSaving(true);
+      setLoading(true);
       await updateFamily(id, {
-        name: values.name || undefined,
-        notes: values.notes || undefined,
-        husband_id: husband.leader_id,
-        husband_type: husband.leader_type,
-        wife_id: wife.leader_id,
-        wife_type: wife.leader_type,
+        name: values.name || null,
+        notes: values.notes || null,
+        husband_id: husbandId,
+        husband_type: husbandType,
+        husband_status: values.husband_status,
+        wife_id: wifeId,
+        wife_type: wifeType,
+        wife_status: values.wife_status,
       });
       message.success('Family updated');
       router.push(`/families/details/${id}`);
@@ -69,11 +100,11 @@ const EditFamilyContent = () => {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       message.error(getApiErrorMessage(error, 'Failed to update family'));
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
         <Spin size="large" />
@@ -89,7 +120,7 @@ const EditFamilyContent = () => {
         onClick={() => router.push(`/families/details/${id}`)}
         style={{ marginBottom: 16, paddingLeft: 0, color: '#1565c0' }}
       >
-        Back to Family
+        Back to Family Details
       </Button>
 
       <div className="add-ministry-card">
@@ -99,31 +130,73 @@ const EditFamilyContent = () => {
 
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="name" label="Family name">
-            <Input size="large" placeholder="Optional — defaults to spouse last name" />
+            <Input size="large" placeholder="Optional" />
           </Form.Item>
-          <Form.Item
-            name="husband"
-            label="Husband"
-            rules={[{ required: true, message: 'Select husband' }]}
-            extra="Male members and ministers only"
-          >
-            <SpouseSelect gender="male" placeholder="Select husband" />
-          </Form.Item>
-          <Form.Item
-            name="wife"
-            label="Wife"
-            rules={[{ required: true, message: 'Select wife' }]}
-            extra="Female members and ministers only"
-          >
-            <SpouseSelect gender="female" placeholder="Select wife" />
-          </Form.Item>
+
+          <Row gutter={16}>
+              <Col span={8}>
+                  <Form.Item name="husband_status" label="Husband Status">
+                      <Select size="large">
+                          <Option value="registered">Registered</Option>
+                          <Option value="non_member">Non-member</Option>
+                          <Option value="pending">Pending</Option>
+                          <Option value="external">External</Option>
+                      </Select>
+                  </Form.Item>
+              </Col>
+              <Col span={16}>
+                {husbandStatus === 'registered' ? (
+                  <Form.Item
+                    name="husband"
+                    label="Husband"
+                    rules={[{ required: true, message: 'Select husband' }]}
+                  >
+                    <SpouseSelect gender="male" placeholder="Select husband" />
+                  </Form.Item>
+                ) : (
+                    <Form.Item label="Husband" extra="No member record linked.">
+                        <Input size="large" disabled value="Not Registered" />
+                    </Form.Item>
+                )}
+              </Col>
+          </Row>
+
+          <Row gutter={16}>
+              <Col span={8}>
+                  <Form.Item name="wife_status" label="Wife Status">
+                      <Select size="large">
+                          <Option value="registered">Registered</Option>
+                          <Option value="non_member">Non-member</Option>
+                          <Option value="pending">Pending</Option>
+                          <Option value="external">External</Option>
+                      </Select>
+                  </Form.Item>
+              </Col>
+              <Col span={16}>
+                {wifeStatus === 'registered' ? (
+                  <Form.Item
+                    name="wife"
+                    label="Wife"
+                    rules={[{ required: true, message: 'Select wife' }]}
+                  >
+                    <SpouseSelect gender="female" placeholder="Select wife" />
+                  </Form.Item>
+                ) : (
+                    <Form.Item label="Wife" extra="No member record linked.">
+                        <Input size="large" disabled value="Not Registered" />
+                    </Form.Item>
+                )}
+              </Col>
+          </Row>
+
           <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={3} placeholder="Optional notes" />
+            <Input.TextArea rows={3} />
           </Form.Item>
+          
           <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
             <Button onClick={() => router.push(`/families/details/${id}`)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={saving} style={{ background: '#1565c0' }}>
-              Save Changes
+            <Button type="primary" htmlType="submit" loading={loading} style={{ background: '#1565c0' }}>
+              Update Family
             </Button>
           </div>
         </Form>

@@ -22,6 +22,9 @@ import type {
   Permission,
   Role,
   User,
+  Location,
+  PageContent,
+  CommunityProject,
 } from '@/types';
 
 const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -801,6 +804,97 @@ export const getPermissionsGrouped = async (): Promise<Record<string, Permission
   try {
     const response = await api.get<Record<string, Permission[]>>('/access/permissions/grouped');
     return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+// Locations
+export const getLocations = async (status?: string): Promise<Location[]> => {
+  try {
+    const response = await api.get<Location[]>('/locations', { params: { status } });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const createLocation = async (data: Record<string, unknown>): Promise<Location> => {
+  try {
+    const response = await api.post<Location>('/locations', data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateLocation = async (id: string, data: Record<string, unknown>): Promise<Location> => {
+  try {
+    const response = await api.patch<Location>(`/locations/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+// Website CMS
+export const getPageContent = async (slug: string): Promise<PageContent> => {
+  try {
+    const response = await api.get<PageContent>(`/website/pages/${slug}`);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updatePageContent = async (slug: string, content: any): Promise<PageContent> => {
+  try {
+    const response = await api.patch<PageContent>(`/website/pages/${slug}`, content);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getProjects = async (status?: string): Promise<CommunityProject[]> => {
+  try {
+    const response = await api.get<CommunityProject[]>('/website/projects', { params: { status } });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getProject = async (id: string): Promise<CommunityProject> => {
+  try {
+    const response = await api.get<CommunityProject>(`/website/projects/${id}`);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const createProject = async (data: Record<string, unknown>): Promise<CommunityProject> => {
+  try {
+    const response = await api.post<CommunityProject>('/website/projects', data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateProject = async (id: string, data: Record<string, unknown>): Promise<CommunityProject> => {
+  try {
+    const response = await api.patch<CommunityProject>(`/website/projects/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deleteProject = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/website/projects/${id}`);
   } catch (error) {
     throw toApiError(error);
   }
