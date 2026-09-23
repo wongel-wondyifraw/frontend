@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -31,7 +31,7 @@ type NavItem = {
   icon: React.ReactNode;
   permission?: string;
   anyOf?: string[];
-  match?: (path: string) => boolean;
+  match?: (_path: string) => boolean;
 };
 
 const PRIMARY: NavItem[] = [
@@ -137,8 +137,8 @@ export default function BottomNav() {
   const canItem = (item: NavItem) =>
     item.anyOf?.length ? item.anyOf.some((p) => can(p)) : can(item.permission);
 
-  const primary = useMemo(() => PRIMARY.filter((item) => canItem(item)), [user]);
-  const moreItems = useMemo(() => MORE_ITEMS.filter((item) => canItem(item)), [user]);
+  const primary = PRIMARY.filter((item) => canItem(item));
+  const moreItems = MORE_ITEMS.filter((item) => canItem(item));
 
   const isPrimaryActive = (item: NavItem) =>
     item.match ? item.match(pathname) : pathname === item.path || pathname.startsWith(item.path);

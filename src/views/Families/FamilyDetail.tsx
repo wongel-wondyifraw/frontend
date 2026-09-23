@@ -48,7 +48,8 @@ function ageGroupLabel(age: number) {
   return 'Above 20';
 }
 
-function spousePath(id: string, type?: string) {
+function spousePath(id: string | null | undefined, type?: string | null) {
+  if (!id) return '#';
   return type === 'minister' ? `/ministers/details/${id}` : `/members/details/${id}`;
 }
 

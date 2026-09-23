@@ -506,7 +506,7 @@ export default function AnalysisDashboard() {
                       innerRadius={70}
                       outerRadius={110}
                       paddingAngle={2}
-                      label={(props) => {
+                      label={(props: { name?: string | number; value?: string | number }) => {
                         const name = String(props.name ?? '');
                         const value = Number(props.value ?? 0);
                         return `${name} ${value}`;

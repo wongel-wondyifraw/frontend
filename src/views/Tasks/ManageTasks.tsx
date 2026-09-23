@@ -390,7 +390,7 @@ const ManageTasksContent = () => {
           {record.visitation_methods && record.visitation_methods.length > 0 && (
             <div style={{ marginTop: 4 }}>
                 {record.visitation_methods.map(m => (
-                    <Tag key={m} color="blue" size="small">{m}</Tag>
+                    <Tag key={m} color="blue">{m}</Tag>
                 ))}
             </div>
           )}

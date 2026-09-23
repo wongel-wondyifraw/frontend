@@ -44,7 +44,7 @@ export interface Location {
 
 export interface PageContent {
   page_slug: string;
-  content: any;
+  content: Record<string, unknown> | LandingPageContent | null;
   created_at?: string;
   updated_at?: string;
 }
