@@ -8,7 +8,8 @@ function appendCacheBust(url: string, version?: string | number): string {
 
 /**
  * Resolve a stored media path (or absolute URL) against the API host.
- * Uploads are served from the backend at `/uploads/...`, not under `/api/v1`.
+ * Relative paths are served from the backend at `/uploads/...`.
+ * Absolute https URLs (e.g. Cloudinary) are returned as-is.
  */
 export function resolveMediaUrl(
   path: string | null | undefined,
