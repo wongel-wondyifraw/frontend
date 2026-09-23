@@ -1,24 +1,25 @@
 .time-widget {
-    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    background: linear-gradient(135deg, #1E40AF, #1e3a8a);
     border-radius: 12px;
-    padding: 20px;
+    padding: 10px 12px;
     height: 100%;
-    box-shadow: 0 4px 15px rgba(21, 101, 192, 0.3);
+    box-shadow: none;
     color: white;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .time-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 4px;
 }
 
 .time-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 13px;
     color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
 }
@@ -26,8 +27,8 @@
 .time-icon-badge {
     background: rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 6px;
-    border-radius: 8px;
+    padding: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -40,28 +41,25 @@
     justify-content: center;
     align-items: center;
     text-align: center;
+    min-height: 0;
 }
 
 .time-main {
-    font-size: 36px;
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
 }
 
 .date-sub {
-    font-size: 14px;
+    font-size: 11px;
     opacity: 0.9;
     font-weight: 400;
+    line-height: 1.2;
 }
 
 .timezone-info {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-top: 15px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 2px 8px;
-    border-radius: 10px;
+    display: none;
 }

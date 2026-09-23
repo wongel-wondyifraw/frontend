@@ -7,9 +7,9 @@
 .content-card-unified {
     background: var(--bg-card);
     /* was white */
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     border: 1px solid var(--border-color);
     /* was #f1f5f9 */
 }
@@ -121,7 +121,7 @@
 
 .member-card-mini {
     background: var(--bg-hover);
-    /* was #f8fafc */
+    /* was var(--bg-card) */
     border: 1px solid var(--border-color);
     /* was #f1f5f9 */
     border-radius: 12px;
@@ -139,7 +139,7 @@
     /* was #cbd5e1 */
     background: var(--bg-card);
     /* was white */
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
 }
 
 .ministry-members-grid {
@@ -169,8 +169,6 @@
 }
 
 .member-card-elegant:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
     border-color: var(--primary-blue);
 }
 

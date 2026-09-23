@@ -13,8 +13,8 @@ import {
   Statistic,
   Tag,
   Tooltip,
-  message,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -126,45 +126,60 @@ const ManageFamiliesContent = () => {
     {
       title: 'Family',
       key: 'name',
-      render: (_: unknown, record: Family) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Avatar icon={<TeamOutlined />} style={{ backgroundColor: '#1565c0' }} />
-          <div>
-            <div style={{ fontWeight: 600 }}>{record.name || 'Family'}</div>
-            <div style={{ fontSize: 12, color: '#94A3B8' }}>
-              {(record.children?.length ?? 0)} child{(record.children?.length ?? 0) === 1 ? '' : 'ren'}
+      render: (_: unknown, record: Family) => {
+        const hasHusband = Boolean(record.husband_id);
+        const hasWife = Boolean(record.wife_id);
+        const isSingleParent =
+          hasHusband !== hasWife && record.spouse_status !== 'external';
+        const singleParentTag =
+          isSingleParent && hasWife && !hasHusband
+            ? 'Single mom'
+            : isSingleParent && hasHusband && !hasWife
+              ? 'Single dad'
+              : null;
+
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Avatar icon={<TeamOutlined />} style={{ backgroundColor: '#1565c0' }} />
+            <div>
+              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span>{record.name || 'Family'}</span>
+                {singleParentTag && (
+                  <Tag color={singleParentTag === 'Single mom' ? 'magenta' : 'blue'} style={{ marginInlineEnd: 0 }}>
+                    {singleParentTag}
+                  </Tag>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Husband',
       key: 'husband',
+      responsive: ['md'],
       render: (_: unknown, record: Family) => <LeaderNameWithTag leader={record.husband} />,
     },
     {
       title: 'Wife',
       key: 'wife',
+      responsive: ['md'],
       render: (_: unknown, record: Family) => <LeaderNameWithTag leader={record.wife} />,
     },
     {
       title: 'Children',
       key: 'children',
-      render: (_: unknown, record: Family) => (
-        <Space wrap size={[4, 4]}>
-          {(record.children || []).length === 0 ? (
-            <span style={{ color: '#94a3b8' }}>—</span>
-          ) : (
-            (record.children || []).slice(0, 3).map((c) => (
-              <Tag key={c.id}>{c.name} ({c.age})</Tag>
-            ))
-          )}
-          {(record.children?.length ?? 0) > 3 && (
-            <Tag>+{(record.children?.length ?? 0) - 3}</Tag>
-          )}
-        </Space>
-      ),
+      width: 100,
+      responsive: ['sm'],
+      render: (_: unknown, record: Family) => {
+        const count = record.children?.length ?? 0;
+        return count === 0 ? (
+          <span style={{ color: '#94a3b8' }}>0</span>
+        ) : (
+          <Tag>{count}</Tag>
+        );
+      },
     },
     {
       title: 'Action',
@@ -204,63 +219,64 @@ const ManageFamiliesContent = () => {
   ];
 
   return (
-    <div className="manage-ministries-container">
-      <div className="manage-ministries-header">
-        <h2>Family Management</h2>
-        {canCreate && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push('/families/add')}>
-            Create Family
-          </Button>
-        )}
-      </div>
-
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={8} xl={4}>
-          <Card>
+    <div className="manage-page">
+      <Row className="manage-page-stats" gutter={[12, 12]} style={{ marginBottom: 20 }}>
+        <Col xs={12} sm={12} lg={8} xl={4}>
+          <Card size="small">
             <Statistic title="Families" value={stats.familyCount} prefix={<TeamOutlined />} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8} xl={4}>
-          <Card>
+        <Col xs={12} sm={12} lg={8} xl={4}>
+          <Card size="small">
             <Statistic title="Children" value={stats.childrenCount} prefix={<UserOutlined />} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8} xl={5}>
-          <Card>
+        <Col xs={12} sm={8} lg={8} xl={5}>
+          <Card size="small">
             <Statistic title="Below 10" value={stats.childrenBelow10} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8} xl={5}>
-          <Card>
+        <Col xs={12} sm={8} lg={8} xl={5}>
+          <Card size="small">
             <Statistic title="Teenage (10–19)" value={stats.childrenTeenage} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8} xl={6}>
-          <Card>
+        <Col xs={24} sm={8} lg={8} xl={6}>
+          <Card size="small">
             <Statistic title="Above 20" value={stats.childrenAbove20} />
           </Card>
         </Col>
       </Row>
 
-      <div className="ministries-table-card">
-        <DataTable
-          columns={columns}
-          dataSource={families}
-          loading={loading}
-          searchPlaceholder="Search families..."
-          searchValue={searchText}
-          onSearchChange={(value) => {
-            setSearchText(value);
-            debouncedSearch(value);
-          }}
-          serverPagination={{
-            current: page,
-            pageSize,
-            total,
-            onChange: (nextPage, nextSize) => loadFamilies(nextPage, nextSize, searchText),
-          }}
-        />
-      </div>
+      <DataTable
+        title="Family Management"
+        columns={columns}
+        dataSource={families}
+        loading={loading}
+        searchPlaceholder="Search families..."
+        searchValue={searchText}
+        childrenColumnName="family_tree_children"
+        onSearchChange={(value) => {
+          setSearchText(value);
+          debouncedSearch(value);
+        }}
+        serverPagination={{
+          current: page,
+          pageSize,
+          total,
+          onChange: (nextPage, nextSize) => loadFamilies(nextPage, nextSize, searchText),
+        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'Create Family',
+                icon: <PlusOutlined />,
+                onClick: () => router.push('/families/add'),
+              }
+            : undefined
+        }
+        tableCardClassName="data-table-card"
+      />
     </div>
   );
 };

@@ -1,32 +1,31 @@
 .attendance-widget {
     background: #fff;
     border-radius: 12px;
-    padding: 20px;
+    padding: 12px 16px;
     height: 100%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .attendance-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 }
 
 .attendance-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     color: #1a1a1a;
     font-weight: 600;
 }
 
 .attendance-icon-badge {
     background: #eff6ff;
-    /* Light Blue */
-    color: #1565c0;
-    /* Primary Blue */
+    color: #1E40AF;
     padding: 6px;
     border-radius: 8px;
     display: flex;
@@ -36,55 +35,54 @@
 
 .attendance-content {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
+    gap: 16px;
     flex: 1;
+    min-height: 0;
 }
 
 .attendance-main {
-    margin-bottom: 10px;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .attendance-label {
     display: block;
     color: #64748b;
-    /* Blue Grey */
-    font-size: 13px;
-    margin-bottom: 4px;
+    font-size: 12px;
+    margin-bottom: 2px;
 }
 
 .attendance-value {
     display: block;
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 700;
     color: #0f172a;
-    line-height: 1.2;
+    line-height: 1.1;
 }
 
 .attendance-trend {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 13px;
-    margin-top: 4px;
+    font-size: 12px;
+    margin-top: 2px;
     font-weight: 500;
 }
 
 .attendance-trend.up {
-    color: #1565c0;
-    /* Blue */
+    color: #1E40AF;
 }
 
 .attendance-trend.down {
     color: #64748b;
-    /* Grey for down/neutral or keep red if strictly semantic, but request said monochrome blue */
 }
-
-/* Override chart colors via props in JSX or CSS if using CSS variables, but recharts uses inline mostly. 
-   We updated the JS file to use blue strokes. */
 
 .attendance-mini-chart {
     flex: 1;
-    min-height: 60px;
-    margin-bottom: -10px;
+    min-height: 0;
+    height: 48px;
+    margin-bottom: 0;
 }

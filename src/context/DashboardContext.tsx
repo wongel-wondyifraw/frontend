@@ -13,28 +13,46 @@ export const useDashboard = (): DashboardContextValue => {
   return context;
 };
 
+const PROGRAMS_WIDGET: DashboardWidget = { id: 'w-programs', type: 'programs', settings: {} };
+const PROGRAMS_LAYOUT: DashboardLayoutItem = { i: 'w-programs', x: 0, y: 3, w: 8, h: 8, minW: 6, minH: 6 };
+
 const TODO_WIDGET: DashboardWidget = { id: 'w-todo', type: 'todo', settings: { title: 'To-Do' } };
-const TODO_LAYOUT: DashboardLayoutItem = { i: 'w-todo', x: 0, y: 13, w: 8, h: 10, minW: 6, minH: 6 };
+const TODO_LAYOUT: DashboardLayoutItem = { i: 'w-todo', x: 8, y: 3, w: 8, h: 8, minW: 6, minH: 6 };
 
+/** Default view pulls from the widget store — not only the old KPI + calendar set */
 const INITIAL_WIDGETS: DashboardWidget[] = [
-  { id: 'w1', type: 'memberOverview', settings: { title: 'Total Members', totalLabel: 'Total Members', icon: 'group', metric: 'members' } },
-  { id: 'w2', type: 'ministers', settings: { title: 'Total Ministers', totalLabel: 'Total Ministers', icon: 'church', metric: 'ministers' } },
-  { id: 'w3', type: 'ministries', settings: { title: 'Total Ministries', totalLabel: 'Active Ministries', icon: 'volunteer', metric: 'ministries' } },
-  { id: 'w7', type: 'calendar', settings: {} },
-  { id: 'w10', type: 'announcements', settings: {} },
+  { id: 'w-members', type: 'memberOverview', settings: { title: 'Total Members', totalLabel: 'Total Members', icon: 'group', metric: 'members' } },
+  { id: 'w-ministers', type: 'ministers', settings: { title: 'Total Ministers', totalLabel: 'Total Ministers', icon: 'church', metric: 'ministers' } },
+  { id: 'w-ministries', type: 'ministries', settings: { title: 'Total Ministries', totalLabel: 'Active Ministries', icon: 'volunteer', metric: 'ministries' } },
+  { id: 'w-attendance', type: 'attendance', settings: {} },
+  { id: 'w-time', type: 'time', settings: {} },
+  { id: 'w-programs', type: 'programs', settings: {} },
   TODO_WIDGET,
+  { id: 'w-calendar', type: 'calendar', settings: {} },
+  { id: 'w-announcements', type: 'announcements', settings: {} },
+  { id: 'w-actions', type: 'quickActions', settings: {} },
+  { id: 'w-data', type: 'dataAccess', settings: {} },
 ];
 
+/**
+ * 24-col default composed from the widget store:
+ * KPIs + attendance + time → programs / todo / calendar → announcements / actions / data access
+ */
 const DEFAULT_LAYOUT: DashboardLayoutItem[] = [
-  { i: 'w1', x: 0, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-  { i: 'w2', x: 7, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-  { i: 'w3', x: 14, y: 0, w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-  { i: 'w10', x: 0, y: 4, w: 14, h: 9 },
-  { i: 'w7', x: 14, y: 4, w: 7, h: 9 },
+  { i: 'w-members', x: 0, y: 0, w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+  { i: 'w-ministers', x: 4, y: 0, w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+  { i: 'w-ministries', x: 8, y: 0, w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+  { i: 'w-attendance', x: 12, y: 0, w: 8, h: 3, minW: 5, minH: 3, maxH: 6 },
+  { i: 'w-time', x: 20, y: 0, w: 4, h: 3, minW: 3, minH: 3, maxH: 5 },
+  { i: 'w-programs', x: 0, y: 3, w: 8, h: 8, minW: 6, minH: 6 },
   TODO_LAYOUT,
+  { i: 'w-calendar', x: 16, y: 3, w: 8, h: 8, minW: 6, minH: 6 },
+  { i: 'w-announcements', x: 0, y: 11, w: 10, h: 8, minW: 6, minH: 5 },
+  { i: 'w-actions', x: 10, y: 11, w: 7, h: 8, minW: 4, minH: 5 },
+  { i: 'w-data', x: 17, y: 11, w: 7, h: 8, minW: 4, minH: 5 },
 ];
 
-const STORAGE_KEY = 'cms_dashboard_config_v3';
+const STORAGE_KEY = 'cms_dashboard_config_v5';
 
 function ensureMandatoryWidgets(
   widgets: DashboardWidget[],
@@ -43,6 +61,13 @@ function ensureMandatoryWidgets(
   let nextWidgets = [...widgets];
   const nextLayouts = { ...layouts };
   const lg = [...(nextLayouts.lg || [])];
+
+  if (!nextWidgets.some((w) => w.type === 'programs')) {
+    nextWidgets = [...nextWidgets, PROGRAMS_WIDGET];
+    if (!lg.some((l) => l.i === PROGRAMS_WIDGET.id)) {
+      lg.push(PROGRAMS_LAYOUT);
+    }
+  }
 
   if (!nextWidgets.some((w) => w.type === 'todo')) {
     nextWidgets = [...nextWidgets, TODO_WIDGET];
@@ -149,18 +174,18 @@ export const DashboardProvider = ({ children }: DashboardProviderProps) => {
     const newWidgets = [...widgets, newWidget];
 
     const defaultSizes: Record<string, Partial<DashboardLayoutItem>> = {
-      memberOverview: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-      ministers: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-      ministries: { w: 7, h: 4, minW: 5, maxW: 10, minH: 4, maxH: 5 },
-      attendance: { w: 6, h: 8 },
-      announcements: { w: 14, h: 9 },
-      dataAccess: { w: 16, h: 8 },
-      time: { w: 6, h: 4 },
-      calendar: { w: 7, h: 9 },
-      todo: { w: 8, h: 10 },
-      programs: { w: 10, h: 10 },
-      quickActions: { w: 6, h: 7 },
-      stats: { w: 6, h: 4 },
+      memberOverview: { w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+      ministers: { w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+      ministries: { w: 4, h: 3, minW: 3, maxW: 8, minH: 3, maxH: 5 },
+      attendance: { w: 8, h: 3, minW: 5, minH: 3 },
+      announcements: { w: 10, h: 8, minW: 6, minH: 5 },
+      dataAccess: { w: 7, h: 8, minW: 4, minH: 5 },
+      time: { w: 4, h: 3, minW: 3, minH: 3 },
+      calendar: { w: 8, h: 8, minW: 6, minH: 6 },
+      todo: { w: 8, h: 8, minW: 6, minH: 6 },
+      programs: { w: 8, h: 8, minW: 6, minH: 6 },
+      quickActions: { w: 7, h: 8, minW: 4, minH: 5 },
+      stats: { w: 4, h: 3 },
     };
 
     const size = defaultSizes[type] || { w: 3, h: 4 };

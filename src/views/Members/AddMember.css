@@ -46,27 +46,33 @@
 
 .content-card-unified {
     background: var(--bg-card, white);
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--border-color, #f1f5f9);
+    box-shadow: none;
+    border: 1px solid var(--border-color);
 }
 
 .wizard-card {
     border-radius: 12px !important;
 }
 
-.wizard-card .ant-steps-item-finish .ant-steps-item-icon {
-    background: #1565c0;
-    border-color: #1565c0;
-}
-
-.wizard-card .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon {
-    color: #fff;
-}
-
 @media (max-width: 768px) {
     .content-card-unified {
-        padding: 24px;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .add-member-header h1 {
+        font-size: 22px;
+    }
+
+    .add-member-header p {
+        font-size: 14px;
+    }
+
+    .form-section-title {
+        font-size: 16px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
     }
 }

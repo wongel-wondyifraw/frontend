@@ -13,6 +13,8 @@ const PROTECTED_PREFIXES = [
   '/settings',
   '/bible-study',
   '/tasks',
+  '/planning',
+  '/landing',
   '/families',
   '/schedule',
   '/help',

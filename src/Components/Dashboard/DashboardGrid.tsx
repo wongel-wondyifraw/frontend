@@ -20,7 +20,8 @@ const DashboardGrid = () => {
           cols={{ lg: 24, md: 24, sm: 12, xs: 4, xxs: 2 }}
           rowHeight={30}
           width={width}
-          margin={[20, 20] as const}
+          margin={[16, 16] as const}
+          containerPadding={[0, 0] as const}
           dragConfig={{
             enabled: isEditMode,
             handle: '.widget-drag-handle',

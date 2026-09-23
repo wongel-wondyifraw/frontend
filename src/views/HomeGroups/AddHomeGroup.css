@@ -1,7 +1,7 @@
 .add-ministry-container {
     max-width: 1200px;
     margin: 0 auto;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
 }
 
 .add-ministry-header {
@@ -11,33 +11,34 @@
 .add-ministry-header h1 {
     font-size: 28px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
     margin-bottom: 8px;
 }
 
 .add-ministry-header p {
-    color: #64748b;
+    color: var(--text-secondary, #64748b);
     font-size: 16px;
 }
 
-/* Reusing similar classes but with purple theme */
-.form-section-title-purple {
+.form-section-title-purple,
+.form-section-title {
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
     margin-bottom: 24px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.form-icon-wrapper-purple {
+.form-icon-wrapper-purple,
+.form-icon-wrapper {
     width: 32px;
     height: 32px;
-    background: #f3e8ff;
-    color: #9333ea;
+    background: #e0f2fe;
+    color: #0284c7;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -46,9 +47,20 @@
 }
 
 .content-card-unified {
-    background: white;
-    border-radius: 20px;
+    background: var(--bg-card, white);
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f1f5f9;
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+}
+
+.wizard-card {
+    border-radius: 12px !important;
+}
+
+@media (max-width: 768px) {
+    .content-card-unified {
+        padding: 16px;
+        border-radius: 12px;
+    }
 }

@@ -1,0 +1,170 @@
+.lp-display--grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 1.8vw, 1.5rem);
+  width: 100%;
+  align-items: stretch;
+}
+
+.lp-display--grid > * {
+  height: 100%;
+  min-height: 100%;
+}
+
+@media (min-width: 640px) {
+  .lp-display--grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .lp-display--grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1600px) {
+  .lp-display--grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.lp-display--carousel,
+.lp-display--marquee {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(1rem, 1.6vw, 1.4rem);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+}
+
+.lp-display--carousel::-webkit-scrollbar,
+.lp-display--marquee::-webkit-scrollbar {
+  display: none;
+}
+
+.lp-display--carousel > *,
+.lp-display--marquee > * {
+  flex: 0 0 min(320px, 80vw);
+  scroll-snap-align: start;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.lp-display--marquee {
+  scroll-behavior: auto;
+}
+
+@media (min-width: 768px) {
+  .lp-display--carousel > *,
+  .lp-display--marquee > * {
+    flex-basis: min(360px, 40vw);
+  }
+}
+
+@media (min-width: 1200px) {
+  .lp-display--carousel > *,
+  .lp-display--marquee > * {
+    flex-basis: min(380px, 26vw);
+  }
+}
+
+.lp-strip-display.lp-display--carousel,
+.lp-strip-display.lp-display--marquee {
+  justify-content: center;
+}
+
+.lp-strip-display.lp-display--carousel > *,
+.lp-strip-display.lp-display--marquee > * {
+  flex-basis: min(340px, 82vw);
+}
+
+@media (min-width: 900px) {
+  .lp-strip-display.lp-display--carousel > *,
+  .lp-strip-display.lp-display--marquee > * {
+    flex-basis: min(360px, 28vw);
+  }
+}
+
+/* When few about/project cards, keep the row centered on the page */
+.lp-strip-display.lp-display--grid {
+  justify-content: center;
+  justify-items: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .lp-strip-display.lp-display--grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+    max-width: 100%;
+  }
+}
+
+/* Programs carousel — landscape banner posters (~2:1) */
+.lp-programs-display.lp-display--carousel,
+.lp-programs-display.lp-display--marquee {
+  gap: clamp(1.5rem, 2.5vw, 2.25rem);
+  padding-block: 0.35rem 0.75rem;
+  padding-inline: 0.15rem;
+}
+
+.lp-programs-display.lp-display--carousel > *,
+.lp-programs-display.lp-display--marquee > * {
+  flex-basis: min(92vw, 560px);
+  min-height: 0;
+  max-width: 640px;
+}
+
+/* Mobile: stack program cards instead of horizontal scroll */
+@media (max-width: 767px) {
+  .lp-programs-display.lp-display--carousel,
+  .lp-programs-display.lp-display--marquee {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: visible;
+    overflow-y: visible;
+    scroll-snap-type: none;
+    gap: 1.5rem;
+    padding-block: 0.25rem 0.5rem;
+  }
+
+  .lp-programs-display.lp-display--carousel > *,
+  .lp-programs-display.lp-display--marquee > * {
+    flex: 0 0 auto;
+    flex-basis: auto;
+    width: 100%;
+    max-width: 100%;
+    scroll-snap-align: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .lp-programs-display.lp-display--carousel > *,
+  .lp-programs-display.lp-display--marquee > * {
+    flex-basis: min(72vw, 600px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .lp-programs-display.lp-display--carousel > *,
+  .lp-programs-display.lp-display--marquee > * {
+    flex-basis: min(48vw, 640px);
+  }
+}
+
+.lp-programs-display.lp-display--grid {
+  gap: clamp(1.5rem, 2.5vw, 2.25rem);
+  justify-content: center;
+}
+
+.lp-programs-display.lp-display--grid > * {
+  max-width: 640px;
+}

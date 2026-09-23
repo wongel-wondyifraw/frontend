@@ -1,179 +1,230 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Switch, Avatar, Upload, Modal, Select } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { UploadChangeParam } from 'antd/es/upload';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
 import StepperWizard from '@/Components/common/StepperWizard';
 import { getAvatarUrl } from '@/lib/media-url';
-import type { User } from '@/types';
+import { getRoles } from '@/services/api';
+import type { Role, User } from '@/types';
 
-const { Option } = Select;
-
-const USER_WIZARD_STEPS = [
-    { title: 'Personal' },
-    { title: 'Account' },
-    { title: 'Role' },
-];
+const USER_WIZARD_STEPS = [{ title: 'Personal' }, { title: 'Account' }, { title: 'Role' }];
 
 const USER_WIZARD_BACKGROUNDS = [
-    { background: '#f8fafc', border: 'none' },
-    { background: '#f8fafc', border: 'none' },
-    { background: '#e6f7ff', border: '1px solid #91d5ff' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
 ];
 
 interface UserWizardModalProps {
-    open: boolean;
-    editingUser: User | null;
-    userForm: FormInstance;
-    currentStep: number;
-    wizardAvatarPreview: string | null;
-    onCancel: () => void;
-    onNext: () => void;
-    onPrev: () => void;
-    onSubmit: () => void;
-    onWizardAvatarChange: (info: UploadChangeParam) => void;
+  open: boolean;
+  editingUser: User | null;
+  userForm: FormInstance;
+  currentStep: number;
+  wizardAvatarPreview: string | null;
+  submitting?: boolean;
+  onCancel: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  onSubmit: () => void;
+  onWizardAvatarChange: (info: UploadChangeParam) => void;
+  onAfterOpenChange?: (open: boolean) => void;
 }
 
 const UserWizardModal = ({
-    open,
-    editingUser,
-    userForm,
-    currentStep,
-    wizardAvatarPreview,
-    onCancel,
-    onNext,
-    onPrev,
-    onSubmit,
-    onWizardAvatarChange,
+  open,
+  editingUser,
+  userForm,
+  currentStep,
+  wizardAvatarPreview,
+  submitting = false,
+  onCancel,
+  onNext,
+  onPrev,
+  onSubmit,
+  onWizardAvatarChange,
+  onAfterOpenChange,
 }: UserWizardModalProps) => {
-    // Keep Form mounted via forceRender so the instance stays connected.
-    useEffect(() => {
-        if (!open) return;
+  const [roles, setRoles] = useState<Role[]>([]);
 
-        if (editingUser) {
-            userForm.setFieldsValue({
-                first_name: editingUser.first_name,
-                middle_name: editingUser.middle_name,
-                last_name: editingUser.last_name,
-                email: editingUser.email,
-                role: editingUser.role,
-                title: editingUser.title,
-                is_active: editingUser.is_active !== undefined ? editingUser.is_active : true,
-            });
-            return;
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getRoles();
+        if (!cancelled) setRoles(data);
+      } catch {
+        if (!cancelled) {
+          setRoles([
+            { id: 'admin', key: 'admin', name: 'Admin', is_system: true, permissions: [] },
+            { id: 'minister', key: 'minister', name: 'Minister', is_system: true, permissions: [] },
+            { id: 'staff', key: 'staff', name: 'Staff', is_system: true, permissions: [] },
+          ] as Role[]);
         }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
-        userForm.resetFields();
-        userForm.setFieldsValue({ is_active: true });
-    }, [open, editingUser, userForm]);
+  const roleOptions = roles
+    .filter((r) => r.key !== 'member')
+    .map((r) => ({ value: r.key, label: r.name }));
 
-    return (
-        <Modal
-            title={editingUser ? 'Edit User Registration' : 'New User Registration'}
-            open={open}
-            onCancel={onCancel}
-            footer={null}
-            width={700}
-            centered
-            forceRender
-        >
-            <div style={{ padding: '16px 0' }}>
-                <Form form={userForm} layout="vertical" onFinish={onSubmit}>
-                    <StepperWizard
-                        steps={USER_WIZARD_STEPS}
-                        currentStep={currentStep}
-                        onNext={onNext}
-                        onPrev={onPrev}
-                        submitText={editingUser ? 'Confirm Update' : 'Confirm Registration'}
-                        submitLoading={false}
-                        stepBackgrounds={USER_WIZARD_BACKGROUNDS}
-                        showCancel={false}
+  return (
+    <Modal
+      title={editingUser ? 'Edit user' : 'New user'}
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      width={700}
+      centered
+      destroyOnHidden
+      afterOpenChange={onAfterOpenChange}
+      mask={{ closable: false }}
+    >
+      <div style={{ padding: '8px 0 0' }}>
+        <Form form={userForm} layout="vertical" onFinish={onSubmit} preserve={false}>
+          <StepperWizard
+            steps={USER_WIZARD_STEPS}
+            currentStep={currentStep}
+            onNext={onNext}
+            onPrev={onPrev}
+            submitText={editingUser ? 'Save changes' : 'Create user'}
+            submitLoading={submitting}
+            stepBackgrounds={USER_WIZARD_BACKGROUNDS}
+            showCancel={false}
+          >
+            <div>
+              <h3 className="settings-section-title">Personal profile</h3>
+              <div className="settings-wizard-profile">
+                <div className="settings-wizard-avatar">
+                  <Avatar
+                    size={96}
+                    src={wizardAvatarPreview || getAvatarUrl(editingUser?.avatar_url)}
+                    icon={<UserOutlined />}
+                    className="settings-avatar"
+                  />
+                  <div style={{ marginTop: 8 }}>
+                    <Upload
+                      showUploadList={false}
+                      accept="image/jpeg,image/png,image/webp"
+                      beforeUpload={() => false}
+                      onChange={onWizardAvatarChange}
                     >
-                        <div>
-                            <h3 style={{ marginBottom: '20px' }}>Personal Profile</h3>
-                            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'center' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <Avatar
-                                        size={100}
-                                        src={wizardAvatarPreview || getAvatarUrl(editingUser?.avatar_url)}
-                                        icon={<UserOutlined />}
-                                        style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
-                                    />
-                                    <div style={{ marginTop: '8px' }}>
-                                        <Upload showUploadList={false} beforeUpload={() => false} onChange={onWizardAvatarChange}>
-                                            <Button size="small" icon={<UploadOutlined />}>Upload</Button>
-                                        </Upload>
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                        <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
-                                            <Input size="large" placeholder="John" />
-                                        </Form.Item>
-                                        <Form.Item label="Middle Name" name="middle_name">
-                                            <Input size="large" placeholder="Optional" />
-                                        </Form.Item>
-                                    </div>
-                                    <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
-                                        <Input size="large" placeholder="Doe" type="text" />
-                                    </Form.Item>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 style={{ marginBottom: '20px' }}>Account Setup</h3>
-                            <Form.Item
-                                label="Email Address"
-                                name="email"
-                                rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}
-                                extra={<span style={{ color: '#fa8c16', fontSize: '12px' }}>⚠️ Warning: Email cannot be changed later. Please enter carefully.</span>}
-                            >
-                                <Input size="large" placeholder="user@example.com" disabled={!!editingUser} />
-                            </Form.Item>
-
-                            {!editingUser && (
-                                <Form.Item label="Temporary Password" name="password" rules={[{ required: true, min: 6, message: 'Min 6 characters' }]}>
-                                    <Input.Password size="large" placeholder="Set initial password" />
-                                </Form.Item>
-                            )}
-                        </div>
-
-                        <div>
-                            <h3 style={{ marginBottom: '20px' }}>Role & Designation</h3>
-                            <Form.Item label="Select Role" name="role" rules={[{ required: true, message: 'Please assign a role' }]}>
-                                <Select size="large" placeholder="Select an access level">
-                                    <Option value="admin">Admin</Option>
-                                    <Option value="minister">Minister</Option>
-                                    <Option value="staff">Staff</Option>
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.role !== currentValues.role}>
-                                {({ getFieldValue }) => {
-                                    const role = getFieldValue('role');
-                                    return (role === 'minister' || role === 'staff') ? (
-                                        <Form.Item
-                                            label="Title / Designation"
-                                            name="title"
-                                            rules={[{ required: true, message: 'Title is mandatory for this role' }]}
-                                        >
-                                            <Input size="large" placeholder="e.g. Senior Pastor, IT Manager" />
-                                        </Form.Item>
-                                    ) : null;
-                                }}
-                            </Form.Item>
-
-                            <Form.Item label="Account Status" name="is_active" valuePropName="checked">
-                                <Switch />
-                            </Form.Item>
-                        </div>
-                    </StepperWizard>
-                </Form>
+                      <Button size="small" icon={<UploadOutlined />}>
+                        Upload
+                      </Button>
+                    </Upload>
+                  </div>
+                </div>
+                <div className="settings-wizard-fields">
+                  <div className="settings-wizard-name-grid">
+                    <Form.Item
+                      label="First name"
+                      name="first_name"
+                      rules={[{ required: true, message: 'First name is required' }]}
+                    >
+                      <Input placeholder="John" />
+                    </Form.Item>
+                    <Form.Item label="Middle name" name="middle_name">
+                      <Input placeholder="Optional" />
+                    </Form.Item>
+                  </div>
+                  <Form.Item
+                    label="Last name"
+                    name="last_name"
+                    rules={[{ required: true, message: 'Last name is required' }]}
+                  >
+                    <Input placeholder="Doe" />
+                  </Form.Item>
+                </div>
+              </div>
             </div>
-        </Modal>
-    );
+
+            <div>
+              <h3 className="settings-section-title">Account setup</h3>
+              <Form.Item
+                label="Email address"
+                name="email"
+                rules={[
+                  { required: true, message: 'Email is required' },
+                  { type: 'email', message: 'Enter a valid email' },
+                ]}
+                extra={
+                  editingUser
+                    ? 'Email cannot be changed after creation.'
+                    : 'Email cannot be changed later — enter carefully.'
+                }
+              >
+                <Input placeholder="user@example.com" disabled={!!editingUser} autoComplete="off" />
+              </Form.Item>
+
+              {!editingUser && (
+                <Form.Item
+                  label="Temporary password"
+                  name="password"
+                  rules={[
+                    { required: true, message: 'Password is required' },
+                    { min: 6, message: 'At least 6 characters' },
+                  ]}
+                >
+                  <Input.Password placeholder="Set initial password" autoComplete="new-password" />
+                </Form.Item>
+              )}
+            </div>
+
+            <div>
+              <h3 className="settings-section-title">Role & designation</h3>
+              <Form.Item
+                label="Role"
+                name="role"
+                rules={[{ required: true, message: 'Assign a role' }]}
+              >
+                <Select
+                  placeholder="Select an access level"
+                  options={
+                    roleOptions.length
+                      ? roleOptions
+                      : [
+                          { value: 'admin', label: 'Admin' },
+                          { value: 'minister', label: 'Minister' },
+                          { value: 'staff', label: 'Staff' },
+                        ]
+                  }
+                />
+              </Form.Item>
+
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, cur) => prev.role !== cur.role}
+              >
+                {({ getFieldValue }) => {
+                  const role = getFieldValue('role');
+                  return role === 'minister' || role === 'staff' ? (
+                    <Form.Item
+                      label="Title / designation"
+                      name="title"
+                      rules={[{ required: true, message: 'Title is required for this role' }]}
+                    >
+                      <Input placeholder="e.g. Senior Pastor, IT Manager" />
+                    </Form.Item>
+                  ) : null;
+                }}
+              </Form.Item>
+
+              <Form.Item label="Account active" name="is_active" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </div>
+          </StepperWizard>
+        </Form>
+      </div>
+    </Modal>
+  );
 };
 
 export default UserWizardModal;

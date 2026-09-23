@@ -17,8 +17,8 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   DeleteOutlined,
   EditOutlined,

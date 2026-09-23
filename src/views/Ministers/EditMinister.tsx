@@ -2,8 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  Form, Input, Select, DatePicker, Button, Upload, message, Row, Col, Spin, Radio, Avatar,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Button,
+  Upload,
+  Row,
+  Col,
+  Spin,
+  Radio,
+  Avatar,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined, UserOutlined, UploadOutlined, MailOutlined, PhoneOutlined,
   HomeOutlined, GlobalOutlined, CheckCircleOutlined,
@@ -28,10 +39,10 @@ const STEPS = [
 ];
 
 const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
 ];
 
 const EditMinister = () => {

@@ -1,7 +1,7 @@
 .upcoming-programs-card {
-    background: #fcfcfc;
+    background: var(--bg-card);
     border-radius: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow: none;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -13,9 +13,35 @@
     font-size: 16px;
     font-weight: 600;
     color: #0f172a;
+}
+
+.upcoming-programs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 20px 24px;
     background: #f1f5f9;
     border-bottom: 1px solid #e2e8f0;
+}
+
+.upcoming-programs-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e40af;
+    text-decoration: none;
+}
+
+.upcoming-programs-link:hover {
+    text-decoration: underline;
+}
+
+.programs-loading,
+.programs-empty {
+    padding: 24px;
+    color: #94a3b8;
+    font-size: 13px;
+    margin: 0;
 }
 
 .programs-list {
@@ -32,7 +58,7 @@
     gap: 16px;
     padding: 12px;
     border-radius: 12px;
-    background: #f8fafc;
+    background: var(--bg-card);
     transition: all 0.2s ease;
 }
 
@@ -49,7 +75,7 @@
     background: white;
     padding: 8px 12px;
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     min-width: 60px;
 }
 
@@ -70,11 +96,35 @@
     flex: 1;
 }
 
+.program-item--link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.program-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
 .program-title {
     font-size: 14px;
     font-weight: 600;
     color: #334155;
-    margin-bottom: 4px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.program-type-tag {
+    margin-inline-end: 0 !important;
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 18px;
 }
 
 .program-time {
@@ -83,4 +133,11 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+}
+
+.program-location {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

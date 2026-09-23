@@ -1,3 +1,16 @@
+.dashboard-page {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-stage {
+  position: relative;
+  width: 100%;
+}
+
 .dashboard-grid {
     display: flex;
     gap: 24px;

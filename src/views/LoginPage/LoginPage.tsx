@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from "react";
-import { Typography, Form, Input, Button, message } from "antd";
+import { Typography, Form, Input, Button } from "antd";
 import {
   GoogleOutlined,
   LoginOutlined,
@@ -12,9 +12,9 @@ import { useRouter } from "next/navigation";
 import { loginUser } from "../../services/api";
 import { setAuthCookie } from "../../lib/auth-cookies";
 import { getApiErrorMessage } from "../../lib/errors";
-import AppLogo from "../../Components/common/AppLogo";
 import PoweredByShepherd from "../../Components/common/PoweredByShepherd";
 import { TENANT } from "@/lib/tenant";
+import { useToast } from "@/context/ToastContext";
 import "./LoginPage.css";
 import { useUser } from "../../context/UserContext";
 
@@ -23,6 +23,7 @@ const { Title, Text } = Typography;
 const LoginPage = () => {
   const router = useRouter();
   const { refreshUser } = useUser();
+  const { showToast } = useToast();
 
   const [loading, setLoading] = useState(false);
 
@@ -39,12 +40,12 @@ const LoginPage = () => {
       // Update user context immediately
       await refreshUser();
 
-      message.success("Login successful!");
+      showToast("success", "Login successful!");
       router.push("/dashboard");
     } catch (error: unknown) {
       const errorMessage = getApiErrorMessage(error, "Invalid email or password");
       console.error("Login failed:", errorMessage, error);
-      message.error(errorMessage);
+      showToast("error", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -52,14 +53,16 @@ const LoginPage = () => {
 
   return (
     <div className="login-page">
-      {/* HEADER LOGO */}
+      <div className="login-bg" aria-hidden="true" />
+      <div className="login-bg-overlay" aria-hidden="true" />
+
+      {/* HEADER */}
       <header className="login-header">
-        <AppLogo variant="full" href="/" priority />
         <Button
           type="link"
           icon={<ArrowLeftOutlined />}
           onClick={() => router.push('/')}
-          style={{ color: '#1565c0', fontWeight: 600 }}
+          style={{ color: '#1E40AF', fontWeight: 600 }}
         >
           Back to Home
         </Button>

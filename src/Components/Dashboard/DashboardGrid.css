@@ -2,9 +2,11 @@
 .dashboard-dynamic-grid {
     /* No grid display here, RGL manages absolute positioning */
     width: 100%;
-    min-height: 80vh;
+    max-width: none;
+    min-height: calc(100vh - 160px);
     position: relative;
-    padding-bottom: 50px;
+    padding-bottom: 24px;
+    box-sizing: border-box;
 }
 
 .grid-item-wrapper {
@@ -21,7 +23,7 @@
 
 .react-grid-item.resizing {
     z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 .widget-drag-handle {

@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Card, Tooltip, Modal, Empty } from 'antd';
+import { Tag, Button, Spin, Avatar, Popconfirm, Card, Tooltip, Modal, Empty, Statistic } from 'antd';
+import { message } from '@/lib/app-message';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -15,14 +16,38 @@ import {
     CheckCircleOutlined,
     FilePdfOutlined,
     TeamOutlined,
-    InfoCircleOutlined
+    InfoCircleOutlined,
+    IdcardOutlined,
+    GlobalOutlined,
+    HomeOutlined,
+    HeartOutlined,
 } from '@ant-design/icons';
 import { getMemberById, deleteMember, removeMinistryMember, getFamilyByMember } from '../../services/api';
 import type { MemberDetailProps, Member, Family } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
-import { LeaderNameWithTag, leaderDisplayName } from '../../Components/common/LeaderLabel';
+import { getInitials } from '@/lib/initials';
+import { MEMBER_TYPE_OPTIONS } from '@/lib/member-payload';
+import { leaderDisplayName } from '../../Components/common/LeaderLabel';
 import './MemberDetail.css';
+
+function yesNoTag(value: unknown) {
+  const yes = value === true || value === 'true' || value === 'yes';
+  return yes ? (
+    <Tag icon={<CheckCircleOutlined />} color="success" style={{ padding: '2px 8px', borderRadius: 4 }}>
+      Yes
+    </Tag>
+  ) : (
+    <Tag color="default" style={{ padding: '2px 8px', borderRadius: 4 }}>
+      No
+    </Tag>
+  );
+}
+
+function memberTypeLabel(type?: string | null) {
+  const found = MEMBER_TYPE_OPTIONS.find((o) => o.value === type);
+  return found?.label || (type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Existing Member');
+}
 
 const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDetailProps) => {
     const params = useParams();
@@ -118,10 +143,11 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                         <Avatar
                             size={120}
                             src={getImageUrl(member.image_url) ?? undefined}
-                            icon={<UserOutlined />}
                             className="member-profile-image"
-                            style={{ fontSize: '60px' }}
-                        />
+                            style={{ fontSize: 42, fontWeight: 600, backgroundColor: '#1565c0', color: '#fff' }}
+                        >
+                            {getInitials(member.first_name, member.last_name, member.middle_name)}
+                        </Avatar>
                         <div className="member-header-info">
                             <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
@@ -151,11 +177,64 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                         </div>
                     </div>
 
+                    <div className="member-kpi-row">
+                        <div className="member-kpi-card">
+                            <Statistic
+                                title="Visits"
+                                value={member.visit_count ?? 0}
+                                prefix={<HomeOutlined style={{ color: '#1565c0' }} />}
+                            />
+                        </div>
+                        <div className="member-kpi-card">
+                            <Statistic
+                                title="Ministry interests"
+                                value={member.interested_ministries?.length ?? 0}
+                                prefix={<HeartOutlined style={{ color: '#1565c0' }} />}
+                            />
+                        </div>
+                        <div className="member-kpi-card">
+                            <Statistic
+                                title="Ministries joined"
+                                value={member.ministry_members?.length ?? 0}
+                                prefix={<TeamOutlined style={{ color: '#1565c0' }} />}
+                            />
+                        </div>
+                        <div className="member-kpi-card">
+                            <Statistic
+                                title="Family children"
+                                value={family?.children?.length ?? 0}
+                                prefix={<UserOutlined style={{ color: '#1565c0' }} />}
+                            />
+                        </div>
+                    </div>
+
                     <div className="member-details-grid">
-                        {/* Left Column */}
-                        <div className="left-column">
                             <div className="detail-section">
-                                <h3>Personal Information</h3>
+                                <h3><UserOutlined style={{ marginRight: 8, color: '#1565c0' }} />Personal</h3>
+                                <table className="elegant-info-table">
+                                    <tbody>
+                                        <tr>
+                                            <th><CalendarOutlined /> Date of Birth</th>
+                                            <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><UserOutlined /> Gender</th>
+                                            <td style={{ textTransform: 'capitalize' }}>{member.gender || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><UserOutlined /> Marital Status</th>
+                                            <td style={{ textTransform: 'capitalize' }}>{member.marital_status || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CalendarOutlined /> Joined</th>
+                                            <td>{member.joined_date ? new Date(member.joined_date).toLocaleDateString() : (member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A')}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3><PhoneOutlined style={{ marginRight: 8, color: '#1565c0' }} />Contact</h3>
                                 <table className="elegant-info-table">
                                     <tbody>
                                         <tr>
@@ -167,39 +246,100 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                             <td>{member.phone || 'N/A'}</td>
                                         </tr>
                                         <tr>
+                                            <th><EnvironmentOutlined /> Location</th>
+                                            <td>{member.location?.name || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
                                             <th><EnvironmentOutlined /> Address</th>
                                             <td>{member.address || 'N/A'}</td>
                                         </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3><GlobalOutlined style={{ marginRight: 8, color: '#1565c0' }} />Social Media</h3>
+                                <table className="elegant-info-table">
+                                    <tbody>
                                         <tr>
-                                            <th><CalendarOutlined /> Date of Birth</th>
-                                            <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                            <th>Telegram</th>
+                                            <td>{member.telegram_username ? `@${member.telegram_username}` : 'N/A'}</td>
                                         </tr>
                                         <tr>
-                                            <th><UserOutlined /> Gender</th>
-                                            <td style={{ textTransform: 'capitalize' }}>{member.gender || 'N/A'}</td>
+                                            <th>Facebook</th>
+                                            <td>{member.facebook_username || 'N/A'}</td>
                                         </tr>
                                         <tr>
-                                            <th><UserOutlined /> Marital Status</th>
-                                            <td>{member.marital_status || 'N/A'}</td>
+                                            <th>Instagram</th>
+                                            <td>{member.instagram_username || 'N/A'}</td>
                                         </tr>
                                         <tr>
-                                            <th><CheckCircleOutlined /> Baptized</th>
+                                            <th>WhatsApp</th>
+                                            <td>{member.whatsapp_number || 'N/A'}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3><CheckCircleOutlined style={{ marginRight: 8, color: '#1565c0' }} />Spiritual</h3>
+                                <table className="elegant-info-table">
+                                    <tbody>
+                                        <tr>
+                                            <th><IdcardOutlined /> Member Type</th>
                                             <td>
-                                                {member.baptized === true || member.baptized === 'true' ? (
-                                                    <Tag icon={<CheckCircleOutlined />} color="success" style={{ padding: '2px 8px', borderRadius: '4px' }}>
-                                                        Yes
-                                                    </Tag>
-                                                ) : (
-                                                    <Tag color="default" style={{ padding: '2px 8px', borderRadius: '4px' }}>
-                                                        No
-                                                    </Tag>
-                                                )}
+                                              {memberTypeLabel(member.member_type)}
+                                              {member.requires_follow_up && (
+                                                <Tag color="orange" style={{ marginLeft: 8 }}>Follow-up</Tag>
+                                              )}
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th><FilePdfOutlined /> Church Letter</th>
+                                            <th><CheckCircleOutlined /> Water Baptized</th>
+                                            <td>{yesNoTag(member.baptized)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CheckCircleOutlined /> Holy Spirit Baptized</th>
+                                            <td>{yesNoTag(member.holy_spirit_baptized)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><CalendarOutlined /> Salvation Date</th>
+                                            <td>{member.salvation_date ? new Date(member.salvation_date).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th><FilePdfOutlined /> Recommendation Letter</th>
                                             <td>
-                                                {member.document_url ? <a href={getImageUrl(member.document_url) ?? undefined} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>View Document</a> : 'N/A'}
+                                                {member.recommendation_letter_url ? (
+                                                  <a href={getImageUrl(member.recommendation_letter_url) ?? undefined} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>
+                                                    View Document
+                                                  </a>
+                                                ) : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3><IdcardOutlined style={{ marginRight: 8, color: '#1565c0' }} />Professional</h3>
+                                <table className="elegant-info-table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Employment</th>
+                                            <td style={{ textTransform: 'capitalize' }}>{member.employment_status || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Profession</th>
+                                            <td>{member.profession || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Employer</th>
+                                            <td>{member.employer || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Education</th>
+                                            <td>
+                                              {[member.education_level, member.education_field].filter(Boolean).join(' — ') || 'N/A'}
                                             </td>
                                         </tr>
                                     </tbody>
@@ -265,12 +405,28 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                 )}
                             </div>
 
+                            <div className="detail-section-pair">
                             <div className="detail-section">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3><TeamOutlined style={{ marginRight: 8, color: '#1565c0' }} />Ministry Interests</h3>
+                                {(member.interested_ministries?.length ?? 0) === 0 ? (
+                                    <Empty description="No ministry interests recorded." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                ) : (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                        {(member.interested_ministries || []).map((name) => (
+                                            <Tag key={name} color="blue" style={{ padding: '4px 10px', fontSize: 13 }}>
+                                                {name}
+                                            </Tag>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="detail-section">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                     <h3 style={{ margin: 0 }}><TeamOutlined style={{ marginRight: '8px', color: '#1565c0' }} />Ministry Involvement ({member.ministry_members?.length || 0})</h3>
                                 </div>
 
-                                <div style={{ marginTop: '16px' }}>
+                                <div>
                                     {(member.ministry_members?.length ?? 0) === 0 ? (
                                         <Empty description="Not involved in any ministries." image={Empty.PRESENTED_IMAGE_SIMPLE} />
                                     ) : (
@@ -346,31 +502,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                     )}
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="right-column">
-                            <div className="detail-section">
-                                <h3>Activity Timeline</h3>
-                                <Timeline
-                                    items={[
-                                        {
-                                            color: 'green',
-                                            content: `Member registered on ${member.created_at ? new Date(member.created_at).toLocaleDateString() : 'Unknown'}`,
-                                        },
-                                        ...(member.ministry_members || []).map(mm => ({
-                                            color: 'blue' as const,
-                                            content: `Joined ${mm.ministry?.name || 'Ministry'} on ${mm.joined_at ? new Date(mm.joined_at).toLocaleDateString() : 'Unknown'}`,
-                                        })),
-                                    ]}
-                                />
                             </div>
-                            <div className="detail-section">
-                                <h3>Notes</h3>
-                                <p style={{ color: '#64748b', marginBottom: '16px' }}>No internal notes for this member.</p>
-                                <Button type="dashed" block>Add Note</Button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Print Signature Section (Hidden on screen) */}

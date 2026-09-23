@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Select, Button, message, Row, Col } from 'antd';
+import { Form, Input, Button, Row, Col, AutoComplete, Select, TimePicker, Space } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined,
   HomeOutlined,
@@ -13,14 +14,38 @@ import {
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
-import { createHomeGroup, getMembersList, addHomeGroupMember } from '../../services/api';
-import type { Member } from '@/types';
+import {
+  createHomeGroup,
+  getMembersList,
+  addHomeGroupMember,
+  getLocations,
+  createLocation,
+} from '../../services/api';
+import type { Member, Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
+import { type Dayjs } from 'dayjs';
 import './AddHomeGroup.css';
 
-const { Option } = Select;
 const { TextArea } = Input;
+
+const WEEKDAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+function formatSchedule(day?: string, time?: Dayjs | null): string {
+  if (!day && !time) return '';
+  const timeLabel = time ? time.format('h:mm A') : '';
+  if (day && timeLabel) return `Every ${day} ${timeLabel}`;
+  if (day) return `Every ${day}`;
+  return timeLabel;
+}
 
 const STEPS = [
   { title: 'Group Info' },
@@ -29,12 +54,7 @@ const STEPS = [
   { title: 'Review & Create' },
 ];
 
-const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f0f9ff', border: '1px solid #bae6fd' },
-  { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-  { background: '#e6f7ff', border: '1px solid #91d5ff' },
-];
+const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
 
 const AddHomeGroup = () => {
   const router = useRouter();
@@ -42,10 +62,12 @@ const AddHomeGroup = () => {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
 
   useEffect(() => {
     loadMembers();
+    getLocations('active').then(setLocations).catch(() => {});
   }, []);
 
   const loadMembers = async () => {
@@ -54,6 +76,18 @@ const AddHomeGroup = () => {
     } catch {
       message.error('Failed to load members');
     }
+  };
+
+  const resolveLocationName = async (raw?: string): Promise<string | undefined> => {
+    const trimmed = raw?.trim();
+    if (!trimmed) return undefined;
+    const existing = locations.find(
+      (l) => l.name.toLowerCase() === trimmed.toLowerCase() || l.id === trimmed,
+    );
+    if (existing) return existing.name;
+    const created = await createLocation({ name: trimmed, status: 'active' });
+    setLocations((prev) => [...prev, created]);
+    return created.name;
   };
 
   const next = async () => {
@@ -77,11 +111,12 @@ const AddHomeGroup = () => {
       setLoading(true);
 
       const leader = decodeLeaderValue(values.leader_key);
+      const locationName = await resolveLocationName(values.location);
       const created = await createHomeGroup({
         name: values.name,
         about: values.about || '',
-        schedule: values.schedule || '',
-        location: values.location,
+        schedule: formatSchedule(values.schedule_day, values.schedule_time),
+        location: locationName,
         leader_id: leader.leader_id,
         leader_type: leader.leader_type,
       });
@@ -152,8 +187,28 @@ const AddHomeGroup = () => {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="schedule" label="Schedule Details">
-                    <Input size="large" placeholder="e.g. Every Friday 7:00 PM" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
+                  <Form.Item label="Meeting Schedule">
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Form.Item name="schedule_day" noStyle>
+                        <Select
+                          size="large"
+                          placeholder="Day"
+                          allowClear
+                          style={{ width: '45%' }}
+                          options={WEEKDAYS.map((d) => ({ value: d, label: d }))}
+                        />
+                      </Form.Item>
+                      <Form.Item name="schedule_time" noStyle>
+                        <TimePicker
+                          size="large"
+                          use12Hours
+                          format="h:mm A"
+                          placeholder="Time"
+                          style={{ width: '55%' }}
+                          suffixIcon={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />}
+                        />
+                      </Form.Item>
+                    </Space.Compact>
                   </Form.Item>
                 </Col>
               </Row>
@@ -161,9 +216,19 @@ const AddHomeGroup = () => {
                 name="location"
                 label="Meeting Location"
                 rules={[{ required: true, message: 'Location is required' }]}
-                extra="Where this home group meets (address or place name)."
+                extra="Search an existing location or type a new one to add it."
               >
-                <Input size="large" placeholder="e.g. 123 Oak Street, Living Room" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+                <AutoComplete
+                  options={locations.map((loc) => ({ value: loc.name }))}
+                  placeholder="Search or enter location"
+                  style={{ width: '100%' }}
+                  filterOption={(inputValue, option) =>
+                    String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                  }
+                  allowClear
+                >
+                  <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+                </AutoComplete>
               </Form.Item>
             </div>
 
@@ -185,7 +250,7 @@ const AddHomeGroup = () => {
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Home Group
               </h3>
-              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid #e2e8f0', marginTop: 16 }}>
+              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid var(--border-color)', marginTop: 16 }}>
                 <h4 style={{ marginBottom: 16, color: '#0f172a' }}>Home Group Summary</h4>
                 <Form.Item noStyle shouldUpdate>
                   {() => {
@@ -203,7 +268,10 @@ const AddHomeGroup = () => {
                         <div><strong>Name:</strong> {values.name || '—'}</div>
                         <div><strong>Leader:</strong> {leaderName}</div>
                         <div><strong>Location:</strong> {values.location || '—'}</div>
-                        <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
+                        <div>
+                          <strong>Schedule:</strong>{' '}
+                          {formatSchedule(values.schedule_day, values.schedule_time) || '—'}
+                        </div>
                         <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                       </div>

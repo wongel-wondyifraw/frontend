@@ -10,7 +10,10 @@ const WidgetRenderer = ({ id, type, settings = {} }: DashboardWidget) => {
     const { isEditMode, removeWidget, widgets } = useDashboard();
     const WidgetComponent = WidgetRegistry[type as keyof typeof WidgetRegistry];
     const todoCount = widgets.filter((w) => w.type === 'todo').length;
-    const canRemove = !(type === 'todo' && todoCount <= 1);
+    const programsCount = widgets.filter((w) => w.type === 'programs').length;
+    const canRemove =
+      !(type === 'todo' && todoCount <= 1) &&
+      !(type === 'programs' && programsCount <= 1);
 
     if (!WidgetComponent) {
         return <div>Unknown Widget Type: {type}</div>;

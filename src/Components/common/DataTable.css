@@ -1,0 +1,243 @@
+/* ── Shared manage-list layout (Manage Members pattern) ── */
+/* DataTable toolbar: filters + search + actions inline */
+
+.manage-page {
+  padding: 0;
+  overflow: visible;
+  max-width: 100%;
+}
+
+.manage-page-stats {
+  margin-bottom: 16px;
+}
+
+/* Title (optional) above · filters + search + actions on one row */
+.data-table-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.data-table-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main, #0f172a);
+  min-width: 0;
+}
+
+.data-table-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.data-table-search {
+  width: 250px;
+  flex: 1 1 200px;
+  max-width: 420px;
+  min-width: 0;
+}
+
+/* Filters stay left-aligned next to search */
+.data-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-left: 0;
+  flex: 0 0 auto;
+  order: -1;
+}
+
+/* Action cluster — always pushed to the trailing edge */
+.data-table-end,
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.data-table-action {
+  background: var(--primary-blue, #1e40af);
+}
+
+/* Filter control widths (desktop); mobile forces 100% */
+.dt-filter {
+  width: 140px;
+}
+
+.dt-filter-wide {
+  width: 180px;
+}
+
+.dt-filter-range {
+  width: 260px;
+}
+
+/* Unified table card — aliases for existing page class names */
+.data-table-card,
+.members-table-card,
+.ministries-table-card,
+.roles-table-card {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: none;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.ant-table-wrapper,
+.ant-spin-nested-loading,
+.ant-spin-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.ant-table-wrapper {
+  background: transparent;
+}
+
+.ant-table-thead .ant-table-cell {
+  background-color: var(--bg-hover) !important;
+  color: var(--primary-blue) !important;
+  font-weight: 600 !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.ant-table-cell {
+  padding: 12px 16px !important;
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-bottom: 1px solid var(--divider) !important;
+}
+
+.ant-table-row:hover .ant-table-cell {
+  background: var(--bg-hover) !important;
+}
+
+.ant-pagination-item a {
+  color: var(--text-main) !important;
+}
+
+.ant-pagination-item-active {
+  background: var(--bg-card) !important;
+  border-color: var(--primary-blue) !important;
+}
+
+.ant-pagination-item-active a {
+  color: var(--primary-blue) !important;
+}
+
+/* Legacy aliases used by Manage Members filters */
+.mm-filter-select {
+  width: 140px;
+}
+
+.mm-filter-sort {
+  width: 180px;
+}
+
+.mm-filter-range {
+  width: 260px;
+}
+
+@media (max-width: 768px) {
+  .data-table-title {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .data-table-end,
+  .page-header-actions {
+    gap: 8px;
+  }
+
+  .data-table-end .ant-btn,
+  .page-header-actions .ant-btn,
+  .data-table-action {
+    height: 42px;
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .data-table-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  /* Filters left, Add right on the first mobile row */
+  .data-table-filters {
+    width: auto;
+    margin-left: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px;
+    flex: 0 0 auto;
+    order: 0;
+  }
+
+  .data-table-end,
+  .page-header-actions {
+    order: 1;
+    margin-left: auto;
+  }
+
+  .data-table-search {
+    width: 100% !important;
+    max-width: none;
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .data-table-filters > * {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto;
+  }
+
+  .dt-filter,
+  .dt-filter-wide,
+  .dt-filter-range,
+  .mm-filter-select,
+  .mm-filter-sort,
+  .mm-filter-range {
+    width: 100% !important;
+  }
+
+  /* Inline single filters (not popup) still full-width when alone on small screens */
+  .data-table-filters > .ant-select,
+  .data-table-filters > .ant-picker {
+    min-width: 140px;
+  }
+
+  .data-table-card,
+  .members-table-card,
+  .ministries-table-card,
+  .roles-table-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .manage-page-stats .ant-col {
+    margin-bottom: 0;
+  }
+}

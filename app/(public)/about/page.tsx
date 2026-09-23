@@ -1,10 +1,18 @@
-import GenericPublicPage from '@/views/LandingPage/GenericPublicPage';
-import { TENANT } from '@/lib/tenant';
+'use client';
 
-export const metadata = {
-  title: `About | ${TENANT.name}`,
-};
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Spin } from 'antd';
 
+/** About is managed under Landing Page → About (homepage #about). */
 export default function AboutPage() {
-  return <GenericPublicPage slug="about" title="About Us" />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/#about');
+  }, [router]);
+  return (
+    <div style={{ display: 'flex', minHeight: '40vh', alignItems: 'center', justifyContent: 'center' }}>
+      <Spin size="large" />
+    </div>
+  );
 }

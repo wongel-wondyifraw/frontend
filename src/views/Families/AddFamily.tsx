@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, message, Select, Row, Col } from 'antd';
+import { Form, Input, Button, Select, Row, Col } from 'antd';
+import { message } from '@/lib/app-message';
 import { ArrowLeftOutlined, TeamOutlined } from '@ant-design/icons';
 import { createFamily } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -24,17 +25,17 @@ const AddFamilyContent = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
-      let husbandId: string | undefined = undefined;
-      let husbandType: string | undefined = undefined;
-      let wifeId: string | undefined = undefined;
-      let wifeType: string | undefined = undefined;
+
+      let husbandId: string | undefined;
+      let husbandType: string | undefined;
+      let wifeId: string | undefined;
+      let wifeType: string | undefined;
 
       if (values.husband_status === 'registered') {
         const husband = decodeLeaderValue(values.husband);
         if (!husband.leader_id || !husband.leader_type) {
-            message.error('Select registered husband');
-            return;
+          message.error('Select registered husband');
+          return;
         }
         husbandId = husband.leader_id;
         husbandType = husband.leader_type;
@@ -43,8 +44,8 @@ const AddFamilyContent = () => {
       if (values.wife_status === 'registered') {
         const wife = decodeLeaderValue(values.wife);
         if (!wife.leader_id || !wife.leader_type) {
-            message.error('Select registered wife');
-            return;
+          message.error('Select registered wife');
+          return;
         }
         wifeId = wife.leader_id;
         wifeType = wife.leader_type;
@@ -55,16 +56,27 @@ const AddFamilyContent = () => {
         return;
       }
 
+      let spouse_status = 'none';
+      if (values.husband_status === 'registered' && values.wife_status === 'registered') {
+        spouse_status = 'registered';
+      } else if (values.husband_status === 'external' || values.wife_status === 'external') {
+        spouse_status = 'external';
+      } else if (values.husband_status === 'pending' || values.wife_status === 'pending') {
+        spouse_status = 'pending';
+      }
+
       setLoading(true);
       const created = await createFamily({
         name: values.name || undefined,
         notes: values.notes || undefined,
         husband_id: husbandId,
         husband_type: husbandType,
-        husband_status: values.husband_status,
         wife_id: wifeId,
         wife_type: wifeType,
-        wife_status: values.wife_status,
+        spouse_status,
+        external_spouse_name: values.external_spouse_name || undefined,
+        external_spouse_phone: values.external_spouse_phone || undefined,
+        external_spouse_church: values.external_spouse_church || undefined,
       });
       message.success('Family created.');
       router.push(`/families/details/${created.id}`);
@@ -155,6 +167,33 @@ const AddFamilyContent = () => {
                 )}
               </Col>
           </Row>
+
+          {(husbandStatus === 'external' || wifeStatus === 'external') && (
+            <div style={{ marginTop: 8, marginBottom: 16, padding: 16, background: 'var(--bg-card)', borderRadius: 8 }}>
+              <p style={{ marginTop: 0, color: '#64748b' }}>External spouse details</p>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item
+                    name="external_spouse_name"
+                    label="Name"
+                    rules={[{ required: true, message: 'External spouse name is required' }]}
+                  >
+                    <Input size="large" placeholder="Full name" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="external_spouse_phone" label="Phone">
+                    <Input size="large" placeholder="Phone" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="external_spouse_church" label="Local church">
+                    <Input size="large" placeholder="Church name" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
+          )}
 
           <Form.Item name="notes" label="Notes">
             <Input.TextArea rows={3} placeholder="Optional notes" />

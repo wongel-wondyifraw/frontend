@@ -1,39 +1,25 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import { notification } from 'antd';
+import { App } from 'antd';
 import { SmileOutlined } from '@ant-design/icons';
 import { DashboardStatsProvider } from '../../context/DashboardStatsContext';
-import { DashboardProvider } from '../../context/DashboardContext';
 import { useUser } from '../../context/UserContext';
-import DashboardToolbar from '../../Components/Dashboard/DashboardToolbar';
+import AnalysisDashboard from '../../Components/Dashboard/AnalysisDashboard/AnalysisDashboard';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import type { DashboardProps } from '@/types';
 import './Dashboard.css';
 
-const DashboardGrid = dynamic(
-  () => import('../../Components/Dashboard/DashboardGrid'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="page-loading">
-        <div className="page-loading-spinner" aria-label="Loading dashboard" />
-      </div>
-    ),
-  },
-);
-
 const DashboardContent = () => {
   const { user } = useUser();
-  const [api, contextHolder] = notification.useNotification();
+  const { notification } = App.useApp();
   const hasShownToast = useRef(false);
 
   useEffect(() => {
     if (user && !hasShownToast.current && !sessionStorage.getItem('welcomeToastShown')) {
-      api.open({
+      notification.open({
         title: `Welcome Back, ${user.first_name || 'User'}!`,
         description: "Here's what's happening in your ministry today.",
-        icon: <SmileOutlined style={{ color: '#1565c0' }} />,
+        icon: <SmileOutlined style={{ color: '#1E40AF' }} />,
         placement: 'topRight',
         className: 'welcome-toast',
         duration: 4.5,
@@ -42,14 +28,14 @@ const DashboardContent = () => {
       sessionStorage.setItem('welcomeToastShown', 'true');
       hasShownToast.current = true;
     }
-  }, [api, user]);
+  }, [notification, user]);
 
   return (
-    <>
-      {contextHolder}
-      <DashboardToolbar />
-      <DashboardGrid />
-    </>
+    <div className="dashboard-page">
+      <div className="dashboard-stage">
+        <AnalysisDashboard />
+      </div>
+    </div>
   );
 };
 
@@ -57,9 +43,7 @@ const Dashboard = ({ initialStats = null }: DashboardProps) => {
   return (
     <PermissionGate permission="dashboard.read" pageLabel="Dashboard">
       <DashboardStatsProvider initialStats={initialStats}>
-        <DashboardProvider>
-          <DashboardContent />
-        </DashboardProvider>
+        <DashboardContent />
       </DashboardStatsProvider>
     </PermissionGate>
   );

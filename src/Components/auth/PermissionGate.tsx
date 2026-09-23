@@ -12,11 +12,12 @@ export function PermissionGate({
   children,
   pageLabel,
 }: {
-  permission: string;
+  permission: string | string[];
   children: ReactNode;
   pageLabel?: string;
 }) {
   const { user, loading } = useUser();
+  const required = Array.isArray(permission) ? permission : [permission];
 
   if (loading) {
     return (
@@ -26,8 +27,9 @@ export function PermissionGate({
     );
   }
 
-  if (!hasPermission(user, permission)) {
-    return <AccessDenied permission={permission} pageLabel={pageLabel} />;
+  const allowed = required.some((slug) => hasPermission(user, slug));
+  if (!allowed) {
+    return <AccessDenied permission={required.join(' or ')} pageLabel={pageLabel} />;
   }
 
   return <>{children}</>;

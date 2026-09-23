@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Select, Button, message, Row, Col } from 'antd';
+import { Form, Input, Select, Button, Row, Col } from 'antd';
+import { message } from '@/lib/app-message';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
@@ -28,12 +29,7 @@ const STEPS = [
     { title: 'Review & Create' },
 ];
 
-const STEP_BACKGROUNDS = [
-    { background: '#f8fafc', border: 'none' },
-    { background: '#f0f9ff', border: '1px solid #bae6fd' },
-    { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-    { background: '#e6f7ff', border: '1px solid #91d5ff' },
-];
+const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
 
 const AddMinistry = () => {
     const router = useRouter();
@@ -198,7 +194,7 @@ const AddMinistry = () => {
                                 </h3>
                                 <div style={{
                                     background: '#fff', borderRadius: '8px', padding: '20px',
-                                    border: '1px solid #e2e8f0', marginTop: '16px'
+                                    border: '1px solid var(--border-color)', marginTop: '16px'
                                 }}>
                                     <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Ministry Summary</h4>
                                     <Form.Item noStyle shouldUpdate>

@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Button, Avatar, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Tag, Button, Avatar, Modal, Tooltip } from 'antd';
+import { message } from '@/lib/app-message';
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
 import { getMinisters, deleteMinister } from '../../services/api';
@@ -10,6 +11,7 @@ import type { ManageMinistersProps, Minister } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
+import { getInitials } from '@/lib/initials';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMinisters.css';
@@ -82,11 +84,12 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       render: (_: unknown, record: Minister) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Avatar
-            icon={<UserOutlined />}
-            src={getImageUrl(record.image_url)}
-            style={{ backgroundColor: '#1565c0' }}
+            src={getImageUrl(record.image_url) || undefined}
+            style={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 600 }}
             crossOrigin="use-credentials"
-          />
+          >
+            {getInitials(record.first_name, record.last_name, record.middle_name)}
+          </Avatar>
           <div>
             <span style={{ fontWeight: 600 }}>
               {record.first_name} {record.middle_name ? `${record.middle_name} ` : ''}{record.last_name}
@@ -100,12 +103,14 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
+      responsive: ['md'],
       render: (title: string | undefined) => title || '-',
     },
     {
       title: 'Phone',
       dataIndex: 'phone',
       key: 'phone',
+      responsive: ['sm'],
       render: (phone: string | undefined) => phone || '-',
     },
     {
@@ -167,7 +172,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
   ];
 
   return (
-    <div className="manage-members-container">
+    <div className="manage-page">
       <DataTable
         title="Manage Ministers"
         columns={columns}
@@ -188,7 +193,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
           icon: <PlusOutlined />,
           onClick: () => router.push('/ministers/add'),
         } : undefined}
-        tableCardClassName="members-table-card"
+        tableCardClassName="data-table-card"
       />
     </div>
   );

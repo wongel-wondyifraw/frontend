@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Avatar, message, Modal, Tooltip } from 'antd';
+import { Button, Avatar, Modal, Tooltip } from 'antd';
+import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
@@ -94,6 +95,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
     {
       title: 'Location',
       key: 'location',
+      responsive: ['sm'],
       render: (_: unknown, record: HomeGroup) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <EnvironmentOutlined style={{ color: '#64748b' }} />
@@ -104,6 +106,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
     {
       title: 'Leader',
       key: 'leader',
+      responsive: ['md'],
       render: (_: unknown, record: HomeGroup) => (
         record.leader ? <LeaderNameWithTag leader={record.leader} /> : '-'
       ),
@@ -112,6 +115,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
       title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
+      responsive: ['lg'],
       render: (date: string | undefined) => (date ? new Date(date).toLocaleDateString() : '-'),
     },
     {
@@ -152,7 +156,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
   ];
 
   return (
-    <div className="manage-ministries-container">
+    <div className="manage-page">
       <DataTable
         title="Manage Home Groups"
         columns={columns}
@@ -173,7 +177,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
           icon: <PlusOutlined />,
           onClick: () => router.push('/members/home-groups/add'),
         } : undefined}
-        tableCardClassName="ministries-table-card"
+        tableCardClassName="data-table-card"
       />
     </div>
   );

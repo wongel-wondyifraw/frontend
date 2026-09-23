@@ -2,8 +2,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  Tag, Button, Timeline, Spin, message, Avatar, Popconfirm, Dropdown, Modal, Typography, Space,
+  Tag,
+  Button,
+  Timeline,
+  Spin,
+  Avatar,
+  Popconfirm,
+  Dropdown,
+  Modal,
+  Typography,
+  Space,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import type { MenuProps } from 'antd';
 import {
   EditOutlined, DeleteOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined,
@@ -320,7 +330,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
         title="Temporary password"
         open={!!credentials}
         closable={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         onOk={() => setCredentials(null)}
         okText="Done"
         cancelButtonProps={{ style: { display: 'none' } }}
@@ -328,7 +338,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
         <Text>
           Share these credentials with the minister now. The password is shown only once.
         </Text>
-        <div style={{ marginTop: 16, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+        <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
           <div style={{ marginBottom: 12 }}>
             <Text type="secondary">Email</Text>
             <Paragraph copyable={{ icon: <CopyOutlined /> }} style={{ marginBottom: 0, fontWeight: 600 }}>

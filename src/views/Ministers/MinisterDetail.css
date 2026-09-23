@@ -11,16 +11,16 @@
     max-width: 1200px;
     margin: 0 auto;
     color: var(--dark);
-    padding: 24px;
+    padding: 0;
 }
 
 /* Unified Card Container */
 .content-card-unified {
-    background: var(--white);
-    border-radius: 20px;
+    background: var(--bg-card);
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: 0 10px 25px rgba(16, 24, 40, 0.05);
-    border: 1px solid var(--light-blue-bg);
+    box-shadow: none;
+    border: 1px solid var(--border-color);
 }
 
 /* Header Section within Unified Card */
@@ -159,7 +159,7 @@
 }
 
 .elegant-info-table tr:hover td {
-    background-color: #f8fafc;
+    background-color: var(--bg-card);
 }
 
 .info-row {
@@ -212,13 +212,11 @@
     border-radius: 16px;
     border: 1px solid var(--light-blue-bg);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--white);
+    background: var(--bg-card);
     overflow: hidden;
 }
 
 .member-card-elegant:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
     border-color: var(--blue);
 }
 
@@ -303,7 +301,7 @@
     /* Content Card Styling */
     .content-card-unified {
         border: none !important;
-        box-shadow: none !important;
+        box-shadow: none;
         padding: 0 !important;
         position: relative;
         z-index: 1;
@@ -311,8 +309,8 @@
 
     /* Header Background Styling */
     .member-header-section {
-        background-color: #f8fafc !important;
-        border: 1px solid #e2e8f0 !important;
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 12px;
         padding: 20px !important;
         margin-bottom: 24px !important;

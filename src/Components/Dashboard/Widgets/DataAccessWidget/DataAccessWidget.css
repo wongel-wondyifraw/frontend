@@ -3,7 +3,7 @@
     border-radius: 12px;
     padding: 20px;
     height: 100%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
 }
@@ -35,7 +35,7 @@
 .support-status {
     display: flex;
     align-items: center;
-    background: #f8fafc;
+    background: var(--bg-card);
     padding: 8px 12px;
     border-radius: 8px;
     margin-bottom: 15px;

@@ -1,7 +1,7 @@
 .todo-list-card {
-    background: #fcfcfc;
+    background: var(--bg-card);
     border-radius: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow: none;
     height: 100%;
     display: flex;
     flex-direction: column;

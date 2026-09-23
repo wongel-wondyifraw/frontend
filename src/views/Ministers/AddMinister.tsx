@@ -2,8 +2,20 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Form, Input, Select, DatePicker, Button, Upload, message, Avatar, Row, Col, Radio, Modal, Typography,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Button,
+  Upload,
+  Avatar,
+  Row,
+  Col,
+  Radio,
+  Modal,
+  Typography,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined, UserOutlined, UploadOutlined, MailOutlined, PhoneOutlined,
   HomeOutlined, CheckCircleOutlined, GlobalOutlined, CopyOutlined,
@@ -26,10 +38,10 @@ const STEPS = [
 ];
 
 const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f8fafc', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
+  { background: 'var(--bg-card)', border: 'none' },
 ];
 
 const AddMinister = () => {
@@ -245,7 +257,7 @@ const AddMinister = () => {
               <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review
               </h3>
-              <div style={{ background: '#fff', borderRadius: '8px', padding: '20px', border: '1px solid #e2e8f0' }}>
+              <div style={{ background: '#fff', borderRadius: '8px', padding: '20px', border: '1px solid var(--border-color)' }}>
                 <Form.Item noStyle shouldUpdate>
                   {() => {
                     const values = form.getFieldsValue();
@@ -271,7 +283,7 @@ const AddMinister = () => {
         title="Minister account created"
         open={!!credentials}
         closable={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         onOk={() => router.push('/ministers/manage')}
         okText="Go to Ministers"
         cancelButtonProps={{ style: { display: 'none' } }}
@@ -279,7 +291,7 @@ const AddMinister = () => {
         <Text>
           Share these login credentials with the minister now. The password is shown only once.
         </Text>
-        <div style={{ marginTop: 16, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+        <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
           <div style={{ marginBottom: 12 }}>
             <Text type="secondary">Email</Text>
             <Paragraph copyable={{ icon: <CopyOutlined /> }} style={{ marginBottom: 0, fontWeight: 600 }}>

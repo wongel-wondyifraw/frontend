@@ -2,7 +2,7 @@
     background: var(--bg-card);
     /* was #FFFFFF */
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     padding: 8px;
     height: auto;
     border: 1px solid var(--border-color);

@@ -14,6 +14,7 @@ import type {
   BibleStudyMember,
   TaskAssignment,
   TaskDefinition,
+  Plan,
   Family,
   FamilyChild,
   FamilyStats,
@@ -644,6 +645,55 @@ export const deleteTask = async (id: string): Promise<void> => {
   }
 };
 
+export const getPlans = async (params: PaginationParams & {
+  type?: string;
+  from?: string;
+  to?: string;
+  status?: string;
+} = {}): Promise<PaginatedResponse<Plan>> => {
+  try {
+    const response = await api.get<PaginatedResponse<Plan>>('/plans', { params });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getPlanById = async (id: string): Promise<Plan> => {
+  try {
+    const response = await api.get<Plan>(`/plans/${id}`);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const createPlan = async (data: Record<string, unknown>): Promise<Plan> => {
+  try {
+    const response = await api.post<Plan>('/plans', data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updatePlan = async (id: string, data: Record<string, unknown>): Promise<Plan> => {
+  try {
+    const response = await api.patch<Plan>(`/plans/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deletePlan = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/plans/${id}`);
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const getFamilyStats = async (): Promise<FamilyStats> => {
   try {
     const response = await api.get<FamilyStats>('/families/stats');
@@ -708,7 +758,7 @@ export const deleteFamily = async (id: string): Promise<void> => {
 
 export const addFamilyChild = async (
   familyId: string,
-  data: { name: string; age: number },
+  data: { name: string; age?: number; date_of_birth?: string },
 ): Promise<FamilyChild> => {
   try {
     const response = await api.post<FamilyChild>(`/families/${familyId}/children`, data);
@@ -847,7 +897,7 @@ export const getPageContent = async (slug: string): Promise<PageContent> => {
   }
 };
 
-export const updatePageContent = async (slug: string, content: any): Promise<PageContent> => {
+export const updatePageContent = async (slug: string, content: unknown): Promise<PageContent> => {
   try {
     const response = await api.patch<PageContent>(`/website/pages/${slug}`, content);
     return response.data;
@@ -855,6 +905,11 @@ export const updatePageContent = async (slug: string, content: any): Promise<Pag
     throw toApiError(error);
   }
 };
+
+export const getLandingContent = async (): Promise<PageContent> => getPageContent('landing');
+
+export const updateLandingContent = async (content: unknown): Promise<PageContent> =>
+  updatePageContent('landing', content);
 
 export const getProjects = async (status?: string): Promise<CommunityProject[]> => {
   try {

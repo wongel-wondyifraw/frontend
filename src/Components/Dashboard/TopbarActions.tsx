@@ -1,9 +1,8 @@
 'use client';
 
-import { Bell, CheckCircle, AlertCircle, Moon, Sun } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button, Popover, Avatar, Badge, Empty, Spin } from 'antd';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationsContext';
 import { useUser } from '@/context/UserContext';
 import { hasPermission } from '@/types';
@@ -21,7 +20,6 @@ function formatTimeAgo(iso: string): string {
 }
 
 export default function TopbarActions() {
-  const { theme, toggleTheme } = useTheme();
   const { user } = useUser();
   const router = useRouter();
   const canReadNotifications = hasPermission(user, 'notifications.read');
@@ -103,15 +101,6 @@ export default function TopbarActions() {
 
   return (
     <>
-      <button
-        type="button"
-        className="icon-btn theme-toggle-btn"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
-
       {canReadNotifications && (
         <Popover content={notificationContent} trigger="click" placement="bottomRight" arrow={false}>
           <button type="button" className="icon-btn notification-btn" aria-label="Notifications">

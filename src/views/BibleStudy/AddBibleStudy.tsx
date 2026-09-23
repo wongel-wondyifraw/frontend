@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Select, Button, message, Row, Col, Radio, Upload, Typography } from 'antd';
+import { Form, Input, Select, Button, Row, Col, Radio, Upload, Typography } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined,
   BookOutlined,
@@ -37,13 +38,7 @@ const STEPS = [
   { title: 'Review & Create' },
 ];
 
-const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f0f9ff', border: '1px solid #bae6fd' },
-  { background: '#fefce8', border: '1px solid #fde68a' },
-  { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-  { background: '#e6f7ff', border: '1px solid #91d5ff' },
-];
+const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
 
 const AddBibleStudy = () => {
   const router = useRouter();
@@ -255,7 +250,7 @@ const AddBibleStudy = () => {
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Bible Study
               </h3>
-              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid #e2e8f0' }}>
+              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid var(--border-color)' }}>
                 <Form.Item noStyle shouldUpdate>
                   {() => {
                     const values = form.getFieldsValue();

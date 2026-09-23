@@ -40,7 +40,9 @@ export default function AppLogo({
       height={config.height}
       className={config.className}
       priority={priority}
-      unoptimized
+      sizes={`${config.width}px`}
+      quality={75}
+      style={{ width: 'auto', height: 'auto', maxHeight: config.height }}
     />
   );
 

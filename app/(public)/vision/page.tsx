@@ -1,10 +1,18 @@
-import GenericPublicPage from '@/views/LandingPage/GenericPublicPage';
-import { TENANT } from '@/lib/tenant';
+'use client';
 
-export const metadata = {
-  title: `Vision | ${TENANT.name}`,
-};
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Spin } from 'antd';
 
+/** Vision is managed under Landing Page → Vision (homepage #vision). */
 export default function VisionPage() {
-  return <GenericPublicPage slug="vision" title="Our Vision" />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/#vision');
+  }, [router]);
+  return (
+    <div style={{ display: 'flex', minHeight: '40vh', alignItems: 'center', justifyContent: 'center' }}>
+      <Spin size="large" />
+    </div>
+  );
 }

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wash" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f3f6fb"/>
+      <stop offset="100%" stop-color="#e8eef6"/>
+    </linearGradient>
+
+    <linearGradient id="blueSoft" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#1e40af" stop-opacity="0"/>
+    </linearGradient>
+
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.35" fill="#1e40af" fill-opacity="0.12"/>
+    </pattern>
+
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#1e40af" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+
+    <pattern id="diamonds" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M32 6 L42 32 L32 58 L22 32 Z" fill="none" stroke="#1e40af" stroke-opacity="0.12" stroke-width="1.25"/>
+      <circle cx="32" cy="32" r="2.5" fill="#1e40af" fill-opacity="0.1"/>
+    </pattern>
+
+    <pattern id="crosses" width="96" height="96" patternUnits="userSpaceOnUse">
+      <path d="M48 28 V52 M36 40 H60" fill="none" stroke="#1e40af" stroke-opacity="0.14" stroke-width="1.5" stroke-linecap="round"/>
+    </pattern>
+  </defs>
+
+  <!-- White base -->
+  <rect width="1600" height="900" fill="url(#wash)"/>
+
+  <!-- Soft blue light accents -->
+  <ellipse cx="280" cy="-40" rx="520" ry="360" fill="url(#blueSoft)"/>
+  <ellipse cx="1380" cy="980" rx="600" ry="420" fill="#1e40af" fill-opacity="0.06"/>
+
+  <!-- Pattern layers -->
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <rect width="1600" height="900" fill="url(#dots)"/>
+  <rect width="1600" height="900" fill="url(#diamonds)"/>
+  <rect width="1600" height="900" fill="url(#crosses)"/>
+
+  <!-- Large soft geometry accents -->
+  <g fill="none" stroke="#1e40af" stroke-opacity="0.14" stroke-width="2">
+    <circle cx="180" cy="720" r="140"/>
+    <circle cx="180" cy="720" r="90"/>
+    <circle cx="1450" cy="160" r="160"/>
+    <circle cx="1450" cy="160" r="100"/>
+  </g>
+
+  <g fill="#1e40af" fill-opacity="0.05">
+    <polygon points="980,40 1180,220 980,400 780,220"/>
+    <polygon points="320,520 460,640 320,760 180,640"/>
+  </g>
+</svg>

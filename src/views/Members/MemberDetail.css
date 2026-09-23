@@ -8,19 +8,19 @@
 }
 
 .member-detail-container {
-    max-width: 1200px;
-    margin: 0 auto;
+    /* outer inset comes from .content-scrollable (same as list pages) */
+    width: 100%;
     color: var(--dark);
-    padding: 24px;
+    padding: 0;
 }
 
 /* Unified Card Container */
 .content-card-unified {
-    background: var(--white);
-    border-radius: 20px;
+    background: var(--bg-card, var(--white));
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: 0 10px 25px rgba(16, 24, 40, 0.05);
-    border: 1px solid var(--light-blue-bg);
+    box-shadow: none;
+    border: 1px solid var(--border-color);
 }
 
 /* Header Section within Unified Card */
@@ -30,7 +30,7 @@
     gap: 32px;
     margin-bottom: 40px;
     padding-bottom: 32px;
-    border-bottom: 1px solid var(--light-blue-bg);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .member-profile-image {
@@ -81,54 +81,132 @@
 
 .member-actions-stacked {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
     margin-left: auto;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: flex-end;
 }
 
-/* Grid Layout for details */
-.member-details-grid {
+/* KPI summary row */
+.member-kpi-row {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 40px;
-    /* Generous gap for clean layout */
-}
-
-/* Inner Sections - No longer cards */
-.detail-section {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
     margin-bottom: 32px;
 }
 
-.detail-section h3 {
-    font-size: 18px;
+@media (max-width: 1100px) {
+    .member-kpi-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .member-kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.member-kpi-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.member-kpi-card .ant-statistic-title {
+    color: #64748b;
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 24px;
+    margin-bottom: 4px;
+}
+
+.member-kpi-card .ant-statistic-content {
+    color: var(--navy, #101828);
+}
+
+/* Grid Layout for details — multi-column on wide screens */
+.member-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+@media (min-width: 1400px) {
+    .member-details-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Sections marked by soft gray fill — no outer border */
+.detail-section {
+    margin-bottom: 0;
+    background: var(--bg-hover, #F1F5F9);
+    border: none;
+    border-radius: 14px;
+    padding: 18px 20px;
+    min-width: 0;
+}
+
+.detail-section--span-2 {
+    grid-column: span 2;
+}
+
+.detail-section--wide {
+    grid-column: 1 / -1;
+}
+
+.detail-section-pair {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.detail-section-pair > .detail-section {
+    min-height: 100%;
+}
+
+@media (max-width: 1024px) {
+    .detail-section-pair {
+        grid-template-columns: 1fr;
+    }
+}
+
+.detail-section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
     color: var(--blue);
-    /* Blue Theme */
     display: flex;
     align-items: center;
     gap: 8px;
-    border-bottom: 1px solid var(--light-blue-bg);
-    padding-bottom: 12px;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
-/* Elegant Info Table */
+/* Info rows — no internal borders; sit on section gray */
 .elegant-info-table {
     width: 100%;
-    border-collapse: separate;
+    border-collapse: collapse;
     border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--light-blue-bg);
+    border-radius: 0;
+    overflow: visible;
+    border: none;
+    background: transparent;
 }
 
 .elegant-info-table th,
 .elegant-info-table td {
-    padding: 14px 20px;
+    padding: 8px 0;
     text-align: left;
-    border-bottom: 1px solid var(--light-blue-bg);
+    border: none;
     font-size: 14px;
+    background: transparent;
 }
 
 .elegant-info-table tr:last-child th,
@@ -137,13 +215,13 @@
 }
 
 .elegant-info-table th {
-    background-color: var(--white);
     color: var(--blue);
     font-weight: 600;
-    width: 1%;
-    padding-right: 32px;
+    width: 42%;
+    max-width: 180px;
+    padding-right: 16px;
     white-space: nowrap;
-    border-right: 1px solid var(--light-blue-bg);
+    border-right: none;
 }
 
 .elegant-info-table th .anticon {
@@ -153,13 +231,13 @@
 }
 
 .elegant-info-table td {
-    background-color: var(--white);
     color: var(--navy);
     font-weight: 500;
+    word-break: break-word;
 }
 
 .elegant-info-table tr:hover td {
-    background-color: #f8fafc;
+    background: transparent;
 }
 
 .info-row {
@@ -198,27 +276,19 @@
 
 .ministry-involvement-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-}
-
-@media (max-width: 768px) {
-    .ministry-involvement-grid {
-        grid-template-columns: 1fr;
-    }
+    grid-template-columns: 1fr;
+    gap: 12px;
 }
 
 .member-card-elegant {
     border-radius: 16px;
-    border: 1px solid var(--light-blue-bg);
+    border: 1px solid var(--border-color);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--white);
     overflow: hidden;
 }
 
 .member-card-elegant:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
     border-color: var(--blue);
 }
 
@@ -228,7 +298,7 @@
 
 .member-card-elegant .ant-card-actions {
     background: #fafafa;
-    border-top: 1px solid var(--light-blue-bg);
+    border-top: 1px solid var(--border-color);
 }
 
 .member-card-elegant .ant-card-actions li {
@@ -238,6 +308,11 @@
 @media (max-width: 1024px) {
     .member-details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .detail-section--span-2,
+    .detail-section--wide {
+        grid-column: 1 / -1;
     }
 
     .member-header-section {
@@ -252,6 +327,12 @@
 
     .content-card-unified {
         padding: 24px;
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1399px) {
+    .detail-section--span-2 {
+        grid-column: span 2;
     }
 }
 
@@ -303,7 +384,7 @@
     /* Content Card Styling */
     .content-card-unified {
         border: none !important;
-        box-shadow: none !important;
+        box-shadow: none;
         padding: 0 !important;
         position: relative;
         z-index: 1;
@@ -311,8 +392,8 @@
 
     /* Header Background Styling */
     .member-header-section {
-        background-color: #f8fafc !important;
-        border: 1px solid #e2e8f0 !important;
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
         border-radius: 12px;
         padding: 20px !important;
         margin-bottom: 24px !important;
@@ -331,14 +412,17 @@
         display: block !important;
     }
 
-    .left-column,
-    .right-column {
-        width: 100% !important;
-    }
-
     .detail-section {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
         margin-bottom: 20px !important;
         break-inside: avoid;
+    }
+
+    .detail-section--span-2,
+    .detail-section--wide {
+        grid-column: auto !important;
     }
 
     .detail-section h3 {

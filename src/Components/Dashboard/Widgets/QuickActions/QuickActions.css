@@ -1,8 +1,8 @@
 .quick-actions-card {
     background: #FFFFFF;
-    border: 1px solid #DBEAFE;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
+    box-shadow: none;
     height: auto;
     overflow: hidden;
 }
@@ -11,7 +11,7 @@
     padding: 12px 16px;
     background: #FFFFFF;
     /* Clean white header */
-    border-bottom: 1px solid #F1F5F9;
+    border-bottom: 1px solid var(--bg-body);
 }
 
 .quick-actions-header h3 {
@@ -37,7 +37,7 @@
     align-items: center;
     justify-content: flex-start;
     background: #FFFFFF;
-    border: 1px solid #DBEAFE;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     /* 8px spec */
     padding: 8px 12px;
@@ -58,7 +58,7 @@
 /* Force Monochromatic Blue for all buttons */
 .action-btn:nth-child(n) {
     background: #FFFFFF;
-    border-color: #DBEAFE;
+    border-color: var(--border-color);
 }
 
 .action-btn:nth-child(n):hover {
@@ -69,7 +69,7 @@
 .action-btn:nth-child(n) .action-icon {
     color: #3B82F6;
     /* Executive Blue */
-    background: #F1F5F9;
+    background: var(--bg-body);
 }
 
 .action-icon {

@@ -1,62 +1,69 @@
 'use client';
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { CalendarOutlined, RiseOutlined } from '@ant-design/icons';
+import { CalendarOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
+import { useDashboardStats } from '@/context/DashboardStatsContext';
 import './AttendanceWidget.css';
 
-const data = [
-    { name: 'S1', value: 400 },
-    { name: 'S2', value: 380 },
-    { name: 'S3', value: 420 },
-    { name: 'S4', value: 450 },
-    { name: 'S5', value: 480 },
-    { name: 'S6', value: 460 },
-    { name: 'S7', value: 520 },
-];
-
+/** Uses real weekly registration counts as an activity pulse (no attendance module yet). */
 const AttendanceWidget = () => {
-    return (
-        <div className="attendance-widget">
-            <div className="attendance-header">
-                <h3>Attendance Snapshot</h3>
-                <div className="attendance-icon-badge">
-                    <CalendarOutlined />
-                </div>
-            </div>
+  const stats = useDashboardStats();
+  const spark = stats?.registrationSpark || [];
+  const thisWeek = stats?.membersThisWeek ?? 0;
+  const lastWeek = stats?.membersLastWeek ?? 0;
+  const data = useMemo(
+    () => spark.slice(-7).map((value, i) => ({ name: `S${i + 1}`, value })),
+    [spark],
+  );
+  const delta =
+    lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : thisWeek > 0 ? 100 : 0;
+  const up = delta >= 0;
 
-            <div className="attendance-content">
-                <div className="attendance-main">
-                    <span className="attendance-label">Last Service</span>
-                    <span className="attendance-value">520</span>
-                    <div className="attendance-trend up">
-                        <RiseOutlined />
-                        <span>12% vs last week</span>
-                    </div>
-                </div>
-
-                <div className="attendance-mini-chart">
-                    <ResponsiveContainer width="100%" height={60}>
-                        <AreaChart data={data}>
-                            <defs>
-                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#7F56D9" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#7F56D9" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <Area
-                                type="monotone"
-                                dataKey="value"
-                                stroke="#7F56D9"
-                                strokeWidth={2}
-                                fillOpacity={1}
-                                fill="url(#colorValue)"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
+  return (
+    <div className="attendance-widget">
+      <div className="attendance-header">
+        <h3>New members pulse</h3>
+        <div className="attendance-icon-badge">
+          <CalendarOutlined />
         </div>
-    );
+      </div>
+
+      <div className="attendance-content">
+        <div className="attendance-main">
+          <span className="attendance-label">This week</span>
+          <span className="attendance-value">{thisWeek}</span>
+          <div className={`attendance-trend ${up ? 'up' : 'down'}`}>
+            {up ? <RiseOutlined /> : <FallOutlined />}
+            <span>
+              {Math.abs(delta)}% vs last week ({lastWeek})
+            </span>
+          </div>
+        </div>
+
+        <div className="attendance-mini-chart">
+          <ResponsiveContainer width="100%" height={48}>
+            <AreaChart data={data.length ? data : [{ name: 'S1', value: 0 }]}>
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#1E40AF" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#1E40AF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#1E40AF"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorValue)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AttendanceWidget;

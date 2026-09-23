@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Avatar, message, Modal, Tooltip, Tag } from 'antd';
+import { Button, Avatar, Modal, Tooltip, Tag } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, BookOutlined, InfoCircleOutlined,
   EnvironmentOutlined, FileTextOutlined,
@@ -92,6 +93,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
     {
       title: 'Content',
       key: 'content',
+      responsive: ['sm'],
       render: (_: unknown, record: BibleStudy) => (
         record.content_type === 'book' ? (
           <Tag icon={<BookOutlined />} color="blue">{record.bible_book || 'Book'}</Tag>
@@ -103,6 +105,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
     {
       title: 'Location',
       key: 'location',
+      responsive: ['md'],
       render: (_: unknown, record: BibleStudy) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <EnvironmentOutlined style={{ color: '#64748b' }} />
@@ -113,6 +116,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
     {
       title: 'Leader',
       key: 'leader',
+      responsive: ['lg'],
       render: (_: unknown, record: BibleStudy) => (
         record.leader ? <LeaderNameWithTag leader={record.leader} /> : '-'
       ),
@@ -155,7 +159,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
   ];
 
   return (
-    <div className="manage-ministries-container">
+    <div className="manage-page">
       <DataTable
         title="Manage Bible Studies"
         columns={columns}
@@ -179,7 +183,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
           icon: <PlusOutlined />,
           onClick: () => router.push('/bible-study/add'),
         } : undefined}
-        tableCardClassName="ministries-table-card"
+        tableCardClassName="data-table-card"
       />
     </div>
   );

@@ -14,9 +14,9 @@ import {
   Switch,
   Tag,
   Tooltip,
-  message,
   Checkbox,
 } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   CheckCircleOutlined,
   DeleteOutlined,
@@ -368,17 +368,20 @@ const ManageTasksContent = () => {
     {
       title: 'Assigned to',
       key: 'minister',
+      responsive: ['sm'],
       render: (_: unknown, record: TaskAssignment) => personName(record.minister),
     },
     {
       title: 'Visit / Target',
       key: 'target',
+      responsive: ['md'],
       render: (_: unknown, record: TaskAssignment) =>
         record.definition?.requires_visit_target ? personName(record.target_member) : '—',
     },
     {
       title: 'Date range & Methods',
       key: 'dates',
+      responsive: ['lg'],
       render: (_: unknown, record: TaskAssignment) => (
         <div>
           <span>
@@ -432,9 +435,9 @@ const ManageTasksContent = () => {
 
   const statusFilters = (
     <Select
+      className="dt-filter-wide"
       value={status}
       onChange={handleStatusChange}
-      style={{ width: 160 }}
       options={[
         { value: 'all', label: 'All tasks' },
         { value: 'pending', label: 'Pending' },
@@ -446,40 +449,47 @@ const ManageTasksContent = () => {
   );
 
   return (
-    <div className="manage-ministries-container">
-      <div className="manage-ministries-header">
-        <h2>Task Management</h2>
-        <Space wrap>
-          {canCreate && (
-            <Button icon={<SettingOutlined />} onClick={() => { setEditingDef(null); setDefsOpen(true); }}>
+    <div className="manage-page">
+      <DataTable
+        title="Task Management"
+        columns={columns}
+        dataSource={tasks}
+        loading={loading}
+        searchPlaceholder="Search tasks, ministers..."
+        searchValue={searchText}
+        onSearchChange={handleSearchChange}
+        extraFilters={statusFilters}
+        actionAdjacent={
+          canCreate ? (
+            <Button
+              size="large"
+              icon={<SettingOutlined />}
+              onClick={() => {
+                setEditingDef(null);
+                setDefsOpen(true);
+              }}
+            >
               Definitions
             </Button>
-          )}
-          {canCreate && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={openAssign}>
-              Assign Task
-            </Button>
-          )}
-        </Space>
-      </div>
-
-      <div className="ministries-table-card">
-        <DataTable
-          columns={columns}
-          dataSource={tasks}
-          loading={loading}
-          searchPlaceholder="Search tasks, ministers..."
-          searchValue={searchText}
-          onSearchChange={handleSearchChange}
-          extraFilters={statusFilters}
-          serverPagination={{
-            current: page,
-            pageSize,
-            total,
-            onChange: (nextPage, nextSize) => loadTasks(nextPage, nextSize, searchText, status),
-          }}
-        />
-      </div>
+          ) : undefined
+        }
+        actionButton={
+          canCreate
+            ? {
+                label: 'Assign Task',
+                icon: <PlusOutlined />,
+                onClick: openAssign,
+              }
+            : undefined
+        }
+        serverPagination={{
+          current: page,
+          pageSize,
+          total,
+          onChange: (nextPage, nextSize) => loadTasks(nextPage, nextSize, searchText, status),
+        }}
+        tableCardClassName="data-table-card"
+      />
 
       <Modal
         title="Assign Task"
@@ -509,25 +519,30 @@ const ManageTasksContent = () => {
           </Form.Item>
 
           {selectedDefinition?.requires_visit_target && (
-            <Form.Item
-              name="target_member_id"
-              label="Who to visit"
-              rules={[{ required: true, message: 'Select the member to visit' }]}
-              extra="Home Visit requires choosing a member."
-            >
-              <Select
-                showSearch
-                placeholder="Select member to visit"
-                optionFilterProp="label"
-                options={members
-                  .slice()
-                  .sort((a, b) => (a.visit_count || 0) - (b.visit_count || 0))
-                  .map((m) => ({
-                    value: m.id,
-                    label: `${personName(m)} (Visits: ${m.visit_count || 0})`,
-                  }))}
-              />
-            </Form.Item>
+            <>
+              <Form.Item
+                name="target_member_id"
+                label="Who to visit"
+                rules={[{ required: true, message: 'Select the member to visit' }]}
+                extra="Members listed by visit count (highest first)."
+              >
+                <Select
+                  showSearch
+                  placeholder="Select member to visit"
+                  optionFilterProp="label"
+                  options={members
+                    .slice()
+                    .sort((a, b) => (b.visit_count || 0) - (a.visit_count || 0))
+                    .map((m) => ({
+                      value: m.id,
+                      label: `${personName(m)} — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`,
+                    }))}
+                />
+              </Form.Item>
+              <Form.Item name="visitation_methods" label="Visitation method(s)">
+                <Checkbox.Group options={['Home', 'Office', 'Phone']} />
+              </Form.Item>
+            </>
           )}
 
           <Form.Item
@@ -556,10 +571,6 @@ const ManageTasksContent = () => {
 
           <Form.Item name="notes" label="Notes">
             <TextArea rows={3} placeholder="Optional notes" />
-          </Form.Item>
-
-          <Form.Item name="visitation_methods" label="Visitation Method(s)">
-              <Checkbox.Group options={['In-person', 'Phone', 'Email', 'Virtual']} />
           </Form.Item>
         </Form>
       </Modal>

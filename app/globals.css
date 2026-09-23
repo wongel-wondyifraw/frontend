@@ -1,15 +1,17 @@
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Noto Sans Ethiopic', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  /* Default Light Mode (Shepard.One Monochromatic Blue) */
-  --bg-body: #F1F5F9;
-  /* Ghost Slate */
+  /* Soft canvas surfaces (admin UI elevation model) */
+  --bg-body: #F8FAFC;
+  /* Soft page chrome — close to white */
   --bg-card: #FFFFFF;
-  /* White */
-  --bg-hover: #EFF6FF;
-  /* Ice Wash */
+  /* Primary surface */
+  --bg-hover: #F1F5F9;
+  /* Neutral hover (not ice-blue wash) */
+  --bg-muted: #FFFFFF;
+  /* Nested panels: stay white; separate with border */
 
   --primary-blue: #1E40AF;
   /* Primary Action */
@@ -20,16 +22,17 @@
 
   --text-main: #020617;
   /* Abyssal Black-Blue */
-  --text-secondary: #94A3B8;
-  /* Slate 400 */
+  --text-secondary: #64748B;
+  /* Slate 500 — slightly stronger secondary */
   --text-inverse: #FFFFFF;
 
-  --border-color: #DBEAFE;
-  /* Ice Blue */
-  --divider: #F1F5F9;
+  --border-color: #E2E8F0;
+  /* Neutral structure border */
+  --divider: #E2E8F0;
 
-  --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
+  /* Shadows reserved for overlays; cards use border first */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
 
   color-scheme: light;
 }
@@ -85,6 +88,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
   background-color: var(--bg-body);
@@ -157,4 +162,154 @@ button {
   height: 100% !important;
   object-fit: cover !important;
   object-position: center center;
+}
+
+/* System-wide taller form controls (inputs, selects, filters) */
+.ant-input-affix-wrapper,
+.ant-input:not(textarea),
+.ant-input-number,
+.ant-picker,
+.ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
+  min-height: 42px;
+}
+
+.ant-input-affix-wrapper {
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
+}
+
+.ant-input-affix-wrapper > input.ant-input {
+  min-height: 0;
+  height: 40px;
+  line-height: 40px;
+}
+
+.ant-input:not(textarea):not(.ant-input-borderless) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.4;
+}
+
+textarea.ant-input,
+.ant-input-textarea textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
+.ant-select-single .ant-select-selector {
+  align-items: center;
+}
+
+.ant-select-single .ant-select-selection-item,
+.ant-select-single .ant-select-selection-placeholder {
+  line-height: 40px !important;
+}
+
+.ant-picker {
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
+}
+
+.ant-picker-input > input {
+  height: 40px;
+  line-height: 40px;
+}
+
+.ant-input-number-input {
+  height: 40px;
+}
+
+/* No horizontal scrollbars; tables must not create nested vertical scroll */
+html,
+body,
+.dashboard-layout,
+.main-content {
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+
+.content-scrollable {
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+
+.ant-table-wrapper,
+.ant-table-container,
+.ant-table-content,
+.ant-table-body,
+.ant-spin-nested-loading,
+.ant-spin-container {
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+  max-width: 100%;
+}
+
+.ant-modal-body,
+.ant-drawer-body {
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+
+/* Hide leftover horizontal scrollbar chrome (incl. intentional carousels) */
+.lp-display--carousel::-webkit-scrollbar,
+.lp-display--marquee::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.ant-table {
+  width: 100% !important;
+}
+
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Page headers: title left, primary actions right */
+.page-header,
+.planning-header,
+.landing-admin-header,
+.settings-header,
+.help-header,
+.subscription-header,
+.calendar-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header-actions,
+.planning-header-actions,
+.landing-admin-header > .ant-btn,
+.landing-admin-header > .ant-space,
+.la-actions-row,
+.calendar-header-section > .ant-space,
+.calendar-header-section > .ant-btn {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Filters always trail left next to search / toolbar start */
+.page-header-actions .ant-select,
+.planning-header-actions .ant-select,
+.data-table-filters .ant-select,
+.data-table-filters .ant-picker {
+  flex: 0 0 auto;
+}
+
+.la-actions-row {
+  width: 100%;
 }

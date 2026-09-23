@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Empty, Spin, Tag, message } from 'antd';
+import { Empty, Spin, Tag } from 'antd';
+import { message } from '@/lib/app-message';
 import dayjs from 'dayjs';
 import { completeTask, getMyTasks } from '@/services/api';
 import type { TaskAssignment } from '@/types';

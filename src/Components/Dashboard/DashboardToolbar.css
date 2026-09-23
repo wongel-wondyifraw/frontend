@@ -1,13 +1,22 @@
 .dashboard-toolbar {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
+  align-items: center;
+  margin: 0;
+  pointer-events: none;
+}
+
+.dashboard-toolbar--topbar {
+  position: static;
+  width: auto;
 }
 
 .dashboard-controls {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: auto;
 }
 
 .widget-picker-grid {
@@ -19,7 +28,7 @@
 
 .widget-picker-card {
   cursor: pointer;
-  background: #F8FAFC;
+  background: var(--bg-card);
   border: 1px solid #E2E8F0;
   overflow: hidden;
   display: flex;
@@ -33,7 +42,7 @@
   pointer-events: none;
   min-height: 140px;
   max-height: 140px;
-  background: #F1F5F9;
+  background: var(--bg-body);
   display: flex;
   flex-direction: column;
   overflow: hidden;

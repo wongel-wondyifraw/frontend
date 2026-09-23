@@ -1,0 +1,288 @@
+.analysis-dashboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+
+.ad-intro-card.ant-card {
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: none;
+  height: 100%;
+}
+
+.ad-intro-card .ant-card-body {
+  padding: 20px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 168px;
+}
+
+.ad-intro-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ad-intro-info {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.ad-intro-total .ant-statistic-content {
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-main, #0f172a);
+}
+
+.ad-intro-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 52px;
+  margin: 8px 0 12px;
+}
+
+.ad-intro-trends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  min-height: 46px;
+}
+
+.ad-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.ad-trend-up {
+  color: #16a34a !important;
+}
+
+.ad-trend-down {
+  color: #dc2626 !important;
+}
+
+.ad-intro-footer {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.ad-progress-caption {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px !important;
+}
+
+.ad-main-card.ant-card,
+.ad-bottom-card.ant-card {
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: none;
+}
+
+.ad-bottom-row {
+  align-items: stretch;
+}
+
+.ad-bottom-col {
+  display: flex;
+}
+
+.ad-bottom-col > .ad-bottom-card.ant-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-bottom-col > .ad-bottom-card .ant-card-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 410px;
+  height: 100%;
+}
+
+.ad-todo-card .ant-card-body {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.ad-todo-card .todo-list-card {
+  border: none;
+  box-shadow: none;
+  height: 100%;
+  min-height: 410px;
+  border-radius: 8px;
+}
+
+.ad-main-card .ant-card-body {
+  padding: 0 0 8px;
+}
+
+.ad-main-tabs .ant-tabs-nav {
+  margin: 0;
+  padding: 0 24px;
+}
+
+.ad-main-tabs .ant-tabs-tab {
+  padding: 16px 0;
+  font-size: 15px;
+}
+
+.ad-range-select {
+  min-width: 132px;
+}
+
+.ad-main-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  padding: 8px 24px 24px;
+}
+
+@media (max-width: 992px) {
+  .ad-main-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ad-chart-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ad-ranking-title.ant-typography {
+  margin: 8px 0 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.ad-ranking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ad-ranking-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.ad-ranking-name {
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-ranking-value {
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.ad-ranking-date {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.ad-ranking-empty {
+  grid-template-columns: 1fr !important;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.ad-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #64748b;
+  background: transparent;
+}
+
+.ad-rank-top {
+  background: #0f172a;
+  color: #fff;
+}
+
+.ad-bottom-card .ant-card-head {
+  border-bottom: 1px solid #f1f5f9;
+  min-height: 48px;
+}
+
+.ad-bottom-card .ant-card-body {
+  padding: 16px 24px 20px;
+}
+
+.ad-plans-card .ant-card-body {
+  padding: 0;
+}
+
+.ad-plans-card .upcoming-programs-card {
+  height: 100%;
+  min-height: 280px;
+}
+
+.ad-search-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.ad-search-kpi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 6px;
+}
+
+.ad-link {
+  color: #1e40af;
+}
+
+.ad-table .ant-table {
+  background: transparent;
+}
+
+.ad-pie-wrap {
+  width: 100%;
+  flex: 1;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-pie-wrap .recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 280px;
+}
+
+/* Align analysis page with Pro spacing under floating edit button */
+.dashboard-page:has(.analysis-dashboard) .dashboard-toolbar {
+  top: 0;
+  right: 0;
+}

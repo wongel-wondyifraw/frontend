@@ -49,6 +49,115 @@ export interface PageContent {
   updated_at?: string;
 }
 
+export type LandingDisplayStyle = 'grid' | 'carousel' | 'marquee' | 'static' | 'feed';
+
+export interface LandingMediaItem {
+  title: string;
+  text?: string;
+  tag?: string;
+  ref?: string;
+  /** Program / event date (display string, e.g. "October 28, 2026") */
+  event_date?: string;
+  /** Program / event time (display string, e.g. "08:00 PM") */
+  event_time?: string;
+  /** Optional venue or location line */
+  location?: string;
+  image_url?: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
+  video_url?: string | null;
+  video_file_url?: string | null;
+}
+
+export interface LandingPostItem {
+  author: string;
+  time: string;
+  body: string;
+  image_url?: string | null;
+  video_url?: string | null;
+  video_file_url?: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
+}
+
+export interface LandingPageContent {
+  hero?: {
+    enabled?: boolean;
+    kicker?: string;
+    title?: string;
+    lede?: string;
+    image_url?: string | null;
+    video_url?: string | null;
+    video_file_url?: string | null;
+    file_url?: string | null;
+    file_name?: string | null;
+    cta_label?: string;
+    secondary_cta_label?: string;
+    verse_ref?: string;
+    verse_text?: string;
+  };
+  about?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    display_style?: LandingDisplayStyle;
+    items?: LandingMediaItem[];
+  };
+  vision?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    label?: string;
+    heading?: string;
+    body?: string;
+    image_url?: string | null;
+    video_url?: string | null;
+    video_file_url?: string | null;
+    file_url?: string | null;
+    file_name?: string | null;
+  };
+  projects?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    display_style?: LandingDisplayStyle;
+    items?: LandingMediaItem[];
+  };
+  programs?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    display_style?: LandingDisplayStyle;
+    default_poster_style?: 'navy' | 'emerald' | 'warm';
+    items?: LandingMediaItem[];
+  };
+  updates?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    display_style?: LandingDisplayStyle;
+    /** Show recent programs strip above posts */
+    show_programs_strip?: boolean;
+    programs_strip_title?: string;
+    programs_display?: LandingDisplayStyle;
+    posts?: LandingPostItem[];
+  };
+  contact?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    visit_title?: string;
+    visit_lines?: string[];
+    touch_title?: string;
+    touch_body?: string;
+  };
+  footer?: {
+    blurb?: string;
+    visit_lines?: string[];
+    office_lines?: string[];
+  };
+}
+
 export interface CommunityProject {
   id: string;
   title: string;
@@ -78,15 +187,36 @@ export interface Member {
   address?: string;
   status?: string;
   image_url?: string;
-  document_url?: string;
+  recommendation_letter_url?: string;
   date_of_birth?: string;
   marital_status?: string;
   gender?: string | null;
   baptized?: boolean | string;
+  holy_spirit_baptized?: boolean | string;
   joined_date?: string;
-  created_at?: string;
-  ministry_members?: MinistryMemberLink[];
+  salvation_date?: string;
+  telegram_username?: string;
+  facebook_username?: string | null;
+  instagram_username?: string | null;
+  whatsapp_number?: string | null;
+  member_type?: string;
+  requires_follow_up?: boolean;
+  location_id?: string;
+  location?: { id: string; name: string; status?: string } | null;
+  interested_ministries?: string[];
+  employment_status?: string | null;
+  profession?: string | null;
+  employer?: string | null;
+  education_level?: string | null;
+  education_field?: string | null;
+  is_deacon?: boolean;
   visit_count?: number;
+  status_reason?: string | null;
+  approved_at?: string | null;
+  approved_by_user_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  ministry_members?: MinistryMemberLink[];
 }
 
 export interface MinisterAccount {
@@ -231,6 +361,38 @@ export interface TaskAssignment {
   created_at?: string;
 }
 
+export type PlanType =
+  | 'program'
+  | 'crusade'
+  | 'general_assembly'
+  | 'training'
+  | 'fasting_day'
+  | 'gospel_campaign';
+
+export type PlanStatus = 'planned' | 'completed' | 'cancelled';
+
+export interface PlanMinisterLink {
+  plan_id: string;
+  minister_id: string;
+  assigned_at?: string;
+  minister?: Pick<Minister, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email' | 'phone'>;
+}
+
+export interface Plan {
+  id: string;
+  title: string;
+  type: PlanType;
+  plan_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  notes?: string | null;
+  status: PlanStatus;
+  plan_ministers?: PlanMinisterLink[];
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface FamilyChild {
   id: string;
   family_id: string;
@@ -245,10 +407,12 @@ export interface Family {
   name?: string | null;
   husband_id?: string | null;
   husband_type?: LeaderType | null;
-  husband_status?: string | null;
   wife_id?: string | null;
   wife_type?: LeaderType | null;
-  wife_status?: string | null;
+  spouse_status?: string | null;
+  external_spouse_name?: string | null;
+  external_spouse_phone?: string | null;
+  external_spouse_church?: string | null;
   husband?: LeaderSummary | null;
   wife?: LeaderSummary | null;
   notes?: string | null;
@@ -280,6 +444,8 @@ export interface DashboardStats {
   activeMembers: number;
   inactiveMembers: number;
   membersThisMonth: number;
+  membersThisWeek?: number;
+  membersLastWeek?: number;
   ministerCount: number;
   activeMinisters: number;
   inactiveMinisters: number;
@@ -287,6 +453,9 @@ export interface DashboardStats {
   ministryCount: number;
   ministriesWithLeader: number;
   ministriesWithoutLeader: number;
+  ministryShare?: { name: string; value: number }[];
+  registrationsByMonth?: { month: string; value: number }[];
+  registrationSpark?: number[];
 }
 
 export interface PaginatedResponse<T> {
@@ -301,6 +470,12 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
   search?: string;
+  status?: string;
+  marital_status?: string;
+  joined_from?: string;
+  joined_to?: string;
+  sort_by?: 'created_at' | 'joined_date' | 'visit_count';
+  sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
 }
 
 export interface ApiSearchResult {

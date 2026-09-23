@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Button, Avatar, message, Modal, Tooltip } from 'antd';
+import { Tag, Button, Avatar, Modal, Tooltip } from 'antd';
+import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
@@ -94,6 +95,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
         {
             title: 'Leader',
             key: 'leader',
+            responsive: ['md'],
             render: (_: unknown, record: Ministry) => (
                 record.leader ? <LeaderNameWithTag leader={record.leader} /> : '-'
             ),
@@ -102,6 +104,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
             title: 'Created',
             dataIndex: 'created_at',
             key: 'created_at',
+            responsive: ['lg'],
             render: (date: string | undefined) => date ? new Date(date).toLocaleDateString() : '-',
         },
         {
@@ -142,7 +145,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
     ];
 
     return (
-        <div className="manage-ministries-container">
+        <div className="manage-page">
             <DataTable
                 title="Manage Ministries"
                 columns={columns}
@@ -163,7 +166,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
                     icon: <PlusOutlined />,
                     onClick: () => router.push('/ministries/add'),
                 } : undefined}
-                tableCardClassName="ministries-table-card"
+                tableCardClassName="data-table-card"
             />
         </div>
     );

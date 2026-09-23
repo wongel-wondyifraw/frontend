@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Form, Input, Select, Button, message, Row, Col, Radio, Upload, Spin, Typography } from 'antd';
+import { Form, Input, Select, Button, Row, Col, Radio, Upload, Spin, Typography } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined, BookOutlined, ClockCircleOutlined, UserOutlined, CheckCircleOutlined,
   UsergroupAddOutlined, EnvironmentOutlined, FileTextOutlined, UploadOutlined,
@@ -31,13 +32,7 @@ const STEPS = [
   { title: 'Review & Update' },
 ];
 
-const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f0f9ff', border: '1px solid #bae6fd' },
-  { background: '#fefce8', border: '1px solid #fde68a' },
-  { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-  { background: '#e6f7ff', border: '1px solid #91d5ff' },
-];
+const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
 
 const EditBibleStudy = () => {
   const router = useRouter();

@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Form, Input, Select, Button, message, Row, Col, Spin } from 'antd';
+import { Form, Input, Button, Row, Col, Spin, AutoComplete, Select, TimePicker, Space } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined,
   HomeOutlined,
@@ -20,14 +21,45 @@ import {
   getHomeGroupMembers,
   addHomeGroupMember,
   removeHomeGroupMember,
+  getLocations,
+  createLocation,
 } from '../../services/api';
-import type { Member } from '@/types';
+import type { Member, Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
+import dayjs, { type Dayjs } from 'dayjs';
 import './AddHomeGroup.css';
 
-const { Option } = Select;
 const { TextArea } = Input;
+
+const WEEKDAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+function formatSchedule(day?: string, time?: Dayjs | null): string {
+  if (!day && !time) return '';
+  const timeLabel = time ? time.format('h:mm A') : '';
+  if (day && timeLabel) return `Every ${day} ${timeLabel}`;
+  if (day) return `Every ${day}`;
+  return timeLabel;
+}
+
+function parseSchedule(schedule?: string | null): { schedule_day?: string; schedule_time?: Dayjs } {
+  if (!schedule?.trim()) return {};
+  const day = WEEKDAYS.find((d) => schedule.toLowerCase().includes(d.toLowerCase()));
+  const timeMatch = schedule.match(/(\d{1,2}:\d{2}\s*[AP]M)/i);
+  const schedule_time = timeMatch ? dayjs(timeMatch[1], ['h:mm A', 'hh:mm A']) : undefined;
+  return {
+    schedule_day: day,
+    schedule_time: schedule_time?.isValid() ? schedule_time : undefined,
+  };
+}
 
 const STEPS = [
   { title: 'Group Info' },
@@ -36,12 +68,7 @@ const STEPS = [
   { title: 'Review & Update' },
 ];
 
-const STEP_BACKGROUNDS = [
-  { background: '#f8fafc', border: 'none' },
-  { background: '#f0f9ff', border: '1px solid #bae6fd' },
-  { background: '#f0fdf4', border: '1px solid #bbf7d0' },
-  { background: '#e6f7ff', border: '1px solid #91d5ff' },
-];
+const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
 
 const EditHomeGroup = () => {
   const router = useRouter();
@@ -51,6 +78,7 @@ const EditHomeGroup = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
   const initialMemberKeysRef = useRef<string[]>([]);
@@ -66,12 +94,14 @@ const EditHomeGroup = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [group, membersData, groupMembers] = await Promise.all([
+        const [group, membersData, groupMembers, locs] = await Promise.all([
           getHomeGroup(id),
           getMembersList(),
           getHomeGroupMembers(id),
+          getLocations('active').catch(() => [] as Location[]),
         ]);
         setMembers(membersData);
+        setLocations(locs);
         setGroupData({
           name: group.name,
           about: group.about,
@@ -93,12 +123,26 @@ const EditHomeGroup = () => {
     fetchData();
   }, [id, router]);
 
+  const resolveLocationName = async (raw?: string): Promise<string | undefined> => {
+    const trimmed = raw?.trim();
+    if (!trimmed) return undefined;
+    const existing = locations.find(
+      (l) => l.name.toLowerCase() === trimmed.toLowerCase() || l.id === trimmed,
+    );
+    if (existing) return existing.name;
+    const created = await createLocation({ name: trimmed, status: 'active' });
+    setLocations((prev) => [...prev, created]);
+    return created.name;
+  };
+
   useEffect(() => {
     if (initialLoading || !groupData) return;
+    const parsed = parseSchedule(groupData.schedule);
     form.setFieldsValue({
       name: groupData.name,
       about: groupData.about,
-      schedule: groupData.schedule,
+      schedule_day: parsed.schedule_day,
+      schedule_time: parsed.schedule_time,
       location: groupData.location,
       leader_key: encodeLeaderValue(groupData.leader_id, groupData.leader_type),
     });
@@ -141,11 +185,12 @@ const EditHomeGroup = () => {
       const values = await form.validateFields();
       setLoading(true);
       const leader = decodeLeaderValue(values.leader_key);
+      const locationName = await resolveLocationName(values.location);
       await updateHomeGroup(id, {
         name: values.name,
         about: values.about || '',
-        schedule: values.schedule || '',
-        location: values.location,
+        schedule: formatSchedule(values.schedule_day, values.schedule_time),
+        location: locationName,
         leader_id: leader.leader_id,
         leader_type: leader.leader_type,
       });
@@ -238,13 +283,48 @@ const EditHomeGroup = () => {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="schedule" label="Schedule Details">
-                    <Input size="large" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
+                  <Form.Item label="Meeting Schedule">
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Form.Item name="schedule_day" noStyle>
+                        <Select
+                          size="large"
+                          placeholder="Day"
+                          allowClear
+                          style={{ width: '45%' }}
+                          options={WEEKDAYS.map((d) => ({ value: d, label: d }))}
+                        />
+                      </Form.Item>
+                      <Form.Item name="schedule_time" noStyle>
+                        <TimePicker
+                          size="large"
+                          use12Hours
+                          format="h:mm A"
+                          placeholder="Time"
+                          style={{ width: '55%' }}
+                          suffixIcon={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />}
+                        />
+                      </Form.Item>
+                    </Space.Compact>
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item name="location" label="Meeting Location" rules={[{ required: true, message: 'Location is required' }]}>
-                <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+              <Form.Item
+                name="location"
+                label="Meeting Location"
+                rules={[{ required: true, message: 'Location is required' }]}
+                extra="Search an existing location or type a new one to add it."
+              >
+                <AutoComplete
+                  options={locations.map((loc) => ({ value: loc.name }))}
+                  placeholder="Search or enter location"
+                  style={{ width: '100%' }}
+                  filterOption={(inputValue, option) =>
+                    String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                  }
+                  allowClear
+                >
+                  <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+                </AutoComplete>
               </Form.Item>
             </div>
 
@@ -265,7 +345,7 @@ const EditHomeGroup = () => {
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
               </h3>
-              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid #e2e8f0', marginTop: 16 }}>
+              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid var(--border-color)', marginTop: 16 }}>
                 <Form.Item noStyle shouldUpdate>
                   {() => {
                     const values = form.getFieldsValue();
@@ -282,7 +362,10 @@ const EditHomeGroup = () => {
                         <div><strong>Name:</strong> {values.name || '—'}</div>
                         <div><strong>Leader:</strong> {leaderName}</div>
                         <div><strong>Location:</strong> {values.location || '—'}</div>
-                        <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
+                        <div>
+                          <strong>Schedule:</strong>{' '}
+                          {formatSchedule(values.schedule_day, values.schedule_time) || '—'}
+                        </div>
                         <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                       </div>

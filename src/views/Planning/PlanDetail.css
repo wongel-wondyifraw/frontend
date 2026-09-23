@@ -1,0 +1,51 @@
+.plan-detail-avatar {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-detail-kpi .ant-statistic-content-value {
+  font-size: 20px !important;
+}
+
+.plan-detail-notes {
+  margin: 0;
+  color: var(--text-main, #020617);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.detail-section--wide {
+  grid-column: 1 / -1;
+}
+
+.plan-minister-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.plan-minister-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-hover, #f1f5f9);
+  border-radius: 12px;
+}
+
+.plan-minister-name {
+  font-weight: 600;
+  color: var(--text-main, #020617);
+}
+
+.plan-minister-meta {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+}
+
+@media (max-width: 768px) {
+  .plan-detail-kpi {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

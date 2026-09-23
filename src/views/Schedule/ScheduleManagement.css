@@ -1,8 +1,7 @@
 .schedule-container {
-    max-width: 1200px;
-    /* Increased to match dashboard width more closely */
-    margin: 0 auto;
-    padding: 24px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
 }
 
 /* Calendar Card Customization */
@@ -10,15 +9,15 @@
     background: #fff;
     border-radius: 8px;
     /* 8px spec */
-    box-shadow: 0 4px 6px -1px rgba(2, 6, 23, 0.05);
-    border: 1px solid #DBEAFE;
+    box-shadow: none;
+    border: 1px solid var(--border-color);
     overflow: hidden;
 }
 
 .calendar-header-section {
     background: #FFFFFF;
     /* Clean white header */
-    border-bottom: 1px solid #F1F5F9;
+    border-bottom: 1px solid var(--bg-body);
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
@@ -112,13 +111,13 @@
 }
 
 .poster-upload-container {
-    border: 2px dashed #DBEAFE;
+    border: 2px dashed var(--border-color);
     border-radius: 8px;
     padding: 20px;
     text-align: center;
     transition: all 0.3s;
     cursor: pointer;
-    background: #F8FAFC;
+    background: var(--bg-card);
 }
 
 .poster-upload-container:hover {

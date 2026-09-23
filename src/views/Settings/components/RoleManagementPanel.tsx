@@ -1,16 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Form,
-  Input,
-  Modal,
-  Space,
-  Tag,
-  Tooltip,
-  message,
-} from 'antd';
+import { Button, Form, Input, Modal, Tag, Tooltip } from 'antd';
+import { message } from '@/lib/app-message';
 import type { ColumnsType } from 'antd/es/table';
 import {
   DeleteOutlined,
@@ -46,6 +38,7 @@ const RoleManagementPanel = () => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [formSeed, setFormSeed] = useState<Partial<RoleFormValues> | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm<RoleFormValues>();
 
@@ -82,28 +75,31 @@ const RoleManagementPanel = () => {
 
   const openCreate = () => {
     setEditingRole(null);
+    setFormSeed({ permissionSlugs: [], name: undefined, key: undefined, description: undefined });
     setModalOpen(true);
   };
 
   const openEdit = (role: Role) => {
     setEditingRole(role);
+    setFormSeed({
+      key: role.key,
+      name: role.name,
+      description: role.description ?? '',
+      permissionSlugs: role.permissions.map((p) => p.slug),
+    });
     setModalOpen(true);
   };
 
-  useEffect(() => {
-    if (!modalOpen) return;
-    if (editingRole) {
-      form.setFieldsValue({
-        key: editingRole.key,
-        name: editingRole.name,
-        description: editingRole.description ?? '',
-        permissionSlugs: editingRole.permissions.map((p) => p.slug),
-      });
-      return;
+  const handleModalOpenChange = (open: boolean) => {
+    if (open && formSeed) {
+      form.setFieldsValue(formSeed);
     }
-    form.resetFields();
-    form.setFieldsValue({ permissionSlugs: [] });
-  }, [modalOpen, editingRole, form]);
+    if (!open) {
+      form.resetFields();
+      setFormSeed(null);
+      setEditingRole(null);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -160,7 +156,7 @@ const RoleManagementPanel = () => {
       render: (_: unknown, record: Role) => (
         <div>
           <div style={{ fontWeight: 600 }}>{record.name}</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>{record.key}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.key}</div>
         </div>
       ),
     },
@@ -168,18 +164,16 @@ const RoleManagementPanel = () => {
       title: 'Type',
       key: 'type',
       width: 120,
+      responsive: ['sm'],
       render: (_: unknown, record: Role) =>
-        record.is_system ? (
-          <Tag color="blue">System</Tag>
-        ) : (
-          <Tag>Custom</Tag>
-        ),
+        record.is_system ? <Tag color="blue">System</Tag> : <Tag>Custom</Tag>,
     },
     {
       title: 'Permissions',
       key: 'permissions',
+      responsive: ['md'],
       render: (_: unknown, record: Role) => (
-        <span style={{ color: '#64748b' }}>
+        <span style={{ color: 'var(--text-secondary)' }}>
           {record.key === 'admin'
             ? 'All permissions'
             : `${record.permissions.length} permission(s)`}
@@ -190,6 +184,7 @@ const RoleManagementPanel = () => {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
+      responsive: ['lg'],
       render: (desc: string | null | undefined) => desc || '—',
     },
     {
@@ -197,14 +192,10 @@ const RoleManagementPanel = () => {
       key: 'actions',
       width: 120,
       render: (_: unknown, record: Role) => (
-        <Space>
+        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
           <Can permission="roles.manage">
             <Tooltip title="Edit role">
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => openEdit(record)}
-              />
+              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
             </Tooltip>
           </Can>
           <Can permission="roles.manage">
@@ -212,6 +203,7 @@ const RoleManagementPanel = () => {
               <Tooltip title="Delete role">
                 <Button
                   type="text"
+                  size="small"
                   danger
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
@@ -219,7 +211,7 @@ const RoleManagementPanel = () => {
               </Tooltip>
             )}
           </Can>
-        </Space>
+        </div>
       ),
     },
   ];
@@ -227,9 +219,8 @@ const RoleManagementPanel = () => {
   const isAdminRole = editingRole?.key === 'admin';
 
   return (
-    <>
+    <div className="manage-page settings-section--wide">
       <DataTable
-        title="Roles & Permissions"
         columns={columns}
         dataSource={filteredRoles}
         loading={loading}
@@ -242,15 +233,15 @@ const RoleManagementPanel = () => {
             ? { label: 'Add Role', icon: <PlusOutlined />, onClick: openCreate }
             : undefined
         }
-        tableCardClassName="roles-table-card"
+        tableCardClassName="data-table-card"
       />
 
       <Modal
         title={
-          <Space>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <SafetyCertificateOutlined />
             {editingRole ? `Edit ${editingRole.name}` : 'Create role'}
-          </Space>
+          </span>
         }
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
@@ -258,9 +249,10 @@ const RoleManagementPanel = () => {
         confirmLoading={saving}
         okText={editingRole ? 'Save changes' : 'Create role'}
         width={720}
-        forceRender
+        destroyOnHidden
+        afterOpenChange={handleModalOpenChange}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false}>
           {!editingRole && (
             <Form.Item
               name="key"
@@ -291,17 +283,13 @@ const RoleManagementPanel = () => {
             name="permissionSlugs"
             label="Permissions"
             rules={[{ required: !isAdminRole, message: 'Select at least one permission' }]}
-            extra={
-              isAdminRole
-                ? 'The admin role always has every permission.'
-                : undefined
-            }
+            extra={isAdminRole ? 'The admin role always has every permission.' : undefined}
           >
             <PermissionPicker grouped={grouped} disabled={isAdminRole} />
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 };
 

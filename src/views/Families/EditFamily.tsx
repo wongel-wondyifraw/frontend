@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Form, Input, Button, message, Spin, Select, Row, Col } from 'antd';
+import { Form, Input, Button, Spin, Select, Row, Col } from 'antd';
+import { message } from '@/lib/app-message';
 import { ArrowLeftOutlined, TeamOutlined } from '@ant-design/icons';
 import { updateFamily, getFamilyById } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -28,14 +29,24 @@ const EditFamilyContent = () => {
     try {
       setInitialLoading(true);
       const family = await getFamilyById(id);
-      
+      const status = (family.spouse_status || 'registered').toLowerCase();
+      let husband_status = family.husband_id ? 'registered' : status === 'external' ? 'external' : 'non_member';
+      let wife_status = family.wife_id ? 'registered' : status === 'external' ? 'external' : 'non_member';
+      if (status === 'none') {
+        if (!family.husband_id) husband_status = 'non_member';
+        if (!family.wife_id) wife_status = 'non_member';
+      }
+
       form.setFieldsValue({
         name: family.name,
         notes: family.notes,
-        husband_status: (family as any).husband_status || 'registered',
-        wife_status: (family as any).wife_status || 'registered',
+        husband_status,
+        wife_status,
         husband: family.husband_id && family.husband_type ? encodeLeaderValue(family.husband_id, family.husband_type) : undefined,
         wife: family.wife_id && family.wife_type ? encodeLeaderValue(family.wife_id, family.wife_type) : undefined,
+        external_spouse_name: family.external_spouse_name || undefined,
+        external_spouse_phone: family.external_spouse_phone || undefined,
+        external_spouse_church: family.external_spouse_church || undefined,
       });
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Failed to load family'));
@@ -83,16 +94,27 @@ const EditFamilyContent = () => {
         return;
       }
 
+      let spouse_status = 'none';
+      if (values.husband_status === 'registered' && values.wife_status === 'registered') {
+        spouse_status = 'registered';
+      } else if (values.husband_status === 'external' || values.wife_status === 'external') {
+        spouse_status = 'external';
+      } else if (values.husband_status === 'pending' || values.wife_status === 'pending') {
+        spouse_status = 'pending';
+      }
+
       setLoading(true);
       await updateFamily(id, {
         name: values.name || null,
         notes: values.notes || null,
         husband_id: husbandId,
         husband_type: husbandType,
-        husband_status: values.husband_status,
         wife_id: wifeId,
         wife_type: wifeType,
-        wife_status: values.wife_status,
+        spouse_status,
+        external_spouse_name: values.external_spouse_name || null,
+        external_spouse_phone: values.external_spouse_phone || null,
+        external_spouse_church: values.external_spouse_church || null,
       });
       message.success('Family updated');
       router.push(`/families/details/${id}`);
@@ -188,6 +210,33 @@ const EditFamilyContent = () => {
                 )}
               </Col>
           </Row>
+
+          {(husbandStatus === 'external' || wifeStatus === 'external') && (
+            <div style={{ marginTop: 8, marginBottom: 16, padding: 16, background: 'var(--bg-card)', borderRadius: 8 }}>
+              <p style={{ marginTop: 0, color: '#64748b' }}>External spouse details</p>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item
+                    name="external_spouse_name"
+                    label="Name"
+                    rules={[{ required: true, message: 'External spouse name is required' }]}
+                  >
+                    <Input size="large" placeholder="Full name" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="external_spouse_phone" label="Phone">
+                    <Input size="large" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="external_spouse_church" label="Local church">
+                    <Input size="large" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
+          )}
 
           <Form.Item name="notes" label="Notes">
             <Input.TextArea rows={3} />

@@ -3,8 +3,8 @@
     /* was #FFFFFF */
     border-radius: 8px;
     padding: 16px 20px;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
+    box-shadow: none;
+    transition: border-color 0.2s ease;
     border: 1px solid var(--border-color);
     /* was #DBEAFE */
     display: flex;
@@ -14,9 +14,7 @@
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    /* Keep shadow opacity low or adjust variable? Custom here is fine for now */
+    border-color: #cbd5e1;
 }
 
 /* Color Variants - Monochromatic Enforced */
@@ -45,7 +43,7 @@
 .stat-card.green .stat-icon-wrapper,
 .stat-card.purple .stat-icon-wrapper {
     background: var(--bg-hover);
-    /* was #F1F5F9 (Ice Wash/Slate 800) */
+    /* was var(--bg-body) (Ice Wash/Slate 800) */
     color: var(--primary-blue);
     /* was #3B82F6 */
 }

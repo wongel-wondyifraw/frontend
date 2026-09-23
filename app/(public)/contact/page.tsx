@@ -1,10 +1,18 @@
-import GenericPublicPage from '@/views/LandingPage/GenericPublicPage';
-import { TENANT } from '@/lib/tenant';
+'use client';
 
-export const metadata = {
-  title: `Contact | ${TENANT.name}`,
-};
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Spin } from 'antd';
 
+/** Contact is managed under Landing Page → Contact (homepage #contact). */
 export default function ContactPage() {
-  return <GenericPublicPage slug="contact" title="Contact Us" />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/#contact');
+  }, [router]);
+  return (
+    <div style={{ display: 'flex', minHeight: '40vh', alignItems: 'center', justifyContent: 'center' }}>
+      <Spin size="large" />
+    </div>
+  );
 }
