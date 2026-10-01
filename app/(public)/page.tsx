@@ -1,19 +1,30 @@
-import dynamic from 'next/dynamic';
+import ChurchFeed from '@/views/LandingPage/ChurchFeed';
 import { TENANT, PLATFORM } from '@/lib/tenant';
-import PublicSkeleton from '@/Components/common/skeletons/PublicSkeleton';
+import { fetchLandingContent } from '@/lib/landing-server';
+import { getImageUrl } from '@/lib/media-url';
+
+export const revalidate = 60;
 
 export const metadata = {
   title: TENANT.name,
   description: `${TENANT.tagline} Managed with ${PLATFORM.name}.`,
 };
 
-/* Split ChurchFeed (+ antd/framer/landing CSS) out of the initial route chunk
- * so first paint is not blocked on the full landing JS/CSS graph. */
-const ChurchFeed = dynamic(() => import('@/views/LandingPage/ChurchFeed'), {
-  loading: () => <PublicSkeleton />,
-  ssr: true,
-});
+export default async function LandingPage() {
+  const content = await fetchLandingContent();
+  const heroUrl = getImageUrl(content.hero?.image_url) || '';
 
-export default function LandingPage() {
-  return <ChurchFeed />;
+  return (
+    <>
+      {heroUrl ? (
+        <link
+          rel="preload"
+          as="image"
+          href={heroUrl}
+          fetchPriority="high"
+        />
+      ) : null}
+      <ChurchFeed initialContent={content} />
+    </>
+  );
 }

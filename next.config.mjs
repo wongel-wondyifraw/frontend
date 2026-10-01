@@ -26,6 +26,27 @@ const nextConfig = {
         hostname: 'res.cloudinary.com',
         pathname: '/**',
       },
+      // Local / self-hosted uploads served by the Nest API
+      (() => {
+        try {
+          const u = new URL(
+            process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+          );
+          return {
+            protocol: u.protocol.replace(':', ''),
+            hostname: u.hostname,
+            ...(u.port ? { port: u.port } : {}),
+            pathname: '/uploads/**',
+          };
+        } catch {
+          return {
+            protocol: 'http',
+            hostname: 'localhost',
+            port: '3001',
+            pathname: '/uploads/**',
+          };
+        }
+      })(),
     ],
   },
   experimental: {

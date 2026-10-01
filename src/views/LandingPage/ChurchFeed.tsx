@@ -280,9 +280,19 @@ function AnimatedCounter({ value }: { value: string }) {
 /* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════ */
-export default function ChurchFeed({ previewContent }: { previewContent?: LandingPageContent }) {
-  const [fetchedContent, setFetchedContent] = useState<LandingPageContent>(DEFAULT_LANDING_CONTENT);
-  const [loading, setLoading] = useState(!previewContent);
+export default function ChurchFeed({
+  previewContent,
+  initialContent,
+}: {
+  previewContent?: LandingPageContent;
+  /** SSR-seeded content for the public landing — skips the loading gate. */
+  initialContent?: LandingPageContent;
+}) {
+  const seeded = previewContent ?? initialContent;
+  const [fetchedContent, setFetchedContent] = useState<LandingPageContent>(
+    seeded ?? DEFAULT_LANDING_CONTENT,
+  );
+  const [loading, setLoading] = useState(!seeded);
   const [navOpen, setNavOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('');
   const [selectedVision, setSelectedVision] = useState<
@@ -293,8 +303,9 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
   const content = previewContent || fetchedContent;
 
   useEffect(() => {
-    if (previewContent) return; // Skip fetching if in preview mode
-    
+    // Admin preview and SSR-seeded public page already have content.
+    if (previewContent || initialContent) return;
+
     let cancelled = false;
     (async () => {
       try {
@@ -315,7 +326,7 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
     return () => {
       cancelled = true;
     };
-  }, [previewContent]);
+  }, [previewContent, initialContent]);
 
   /* Active nav tracking via intersection observer */
   useEffect(() => {
@@ -514,17 +525,20 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
             <section
               className={`lp-hero${!heroImage ? ' lp-hero--plain' : ''}`}
               id="hero"
-              style={
-                heroImage
-                  ? {
-                      backgroundImage: `linear-gradient(rgba(10,18,45,0.78), rgba(10,18,45,0.88)), url("${heroImage}")`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }
-                  : undefined
-              }
             >
-              {!heroImage && <div className="lp-hero-shade" aria-hidden />}
+              {heroImage ? (
+                <Image
+                  src={heroImage}
+                  alt=""
+                  fill
+                  priority
+                  fetchPriority="high"
+                  className="lp-hero-img"
+                  sizes="100vw"
+                  quality={75}
+                />
+              ) : null}
+              <div className="lp-hero-shade" aria-hidden />
               <div className="lp-hero-copy">
                 {hero?.kicker && (
                   <motion.div
