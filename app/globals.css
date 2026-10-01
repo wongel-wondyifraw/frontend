@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-poppins), var(--font-noto-ethiopic), 'Poppins', 'Noto Sans Ethiopic', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 

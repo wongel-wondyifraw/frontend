@@ -5,7 +5,7 @@
 
 /* ── Design Tokens ── */
 .lp-shell {
-  --lp-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --lp-font: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
 
   /* M3-inspired palette */
   --lp-primary: #003198;
@@ -1712,6 +1712,19 @@ html {
   font-size: 0.8125rem;
   border-radius: 12px;
   border: 1px solid rgba(196, 197, 214, 0.7);
+}
+
+.lp-banner-card-skeleton {
+  min-height: 280px;
+  width: 100%;
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--lp-surface-low) 0%,
+    var(--lp-surface-container) 50%,
+    var(--lp-surface-low) 100%
+  );
+  background-size: 200% 100%;
 }
 
 /* ══════════════════════════════════════════

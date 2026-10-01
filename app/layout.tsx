@@ -3,18 +3,20 @@ import Providers from './providers';
 import type { ReactNode } from 'react';
 import { Inter, Poppins, Noto_Sans_Ethiopic } from 'next/font/google';
 
+/* Variable Inter is critical for landing LCP; keep preload on. */
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-inter',
   display: 'swap',
 });
 
+/* Admin UI fonts — available after first paint, not render-blocking. */
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-poppins',
   display: 'swap',
+  preload: false,
 });
 
 const notoSansEthiopic = Noto_Sans_Ethiopic({
@@ -22,6 +24,7 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({
   weight: ['400', '500', '600', '700'],
   variable: '--font-noto-ethiopic',
   display: 'swap',
+  preload: false,
 });
 
 export const metadata = {

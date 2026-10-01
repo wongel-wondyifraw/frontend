@@ -41,7 +41,6 @@ import {
   RocketOutlined,
 } from '@ant-design/icons';
 import { motion, useReducedMotion, useInView, AnimatePresence } from 'framer-motion';
-import LandingBannerCard from '@/Components/landing/LandingBannerCard';
 import CustomSelect, { type CustomSelectOption } from '@/Components/common/CustomSelect';
 import { PLATFORM, TENANT } from '@/lib/tenant';
 import { getLandingContent, submitContactRequest } from '@/services/api';
@@ -62,6 +61,14 @@ const LocationMap = dynamic(
     loading: () => (
       <div className="lp-map-skeleton">Loading Goro Full Gospel Church map...</div>
     ),
+  }
+);
+
+/* Banner cards are below the fold — keep them out of the initial landing parse. */
+const LandingBannerCard = dynamic(
+  () => import('@/Components/landing/LandingBannerCard'),
+  {
+    loading: () => <div className="lp-banner-card-skeleton" aria-hidden />,
   }
 );
 
@@ -578,7 +585,7 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
                       bottom: '2rem',
                       left: '0',
                       width: '100%',
-                      fontFamily: "'Poppins', var(--lp-font)",
+                      fontFamily: 'var(--lp-font)',
                       color: 'rgba(255,255,255,0.95)',
                       textAlign: 'center'
                     }}
