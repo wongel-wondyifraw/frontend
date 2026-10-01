@@ -13,7 +13,6 @@ import {
   Space,
   Switch,
   Tag,
-  Tooltip,
   Checkbox,
 } from 'antd';
 import { message } from '@/lib/app-message';
@@ -26,6 +25,8 @@ import {
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import DataTable from '../../Components/common/DataTable';
+import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import {
@@ -73,6 +74,7 @@ const ManageTasksContent = () => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [assigneeId, setAssigneeId] = useState<string | undefined>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -101,6 +103,7 @@ const ManageTasksContent = () => {
     nextPageSize = pageSize,
     search = searchText,
     nextStatus = status,
+    nextAssigneeId = assigneeId,
   ) => {
     try {
       setLoading(true);
@@ -109,6 +112,7 @@ const ManageTasksContent = () => {
         limit: nextPageSize,
         search: search || undefined,
         status: nextStatus,
+        minister_id: nextAssigneeId,
       });
       setTasks(result.data);
       setTotal(result.total);
@@ -119,7 +123,7 @@ const ManageTasksContent = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchText, status]);
+  }, [page, pageSize, searchText, status, assigneeId]);
 
   const loadLookups = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -166,7 +170,7 @@ const ManageTasksContent = () => {
   }, [loadLookups]);
 
   const debouncedSearch = useDebouncedCallback((value: string) => {
-    loadTasks(1, pageSize, value, status);
+    loadTasks(1, pageSize, value, status, assigneeId);
   }, 300);
 
   const handleSearchChange = (value: string) => {
@@ -176,8 +180,59 @@ const ManageTasksContent = () => {
 
   const handleStatusChange = (next: StatusFilter) => {
     setStatus(next);
-    loadTasks(1, pageSize, searchText, next);
+    loadTasks(1, pageSize, searchText, next, assigneeId);
   };
+
+  const handleAssigneeChange = (next?: string) => {
+    setAssigneeId(next);
+    loadTasks(1, pageSize, searchText, status, next);
+  };
+
+  const clearFilters = () => {
+    setStatus('all');
+    setAssigneeId(undefined);
+    loadTasks(1, pageSize, searchText, 'all', undefined);
+  };
+
+  const activeFilterCount =
+    (status !== 'all' ? 1 : 0) + (assigneeId ? 1 : 0);
+
+  const filterPanel = (
+    <DataTableFilterPopup
+      activeCount={activeFilterCount}
+      onClear={clearFilters}
+    >
+      <div className="dt-filter-field">
+        <span className="dt-filter-label">Status</span>
+        <Select
+          value={status}
+          onChange={handleStatusChange}
+          options={[
+            { value: 'all', label: 'All tasks' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'overdue', label: 'Overdue' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'cancelled', label: 'Cancelled' },
+          ]}
+        />
+      </div>
+      <div className="dt-filter-field">
+        <span className="dt-filter-label">Assignee</span>
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder="Any minister"
+          value={assigneeId}
+          onChange={(value) => handleAssigneeChange(value || undefined)}
+          options={ministers.map((m) => ({
+            value: m.id,
+            label: personName(m),
+          }))}
+        />
+      </div>
+    </DataTableFilterPopup>
+  );
 
   const openAssign = () => {
     setAssignOpen(true);
@@ -405,88 +460,73 @@ const ManageTasksContent = () => {
     },
     {
       title: 'Action',
-      key: 'action',
-      width: 140,
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: TaskAssignment) => (
-        <Space>
-          {canUpdate && record.status === 'pending' && (
-            <Tooltip title="Mark completed">
-              <Button
-                type="text"
-                icon={<CheckCircleOutlined style={{ color: '#16a34a' }} />}
-                onClick={() => handleComplete(record)}
-              />
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Delete">
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteTask(record)}
-              />
-            </Tooltip>
-          )}
-        </Space>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.definition?.name || 'task'}`}
+          items={[
+            ...(canUpdate && record.status === 'pending'
+              ? [{
+                  key: 'complete',
+                  label: 'Mark completed',
+                  icon: <CheckCircleOutlined style={{ color: '#16a34a' }} />,
+                  onClick: () => handleComplete(record),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDeleteTask(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
-
-  const statusFilters = (
-    <Select
-      className="dt-filter-wide"
-      value={status}
-      onChange={handleStatusChange}
-      options={[
-        { value: 'all', label: 'All tasks' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'overdue', label: 'Overdue' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' },
-      ]}
-    />
-  );
 
   return (
     <div className="manage-page">
       <DataTable
         title="Task Management"
+        subtitle="Assign work, track progress, and manage task definitions."
         columns={columns}
         dataSource={tasks}
         loading={loading}
         searchPlaceholder="Search tasks, ministers..."
         searchValue={searchText}
         onSearchChange={handleSearchChange}
-        extraFilters={statusFilters}
-        actionAdjacent={
-          canCreate ? (
-            <Button
-              size="large"
-              icon={<SettingOutlined />}
-              onClick={() => {
-                setEditingDef(null);
-                setDefsOpen(true);
-              }}
-            >
-              Definitions
-            </Button>
-          ) : undefined
-        }
-        actionButton={
-          canCreate
-            ? {
-                label: 'Assign Task',
-                icon: <PlusOutlined />,
-                onClick: openAssign,
-              }
-            : undefined
+        filterPanel={filterPanel}
+        controlsEnd={
+          <>
+            {canCreate ? (
+              <Button
+                icon={<SettingOutlined />}
+                onClick={() => {
+                  setEditingDef(null);
+                  setDefsOpen(true);
+                }}
+              >
+                Definitions
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button type="primary" className="data-table-action" icon={<PlusOutlined />} onClick={openAssign}>
+                Assign Task
+              </Button>
+            ) : null}
+          </>
         }
         serverPagination={{
           current: page,
           pageSize,
           total,
-          onChange: (nextPage, nextSize) => loadTasks(nextPage, nextSize, searchText, status),
+          onChange: (nextPage, nextSize) =>
+            loadTasks(nextPage, nextSize, searchText, status, assigneeId),
         }}
         tableCardClassName="data-table-card"
       />

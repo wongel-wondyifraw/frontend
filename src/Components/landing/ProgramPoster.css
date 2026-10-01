@@ -15,7 +15,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: inherit;
-  font-family: 'Outfit', 'Noto Sans Ethiopic', system-ui, sans-serif;
+  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif;
   background: var(--pp-white);
 }
 

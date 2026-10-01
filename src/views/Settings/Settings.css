@@ -8,17 +8,24 @@
   margin-bottom: 20px;
 }
 
+.settings-header-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .settings-header h2 {
   margin: 0 0 4px;
   font-size: 24px;
   font-weight: 700;
   color: var(--text-main);
+  line-height: 1.25;
 }
 
 .settings-header p {
   margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .settings-tabs.ant-tabs .ant-tabs-nav {
@@ -75,7 +82,7 @@
 
 .settings-profile {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 32px;
   align-items: start;
 }
@@ -85,8 +92,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 8px 0 0;
-  border-left: 1px solid var(--border-color);
+  padding: 8px 16px 0 0;
+  border-right: 1px solid var(--border-color);
   min-height: 220px;
 }
 
@@ -176,9 +183,9 @@
   }
 
   .settings-avatar-panel {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    padding-top: 24px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 0 24px;
     min-height: 0;
   }
 }

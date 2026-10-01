@@ -9,12 +9,9 @@ import {
   Input,
   Modal,
   Select,
-  Space,
   Tag,
   TimePicker,
   DatePicker,
-  Popconfirm,
-  Tooltip,
   Tabs,
 } from 'antd';
 import { message } from '@/lib/app-message';
@@ -46,6 +43,14 @@ import type { Minister, Plan, PlanStatus, PlanType, TaskAssignment } from '@/typ
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import DataTable from '@/Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
+import DataImportExport from '@/Components/common/DataImportExport';
+import {
+  downloadPlanTemplate,
+  exportPlansExcel,
+  exportPlansPdf,
+  importPlansFromFile,
+} from '@/lib/data-io/plans-io';
 import './Planning.css';
 
 const PLAN_TYPE_OPTIONS: { value: PlanType; label: string; color: string }[] = [
@@ -346,45 +351,22 @@ const PlanningContent = () => {
     }
   };
 
-  const renderStatusActions = (plan: Plan, size: 'small' | 'middle' = 'small') => {
-    if (!canUpdate) return null;
-    return (
-      <>
-        {plan.status === 'planned' && (
-          <>
-            <Tooltip title="Mark as achieved">
-              <Button
-                type="text"
-                size={size}
-                icon={<CheckCircleOutlined style={{ color: '#16a34a' }} />}
-                onClick={() => setPlanStatus(plan, 'completed')}
-              />
-            </Tooltip>
-            <Popconfirm
-              title="Cancel this plan?"
-              description="It will be marked as cancelled and can be activated again later."
-              onConfirm={() => setPlanStatus(plan, 'cancelled')}
-              okText="Cancel plan"
-              okType="danger"
-            >
-              <Tooltip title="Cancel plan">
-                <Button type="text" size={size} danger icon={<StopOutlined />} />
-              </Tooltip>
-            </Popconfirm>
-          </>
-        )}
-        {(plan.status === 'cancelled' || plan.status === 'completed') && (
-          <Tooltip title="Activate plan">
-            <Button
-              type="text"
-              size={size}
-              icon={<PlayCircleOutlined style={{ color: '#16a34a' }} />}
-              onClick={() => setPlanStatus(plan, 'planned')}
-            />
-          </Tooltip>
-        )}
-      </>
-    );
+  const confirmCancelPlan = (plan: Plan) => {
+    Modal.confirm({
+      title: 'Cancel this plan?',
+      content: 'It will be marked as cancelled and can be activated again later.',
+      okText: 'Cancel plan',
+      okType: 'danger',
+      onOk: () => setPlanStatus(plan, 'cancelled'),
+    });
+  };
+
+  const confirmDeletePlan = (plan: Plan) => {
+    Modal.confirm({
+      title: 'Delete this plan?',
+      okType: 'danger',
+      onOk: () => handleDelete(plan),
+    });
   };
 
   const dateCellRender = (value: Dayjs) => {
@@ -492,28 +474,62 @@ const PlanningContent = () => {
     },
     {
       title: 'Action',
-      key: 'action',
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: Plan) => (
-        <Space size={4}>
-          <Tooltip title="Details">
-            <Button
-              type="text"
-              icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-              onClick={() => router.push(`/planning/details/${record.id}`)}
-            />
-          </Tooltip>
-          {canUpdate && (
-            <Tooltip title="Edit">
-              <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-            </Tooltip>
-          )}
-          {renderStatusActions(record, 'middle')}
-          {canDelete && (
-            <Popconfirm title="Delete this plan?" onConfirm={() => handleDelete(record)} okType="danger">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          )}
-        </Space>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.title}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+              onClick: () => router.push(`/planning/details/${record.id}`),
+            },
+            ...(canUpdate
+              ? [{
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => openEdit(record),
+                }]
+              : []),
+            ...(canUpdate && record.status === 'planned'
+              ? [
+                  {
+                    key: 'achieve',
+                    label: 'Mark as achieved',
+                    icon: <CheckCircleOutlined style={{ color: '#16a34a' }} />,
+                    onClick: () => setPlanStatus(record, 'completed'),
+                  },
+                  {
+                    key: 'cancel',
+                    label: 'Cancel plan',
+                    icon: <StopOutlined />,
+                    danger: true,
+                    onClick: () => confirmCancelPlan(record),
+                  },
+                ]
+              : []),
+            ...(canUpdate && (record.status === 'cancelled' || record.status === 'completed')
+              ? [{
+                  key: 'activate',
+                  label: 'Activate plan',
+                  icon: <PlayCircleOutlined style={{ color: '#16a34a' }} />,
+                  onClick: () => setPlanStatus(record, 'planned'),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => confirmDeletePlan(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
@@ -554,22 +570,37 @@ const PlanningContent = () => {
           onChange={(e) => handleSearchChange(e.target.value)}
           allowClear
         />
-        <Select
-          allowClear
-          placeholder="Type"
-          className="planning-toolbar-filter"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v)}
-          options={PLAN_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
-        <Select
-          allowClear
-          placeholder="Status"
-          className="planning-toolbar-filter"
-          value={statusFilter}
-          onChange={(v) => setStatusFilter(v)}
-          options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
+        <div className="planning-controls-end">
+          <Select
+            allowClear
+            placeholder="Type"
+            className="planning-toolbar-filter"
+            value={typeFilter}
+            onChange={(v) => setTypeFilter(v)}
+            options={PLAN_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          />
+          <Select
+            allowClear
+            placeholder="Status"
+            className="planning-toolbar-filter"
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v)}
+            options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          />
+          <DataImportExport
+            entityLabel="Plans"
+            canImport={canCreate}
+            canExport
+            onDownloadTemplate={downloadPlanTemplate}
+            onExportExcel={exportPlansExcel}
+            onExportPdf={exportPlansPdf}
+            onImportFile={importPlansFromFile}
+            onImportComplete={() => {
+              if (activeTab === 'calendar') void loadCalendarData();
+              else void loadAllPlans(1, tablePageSize, searchText);
+            }}
+          />
+        </div>
       </div>
 
       {activeTab === 'calendar' ? (

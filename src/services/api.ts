@@ -1,5 +1,5 @@
-import axios, { type AxiosError } from 'axios';
-import { ApiRequestError } from '@/lib/errors';
+import axios, { type AxiosError } from "axios";
+import { ApiRequestError } from "@/lib/errors";
 import type {
   ApiSearchResult,
   DashboardStats,
@@ -25,24 +25,23 @@ import type {
   User,
   Location,
   PageContent,
-  CommunityProject,
-} from '@/types';
+} from "@/types";
 
-const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 export const API_BASE_URL = rawUrl
-  .replace(/\/$/, '')
+  .replace(/\/$/, "")
   .trim()
-  .replace(/\/api\/v1$/i, '');
+  .replace(/\/api\/v1$/i, "");
 
-if (process.env.NODE_ENV === 'development') {
-  console.log('API_BASE_URL:', API_BASE_URL);
+if (process.env.NODE_ENV === "development") {
+  console.log("API_BASE_URL:", API_BASE_URL);
 }
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -58,28 +57,37 @@ function toApiError(error: unknown): ApiRequestError {
       );
     }
 
-    const data = error.response.data as { message?: string | string[]; statusCode?: number } | undefined;
-    const rawMessage = Array.isArray(data?.message) ? data.message[0] : data?.message;
-    const message = (typeof rawMessage === 'string' && rawMessage.trim())
-      || error.message
-      || 'Request failed';
+    const data = error.response.data as
+      { message?: string | string[]; statusCode?: number } | undefined;
+    const rawMessage = Array.isArray(data?.message)
+      ? data.message[0]
+      : data?.message;
+    const message =
+      (typeof rawMessage === "string" && rawMessage.trim()) ||
+      error.message ||
+      "Request failed";
 
-    return new ApiRequestError(message, data?.statusCode ?? error.response.status);
+    return new ApiRequestError(
+      message,
+      data?.statusCode ?? error.response.status,
+    );
   }
 
   if (error instanceof Error) {
-    return new ApiRequestError(error.message || 'Request failed');
+    return new ApiRequestError(error.message || "Request failed");
   }
 
-  return new ApiRequestError('Request failed');
+  return new ApiRequestError("Request failed");
 }
 
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (!error.response) {
-      console.error('NETWORK ERROR: Possible causes include CORS failure, backend down, or incorrect NEXT_PUBLIC_API_URL.');
-      console.error('Target URL:', error.config?.url);
+      console.error(
+        "NETWORK ERROR: Possible causes include CORS failure, backend down, or incorrect NEXT_PUBLIC_API_URL.",
+      );
+      console.error("Target URL:", error.config?.url);
     }
     return Promise.reject(error);
   },
@@ -87,8 +95,8 @@ api.interceptors.response.use(
 
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -98,9 +106,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
+export const loginUser = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>('/auth/login', {
+    const response = await api.post<LoginResponse>("/auth/login", {
       email: email.trim(),
       password,
     });
@@ -112,25 +123,32 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
 
 export const getProfile = async (): Promise<User> => {
   try {
-    const response = await api.get<User>('/users/profile');
+    const response = await api.get<User>("/users/profile");
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateProfile = async (userData: FormData | Record<string, unknown>): Promise<User> => {
+export const updateProfile = async (
+  userData: FormData | Record<string, unknown>,
+): Promise<User> => {
   try {
-    const response = await api.patch<User>('/users/profile', userData);
+    const response = await api.patch<User>("/users/profile", userData);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const changePassword = async (passwordData: Record<string, string>): Promise<{ message: string }> => {
+export const changePassword = async (
+  passwordData: Record<string, string>,
+): Promise<{ message: string }> => {
   try {
-    const response = await api.patch<{ message: string }>('/users/change-password', passwordData);
+    const response = await api.patch<{ message: string }>(
+      "/users/change-password",
+      passwordData,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -139,7 +157,7 @@ export const changePassword = async (passwordData: Record<string, string>): Prom
 
 export const getUsers = async (): Promise<User[]> => {
   try {
-    const response = await api.get<User[]>('/users');
+    const response = await api.get<User[]>("/users");
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -148,8 +166,8 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const createUser = async (userData: FormData): Promise<User> => {
   try {
-    const response = await api.post<User>('/users', userData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const response = await api.post<User>("/users", userData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
   } catch (error) {
@@ -157,7 +175,10 @@ export const createUser = async (userData: FormData): Promise<User> => {
   }
 };
 
-export const updateUser = async (id: string, userData: FormData | Record<string, unknown>): Promise<User> => {
+export const updateUser = async (
+  id: string,
+  userData: FormData | Record<string, unknown>,
+): Promise<User> => {
   try {
     const response = await api.patch<User>(`/users/${id}`, userData);
     return response.data;
@@ -169,10 +190,14 @@ export const updateUser = async (id: string, userData: FormData | Record<string,
 export const uploadAvatar = async (id: string, file: File): Promise<User> => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post<User>(`/users/${id}/upload-avatar`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    formData.append("file", file);
+    const response = await api.post<User>(
+      `/users/${id}/upload-avatar`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -187,9 +212,13 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 };
 
-export const getMembers = async (params: PaginationParams = {}): Promise<PaginatedResponse<Member>> => {
+export const getMembers = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Member>> => {
   try {
-    const response = await api.get<PaginatedResponse<Member>>('/members', { params });
+    const response = await api.get<PaginatedResponse<Member>>("/members", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -210,16 +239,21 @@ export const getMemberById = async (id: string): Promise<Member> => {
   }
 };
 
-export const createMember = async (memberData: Record<string, unknown>): Promise<Member> => {
+export const createMember = async (
+  memberData: Record<string, unknown>,
+): Promise<Member> => {
   try {
-    const response = await api.post<Member>('/members', memberData);
+    const response = await api.post<Member>("/members", memberData);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateMember = async (id: string, memberData: Record<string, unknown>): Promise<Member> => {
+export const updateMember = async (
+  id: string,
+  memberData: Record<string, unknown>,
+): Promise<Member> => {
   try {
     const response = await api.patch<Member>(`/members/${id}`, memberData);
     return response.data;
@@ -231,10 +265,14 @@ export const updateMember = async (id: string, memberData: Record<string, unknow
 export const uploadMemberImage = async (file: File): Promise<string> => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post<{ url: string }>('/uploads/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    formData.append("file", file);
+    const response = await api.post<{ url: string }>(
+      "/uploads/image",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return response.data.url;
   } catch (error) {
     throw toApiError(error);
@@ -249,9 +287,13 @@ export const deleteMember = async (id: string): Promise<void> => {
   }
 };
 
-export const getMinisters = async (params: PaginationParams = {}): Promise<PaginatedResponse<Minister>> => {
+export const getMinisters = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Minister>> => {
   try {
-    const response = await api.get<PaginatedResponse<Minister>>('/ministers', { params });
+    const response = await api.get<PaginatedResponse<Minister>>("/ministers", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -267,16 +309,21 @@ export const getMinisterById = async (id: string): Promise<Minister> => {
   }
 };
 
-export const createMinister = async (data: Record<string, unknown>): Promise<Minister> => {
+export const createMinister = async (
+  data: Record<string, unknown>,
+): Promise<Minister> => {
   try {
-    const response = await api.post<Minister>('/ministers', data);
+    const response = await api.post<Minister>("/ministers", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateMinister = async (id: string, data: Record<string, unknown>): Promise<Minister> => {
+export const updateMinister = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<Minister> => {
   try {
     const response = await api.patch<Minister>(`/ministers/${id}`, data);
     return response.data;
@@ -293,18 +340,26 @@ export const deleteMinister = async (id: string): Promise<void> => {
   }
 };
 
-export const resetMinisterPassword = async (id: string): Promise<{ temporary_password: string }> => {
+export const resetMinisterPassword = async (
+  id: string,
+): Promise<{ temporary_password: string }> => {
   try {
-    const response = await api.post<{ temporary_password: string }>(`/ministers/${id}/reset-password`);
+    const response = await api.post<{ temporary_password: string }>(
+      `/ministers/${id}/reset-password`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getMinistries = async (params: PaginationParams = {}): Promise<PaginatedResponse<Ministry>> => {
+export const getMinistries = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Ministry>> => {
   try {
-    const response = await api.get<PaginatedResponse<Ministry>>('/ministries', { params });
+    const response = await api.get<PaginatedResponse<Ministry>>("/ministries", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -313,16 +368,20 @@ export const getMinistries = async (params: PaginationParams = {}): Promise<Pagi
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
-    const response = await api.get<DashboardStats>('/dashboard/stats');
+    const response = await api.get<DashboardStats>("/dashboard/stats");
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const searchDashboard = async (query: string): Promise<ApiSearchResult[]> => {
+export const searchDashboard = async (
+  query: string,
+): Promise<ApiSearchResult[]> => {
   try {
-    const response = await api.get<ApiSearchResult[]>('/dashboard/search', { params: { q: query } });
+    const response = await api.get<ApiSearchResult[]>("/dashboard/search", {
+      params: { q: query },
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -338,18 +397,26 @@ export const getMinistry = async (id: string): Promise<Ministry> => {
   }
 };
 
-export const createMinistry = async (ministryData: Record<string, unknown>): Promise<Ministry> => {
+export const createMinistry = async (
+  ministryData: Record<string, unknown>,
+): Promise<Ministry> => {
   try {
-    const response = await api.post<Ministry>('/ministries', ministryData);
+    const response = await api.post<Ministry>("/ministries", ministryData);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateMinistry = async (id: string, ministryData: Record<string, unknown>): Promise<Ministry> => {
+export const updateMinistry = async (
+  id: string,
+  ministryData: Record<string, unknown>,
+): Promise<Ministry> => {
   try {
-    const response = await api.patch<Ministry>(`/ministries/${id}`, ministryData);
+    const response = await api.patch<Ministry>(
+      `/ministries/${id}`,
+      ministryData,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -364,16 +431,23 @@ export const deleteMinistry = async (id: string): Promise<void> => {
   }
 };
 
-export const getMinistryMembers = async (ministryId: string): Promise<MinistryMember[]> => {
+export const getMinistryMembers = async (
+  ministryId: string,
+): Promise<MinistryMember[]> => {
   try {
-    const response = await api.get<MinistryMember[]>(`/ministries/${ministryId}/members`);
+    const response = await api.get<MinistryMember[]>(
+      `/ministries/${ministryId}/members`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const addMinistryMember = async (ministryId: string, memberId: string): Promise<void> => {
+export const addMinistryMember = async (
+  ministryId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.post(`/ministries/${ministryId}/members/${memberId}`);
   } catch (error) {
@@ -381,7 +455,10 @@ export const addMinistryMember = async (ministryId: string, memberId: string): P
   }
 };
 
-export const removeMinistryMember = async (ministryId: string, memberId: string): Promise<void> => {
+export const removeMinistryMember = async (
+  ministryId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.delete(`/ministries/${ministryId}/members/${memberId}`);
   } catch (error) {
@@ -389,18 +466,27 @@ export const removeMinistryMember = async (ministryId: string, memberId: string)
   }
 };
 
-export const getMemberMinistries = async (memberId: string): Promise<Ministry[]> => {
+export const getMemberMinistries = async (
+  memberId: string,
+): Promise<Ministry[]> => {
   try {
-    const response = await api.get<Ministry[]>(`/members/${memberId}/ministries`);
+    const response = await api.get<Ministry[]>(
+      `/members/${memberId}/ministries`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getHomeGroups = async (params: PaginationParams = {}): Promise<PaginatedResponse<HomeGroup>> => {
+export const getHomeGroups = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<HomeGroup>> => {
   try {
-    const response = await api.get<PaginatedResponse<HomeGroup>>('/home-groups', { params });
+    const response = await api.get<PaginatedResponse<HomeGroup>>(
+      "/home-groups",
+      { params },
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -416,16 +502,21 @@ export const getHomeGroup = async (id: string): Promise<HomeGroup> => {
   }
 };
 
-export const createHomeGroup = async (data: Record<string, unknown>): Promise<HomeGroup> => {
+export const createHomeGroup = async (
+  data: Record<string, unknown>,
+): Promise<HomeGroup> => {
   try {
-    const response = await api.post<HomeGroup>('/home-groups', data);
+    const response = await api.post<HomeGroup>("/home-groups", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateHomeGroup = async (id: string, data: Record<string, unknown>): Promise<HomeGroup> => {
+export const updateHomeGroup = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<HomeGroup> => {
   try {
     const response = await api.patch<HomeGroup>(`/home-groups/${id}`, data);
     return response.data;
@@ -442,16 +533,23 @@ export const deleteHomeGroup = async (id: string): Promise<void> => {
   }
 };
 
-export const getHomeGroupMembers = async (homeGroupId: string): Promise<HomeGroupMember[]> => {
+export const getHomeGroupMembers = async (
+  homeGroupId: string,
+): Promise<HomeGroupMember[]> => {
   try {
-    const response = await api.get<HomeGroupMember[]>(`/home-groups/${homeGroupId}/members`);
+    const response = await api.get<HomeGroupMember[]>(
+      `/home-groups/${homeGroupId}/members`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const addHomeGroupMember = async (homeGroupId: string, memberId: string): Promise<void> => {
+export const addHomeGroupMember = async (
+  homeGroupId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.post(`/home-groups/${homeGroupId}/members/${memberId}`);
   } catch (error) {
@@ -459,7 +557,10 @@ export const addHomeGroupMember = async (homeGroupId: string, memberId: string):
   }
 };
 
-export const removeHomeGroupMember = async (homeGroupId: string, memberId: string): Promise<void> => {
+export const removeHomeGroupMember = async (
+  homeGroupId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.delete(`/home-groups/${homeGroupId}/members/${memberId}`);
   } catch (error) {
@@ -470,19 +571,28 @@ export const removeHomeGroupMember = async (homeGroupId: string, memberId: strin
 export const uploadDocument = async (file: File): Promise<string> => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post<{ url: string }>('/uploads/document', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    formData.append("file", file);
+    const response = await api.post<{ url: string }>(
+      "/uploads/document",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return response.data.url;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getBibleStudies = async (params: PaginationParams = {}): Promise<PaginatedResponse<BibleStudy>> => {
+export const getBibleStudies = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<BibleStudy>> => {
   try {
-    const response = await api.get<PaginatedResponse<BibleStudy>>('/bible-studies', { params });
+    const response = await api.get<PaginatedResponse<BibleStudy>>(
+      "/bible-studies",
+      { params },
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -498,16 +608,21 @@ export const getBibleStudy = async (id: string): Promise<BibleStudy> => {
   }
 };
 
-export const createBibleStudy = async (data: Record<string, unknown>): Promise<BibleStudy> => {
+export const createBibleStudy = async (
+  data: Record<string, unknown>,
+): Promise<BibleStudy> => {
   try {
-    const response = await api.post<BibleStudy>('/bible-studies', data);
+    const response = await api.post<BibleStudy>("/bible-studies", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateBibleStudy = async (id: string, data: Record<string, unknown>): Promise<BibleStudy> => {
+export const updateBibleStudy = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<BibleStudy> => {
   try {
     const response = await api.patch<BibleStudy>(`/bible-studies/${id}`, data);
     return response.data;
@@ -524,16 +639,23 @@ export const deleteBibleStudy = async (id: string): Promise<void> => {
   }
 };
 
-export const getBibleStudyMembers = async (bibleStudyId: string): Promise<BibleStudyMember[]> => {
+export const getBibleStudyMembers = async (
+  bibleStudyId: string,
+): Promise<BibleStudyMember[]> => {
   try {
-    const response = await api.get<BibleStudyMember[]>(`/bible-studies/${bibleStudyId}/members`);
+    const response = await api.get<BibleStudyMember[]>(
+      `/bible-studies/${bibleStudyId}/members`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const addBibleStudyMember = async (bibleStudyId: string, memberId: string): Promise<void> => {
+export const addBibleStudyMember = async (
+  bibleStudyId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.post(`/bible-studies/${bibleStudyId}/members/${memberId}`);
   } catch (error) {
@@ -541,7 +663,10 @@ export const addBibleStudyMember = async (bibleStudyId: string, memberId: string
   }
 };
 
-export const removeBibleStudyMember = async (bibleStudyId: string, memberId: string): Promise<void> => {
+export const removeBibleStudyMember = async (
+  bibleStudyId: string,
+  memberId: string,
+): Promise<void> => {
   try {
     await api.delete(`/bible-studies/${bibleStudyId}/members/${memberId}`);
   } catch (error) {
@@ -549,10 +674,12 @@ export const removeBibleStudyMember = async (bibleStudyId: string, memberId: str
   }
 };
 
-export const getTaskDefinitions = async (activeOnly = false): Promise<TaskDefinition[]> => {
+export const getTaskDefinitions = async (
+  activeOnly = false,
+): Promise<TaskDefinition[]> => {
   try {
-    const response = await api.get<TaskDefinition[]>('/tasks/definitions', {
-      params: activeOnly ? { activeOnly: 'true' } : undefined,
+    const response = await api.get<TaskDefinition[]>("/tasks/definitions", {
+      params: activeOnly ? { activeOnly: "true" } : undefined,
     });
     return response.data;
   } catch (error) {
@@ -560,18 +687,26 @@ export const getTaskDefinitions = async (activeOnly = false): Promise<TaskDefini
   }
 };
 
-export const createTaskDefinition = async (data: Record<string, unknown>): Promise<TaskDefinition> => {
+export const createTaskDefinition = async (
+  data: Record<string, unknown>,
+): Promise<TaskDefinition> => {
   try {
-    const response = await api.post<TaskDefinition>('/tasks/definitions', data);
+    const response = await api.post<TaskDefinition>("/tasks/definitions", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateTaskDefinition = async (id: string, data: Record<string, unknown>): Promise<TaskDefinition> => {
+export const updateTaskDefinition = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<TaskDefinition> => {
   try {
-    const response = await api.patch<TaskDefinition>(`/tasks/definitions/${id}`, data);
+    const response = await api.patch<TaskDefinition>(
+      `/tasks/definitions/${id}`,
+      data,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -586,22 +721,29 @@ export const deleteTaskDefinition = async (id: string): Promise<void> => {
   }
 };
 
-export const getTasks = async (params: PaginationParams & {
-  status?: string;
-  minister_id?: string;
-  definition_id?: string;
-} = {}): Promise<PaginatedResponse<TaskAssignment>> => {
+export const getTasks = async (
+  params: PaginationParams & {
+    status?: string;
+    minister_id?: string;
+    definition_id?: string;
+  } = {},
+): Promise<PaginatedResponse<TaskAssignment>> => {
   try {
-    const response = await api.get<PaginatedResponse<TaskAssignment>>('/tasks', { params });
+    const response = await api.get<PaginatedResponse<TaskAssignment>>(
+      "/tasks",
+      { params },
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getMyTasks = async (status?: string): Promise<TaskAssignment[]> => {
+export const getMyTasks = async (
+  status?: string,
+): Promise<TaskAssignment[]> => {
   try {
-    const response = await api.get<TaskAssignment[]>('/tasks/mine', {
+    const response = await api.get<TaskAssignment[]>("/tasks/mine", {
       params: status ? { status } : undefined,
     });
     return response.data;
@@ -610,9 +752,11 @@ export const getMyTasks = async (status?: string): Promise<TaskAssignment[]> => 
   }
 };
 
-export const createTask = async (data: Record<string, unknown>): Promise<TaskAssignment> => {
+export const createTask = async (
+  data: Record<string, unknown>,
+): Promise<TaskAssignment> => {
   try {
-    const response = await api.post<TaskAssignment>('/tasks', data);
+    const response = await api.post<TaskAssignment>("/tasks", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -628,7 +772,10 @@ export const completeTask = async (id: string): Promise<TaskAssignment> => {
   }
 };
 
-export const updateTask = async (id: string, data: Record<string, unknown>): Promise<TaskAssignment> => {
+export const updateTask = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<TaskAssignment> => {
   try {
     const response = await api.patch<TaskAssignment>(`/tasks/${id}`, data);
     return response.data;
@@ -645,14 +792,18 @@ export const deleteTask = async (id: string): Promise<void> => {
   }
 };
 
-export const getPlans = async (params: PaginationParams & {
-  type?: string;
-  from?: string;
-  to?: string;
-  status?: string;
-} = {}): Promise<PaginatedResponse<Plan>> => {
+export const getPlans = async (
+  params: PaginationParams & {
+    type?: string;
+    from?: string;
+    to?: string;
+    status?: string;
+  } = {},
+): Promise<PaginatedResponse<Plan>> => {
   try {
-    const response = await api.get<PaginatedResponse<Plan>>('/plans', { params });
+    const response = await api.get<PaginatedResponse<Plan>>("/plans", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -668,16 +819,21 @@ export const getPlanById = async (id: string): Promise<Plan> => {
   }
 };
 
-export const createPlan = async (data: Record<string, unknown>): Promise<Plan> => {
+export const createPlan = async (
+  data: Record<string, unknown>,
+): Promise<Plan> => {
   try {
-    const response = await api.post<Plan>('/plans', data);
+    const response = await api.post<Plan>("/plans", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updatePlan = async (id: string, data: Record<string, unknown>): Promise<Plan> => {
+export const updatePlan = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<Plan> => {
   try {
     const response = await api.patch<Plan>(`/plans/${id}`, data);
     return response.data;
@@ -696,16 +852,20 @@ export const deletePlan = async (id: string): Promise<void> => {
 
 export const getFamilyStats = async (): Promise<FamilyStats> => {
   try {
-    const response = await api.get<FamilyStats>('/families/stats');
+    const response = await api.get<FamilyStats>("/families/stats");
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getFamilies = async (params: PaginationParams = {}): Promise<PaginatedResponse<Family>> => {
+export const getFamilies = async (
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Family>> => {
   try {
-    const response = await api.get<PaginatedResponse<Family>>('/families', { params });
+    const response = await api.get<PaginatedResponse<Family>>("/families", {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -721,25 +881,34 @@ export const getFamilyById = async (id: string): Promise<Family> => {
   }
 };
 
-export const getFamilyByMember = async (memberId: string): Promise<Family | null> => {
+export const getFamilyByMember = async (
+  memberId: string,
+): Promise<Family | null> => {
   try {
-    const response = await api.get<{ family: Family | null }>(`/families/by-member/${memberId}`);
+    const response = await api.get<{ family: Family | null }>(
+      `/families/by-member/${memberId}`,
+    );
     return response.data?.family ?? null;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const createFamily = async (data: Record<string, unknown>): Promise<Family> => {
+export const createFamily = async (
+  data: Record<string, unknown>,
+): Promise<Family> => {
   try {
-    const response = await api.post<Family>('/families', data);
+    const response = await api.post<Family>("/families", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateFamily = async (id: string, data: Record<string, unknown>): Promise<Family> => {
+export const updateFamily = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<Family> => {
   try {
     const response = await api.patch<Family>(`/families/${id}`, data);
     return response.data;
@@ -761,7 +930,10 @@ export const addFamilyChild = async (
   data: { name: string; age?: number; date_of_birth?: string },
 ): Promise<FamilyChild> => {
   try {
-    const response = await api.post<FamilyChild>(`/families/${familyId}/children`, data);
+    const response = await api.post<FamilyChild>(
+      `/families/${familyId}/children`,
+      data,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -774,14 +946,20 @@ export const updateFamilyChild = async (
   data: Record<string, unknown>,
 ): Promise<FamilyChild> => {
   try {
-    const response = await api.patch<FamilyChild>(`/families/${familyId}/children/${childId}`, data);
+    const response = await api.patch<FamilyChild>(
+      `/families/${familyId}/children/${childId}`,
+      data,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const deleteFamilyChild = async (familyId: string, childId: string): Promise<void> => {
+export const deleteFamilyChild = async (
+  familyId: string,
+  childId: string,
+): Promise<void> => {
   try {
     await api.delete(`/families/${familyId}/children/${childId}`);
   } catch (error) {
@@ -791,7 +969,7 @@ export const deleteFamilyChild = async (familyId: string, childId: string): Prom
 
 export const getRoles = async (): Promise<Role[]> => {
   try {
-    const response = await api.get<Role[]>('/access/roles');
+    const response = await api.get<Role[]>("/access/roles");
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -814,7 +992,7 @@ export const createRole = async (data: {
   permissionSlugs: string[];
 }): Promise<Role> => {
   try {
-    const response = await api.post<Role>('/access/roles', data);
+    const response = await api.post<Role>("/access/roles", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -843,16 +1021,20 @@ export const deleteRole = async (id: string): Promise<void> => {
 
 export const getPermissions = async (): Promise<Permission[]> => {
   try {
-    const response = await api.get<Permission[]>('/access/permissions');
+    const response = await api.get<Permission[]>("/access/permissions");
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getPermissionsGrouped = async (): Promise<Record<string, Permission[]>> => {
+export const getPermissionsGrouped = async (): Promise<
+  Record<string, Permission[]>
+> => {
   try {
-    const response = await api.get<Record<string, Permission[]>>('/access/permissions/grouped');
+    const response = await api.get<Record<string, Permission[]>>(
+      "/access/permissions/grouped",
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -862,23 +1044,30 @@ export const getPermissionsGrouped = async (): Promise<Record<string, Permission
 // Locations
 export const getLocations = async (status?: string): Promise<Location[]> => {
   try {
-    const response = await api.get<Location[]>('/locations', { params: { status } });
+    const response = await api.get<Location[]>("/locations", {
+      params: { status },
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const createLocation = async (data: Record<string, unknown>): Promise<Location> => {
+export const createLocation = async (
+  data: Record<string, unknown>,
+): Promise<Location> => {
   try {
-    const response = await api.post<Location>('/locations', data);
+    const response = await api.post<Location>("/locations", data);
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const updateLocation = async (id: string, data: Record<string, unknown>): Promise<Location> => {
+export const updateLocation = async (
+  id: string,
+  data: Record<string, unknown>,
+): Promise<Location> => {
   try {
     const response = await api.patch<Location>(`/locations/${id}`, data);
     return response.data;
@@ -897,59 +1086,52 @@ export const getPageContent = async (slug: string): Promise<PageContent> => {
   }
 };
 
-export const updatePageContent = async (slug: string, content: unknown): Promise<PageContent> => {
+export const updatePageContent = async (
+  slug: string,
+  content: unknown,
+): Promise<PageContent> => {
   try {
-    const response = await api.patch<PageContent>(`/website/pages/${slug}`, content);
+    const response = await api.patch<PageContent>(
+      `/website/pages/${slug}`,
+      content,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
   }
 };
 
-export const getLandingContent = async (): Promise<PageContent> => getPageContent('landing');
+export const getLandingContent = async (): Promise<PageContent> =>
+  getPageContent("landing");
 
-export const updateLandingContent = async (content: unknown): Promise<PageContent> =>
-  updatePageContent('landing', content);
+export const updateLandingContent = async (
+  content: unknown,
+): Promise<PageContent> => updatePageContent("landing", content);
 
-export const getProjects = async (status?: string): Promise<CommunityProject[]> => {
+export interface ContactRequestPayload {
+  full_name: string;
+  phone: string;
+  email?: string;
+  category?: "prayer" | "cell" | "baptism" | "counseling" | "chms" | "general";
+  message: string;
+  is_confidential?: boolean;
+}
+
+export interface ContactRequestResponse {
+  success: boolean;
+  message: string;
+  id: string;
+}
+
+export const submitContactRequest = async (
+  data: ContactRequestPayload,
+): Promise<ContactRequestResponse> => {
   try {
-    const response = await api.get<CommunityProject[]>('/website/projects', { params: { status } });
+    const response = await api.post<ContactRequestResponse>(
+      "/website/contact-requests",
+      data,
+    );
     return response.data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-};
-
-export const getProject = async (id: string): Promise<CommunityProject> => {
-  try {
-    const response = await api.get<CommunityProject>(`/website/projects/${id}`);
-    return response.data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-};
-
-export const createProject = async (data: Record<string, unknown>): Promise<CommunityProject> => {
-  try {
-    const response = await api.post<CommunityProject>('/website/projects', data);
-    return response.data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-};
-
-export const updateProject = async (id: string, data: Record<string, unknown>): Promise<CommunityProject> => {
-  try {
-    const response = await api.patch<CommunityProject>(`/website/projects/${id}`, data);
-    return response.data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-};
-
-export const deleteProject = async (id: string): Promise<void> => {
-  try {
-    await api.delete(`/website/projects/${id}`);
   } catch (error) {
     throw toApiError(error);
   }
@@ -980,7 +1162,7 @@ export interface NotificationPreferences {
 
 export const getNotifications = async (): Promise<NotificationListResponse> => {
   try {
-    const response = await api.get<NotificationListResponse>('/notifications');
+    const response = await api.get<NotificationListResponse>("/notifications");
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -997,7 +1179,7 @@ export const markNotificationRead = async (id: string): Promise<void> => {
 
 export const markAllNotificationsRead = async (): Promise<void> => {
   try {
-    await api.patch('/notifications/read-all');
+    await api.patch("/notifications/read-all");
   } catch (error) {
     throw toApiError(error);
   }
@@ -1011,20 +1193,27 @@ export const dismissNotification = async (id: string): Promise<void> => {
   }
 };
 
-export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
-  try {
-    const response = await api.get<NotificationPreferences>('/notifications/preferences');
-    return response.data;
-  } catch (error) {
-    throw toApiError(error);
-  }
-};
+export const getNotificationPreferences =
+  async (): Promise<NotificationPreferences> => {
+    try {
+      const response = await api.get<NotificationPreferences>(
+        "/notifications/preferences",
+      );
+      return response.data;
+    } catch (error) {
+      throw toApiError(error);
+    }
+  };
 
-export const updateNotificationPreferences = async (
-  data: { enabled?: boolean; kinds?: Record<string, boolean> },
-): Promise<NotificationPreferences> => {
+export const updateNotificationPreferences = async (data: {
+  enabled?: boolean;
+  kinds?: Record<string, boolean>;
+}): Promise<NotificationPreferences> => {
   try {
-    const response = await api.patch<NotificationPreferences>('/notifications/preferences', data);
+    const response = await api.patch<NotificationPreferences>(
+      "/notifications/preferences",
+      data,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -1034,9 +1223,9 @@ export const updateNotificationPreferences = async (
 export function subscribeNotificationStream(
   onEvent: (event: { type: string; notification?: unknown }) => void,
 ): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === "undefined") return () => {};
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (!token) return () => {};
 
   let es: EventSource | null = null;
@@ -1074,4 +1263,4 @@ export function subscribeNotificationStream(
     closed = true;
     es?.close();
   };
-};
+}

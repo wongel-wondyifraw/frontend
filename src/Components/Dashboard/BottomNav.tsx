@@ -16,7 +16,6 @@ import {
   BookOpen,
   Globe,
   Settings,
-  HelpCircle,
   LogOut,
   X,
 } from 'lucide-react';
@@ -110,7 +109,7 @@ const MORE_ITEMS: NavItem[] = [
     label: 'Landing',
     path: '/landing',
     icon: <Globe size={20} />,
-    anyOf: ['website.manage', 'projects.manage'],
+    permission: 'website.manage',
   },
   {
     id: 'settings',
@@ -118,13 +117,6 @@ const MORE_ITEMS: NavItem[] = [
     path: '/settings',
     icon: <Settings size={20} />,
     permission: 'settings.read',
-  },
-  {
-    id: 'help',
-    label: 'Help',
-    path: '/help',
-    icon: <HelpCircle size={20} />,
-    permission: 'dashboard.read',
   },
 ];
 
@@ -143,9 +135,18 @@ export default function BottomNav() {
   const isPrimaryActive = (item: NavItem) =>
     item.match ? item.match(pathname) : pathname === item.path || pathname.startsWith(item.path);
 
-  const moreActive = moreItems.some(
-    (item) => pathname === item.path || pathname.startsWith(item.path + '/'),
-  );
+  const activeMoreItem =
+    moreItems.find(
+      (item) => pathname === item.path || pathname.startsWith(`${item.path}/`),
+    ) ?? null;
+
+  const moreProxyIcon =
+    activeMoreItem && React.isValidElement(activeMoreItem.icon)
+      ? React.cloneElement(activeMoreItem.icon as React.ReactElement<{ size?: number; strokeWidth?: number }>, {
+          size: 22,
+          strokeWidth: 2,
+        })
+      : activeMoreItem?.icon;
 
   return (
     <>
@@ -166,15 +167,34 @@ export default function BottomNav() {
         })}
         <button
           type="button"
-          className={`bottom-nav-item${moreOpen || moreActive ? ' is-active' : ''}`}
+          className={`bottom-nav-item${moreOpen || activeMoreItem ? ' is-active' : ''}${
+            activeMoreItem ? ' is-proxy' : ''
+          }`}
           onClick={() => setMoreOpen((v) => !v)}
           aria-expanded={moreOpen}
-          aria-label="More navigation"
+          aria-label={
+            activeMoreItem
+              ? `${activeMoreItem.label} selected — open more navigation`
+              : 'More navigation'
+          }
         >
           <span className="bottom-nav-icon">
-            <Ellipsis size={22} strokeWidth={2} />
+            {activeMoreItem ? (
+              <>
+                <span className="bottom-nav-proxy-icon" key={activeMoreItem.id}>
+                  {moreProxyIcon}
+                </span>
+                <span className="bottom-nav-proxy-badge" aria-hidden>
+                  <Ellipsis size={10} strokeWidth={3} />
+                </span>
+              </>
+            ) : (
+              <Ellipsis size={22} strokeWidth={2} />
+            )}
           </span>
-          <span className="bottom-nav-label">More</span>
+          <span className="bottom-nav-label">
+            {activeMoreItem ? activeMoreItem.label : 'More'}
+          </span>
         </button>
       </nav>
 

@@ -1,4 +1,4 @@
-import type { Dayjs } from 'dayjs';
+import type { Dayjs } from "dayjs";
 
 type MinisterFormValues = {
   first_name?: string;
@@ -21,9 +21,9 @@ export function buildMinisterPayload(
   extras: Record<string, unknown> = {},
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = {
-    first_name: values.first_name?.trim() ?? '',
-    last_name: values.last_name?.trim() ?? '',
-    email: values.email?.trim().toLowerCase() ?? '',
+    first_name: values.first_name?.trim() ?? "",
+    last_name: values.last_name?.trim() ?? "",
+    email: values.email?.trim().toLowerCase() ?? "",
     ...extras,
   };
 
@@ -44,10 +44,10 @@ export function buildMinisterPayload(
   if (values.status) payload.status = values.status;
 
   if (values.date_of_birth) {
-    payload.date_of_birth = values.date_of_birth.format('YYYY-MM-DD');
+    payload.date_of_birth = values.date_of_birth.format("YYYY-MM-DD");
   }
   if (values.joined_date) {
-    payload.joined_date = values.joined_date.format('YYYY-MM-DD');
+    payload.joined_date = values.joined_date.format("YYYY-MM-DD");
   }
 
   if (values.image_url) payload.image_url = values.image_url;

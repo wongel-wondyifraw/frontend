@@ -77,7 +77,7 @@ export default function MemberFamilySection() {
 
                 {spouseFromChurch === 'no' && (
                   <Row gutter={16}>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                       <Form.Item
                         label="Spouse Name"
                         name="external_spouse_name"
@@ -86,12 +86,12 @@ export default function MemberFamilySection() {
                         <Input size="large" placeholder="Full Name" />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                       <Form.Item label="Spouse Phone" name="external_spouse_phone">
                         <Input size="large" placeholder="Phone Number" />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                       <Form.Item label="Local Church" name="external_spouse_church">
                         <Input size="large" placeholder="Name of Church" />
                       </Form.Item>
@@ -119,7 +119,7 @@ export default function MemberFamilySection() {
                       <>
                         {fields.map(({ key, name, ...restField }) => (
                           <Row gutter={16} key={key} style={{ marginBottom: 8 }} align="middle">
-                            <Col span={10}>
+                            <Col xs={24} sm={10}>
                               <Form.Item
                                 {...restField}
                                 name={[name, 'name']}
@@ -129,7 +129,7 @@ export default function MemberFamilySection() {
                                 <Input placeholder="Child Name" />
                               </Form.Item>
                             </Col>
-                            <Col span={10}>
+                            <Col xs={24} sm={10}>
                               <Form.Item
                                 {...restField}
                                 name={[name, 'date_of_birth']}
@@ -138,7 +138,7 @@ export default function MemberFamilySection() {
                                 <DatePicker placeholder="Date of Birth" style={{ width: '100%' }} />
                               </Form.Item>
                             </Col>
-                            <Col span={4}>
+                            <Col xs={24} sm={4}>
                               <Button danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
                             </Col>
                           </Row>

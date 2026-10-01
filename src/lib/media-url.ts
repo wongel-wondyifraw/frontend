@@ -1,8 +1,8 @@
-import { API_BASE_URL } from '@/services/api';
+import { API_BASE_URL } from "@/services/api";
 
 function appendCacheBust(url: string, version?: string | number): string {
-  if (version === undefined || version === null || version === '') return url;
-  const joiner = url.includes('?') ? '&' : '?';
+  if (version === undefined || version === null || version === "") return url;
+  const joiner = url.includes("?") ? "&" : "?";
   return `${url}${joiner}v=${encodeURIComponent(String(version))}`;
 }
 
@@ -25,7 +25,7 @@ export function resolveMediaUrl(
     return appendCacheBust(trimmed, version);
   }
 
-  const normalized = trimmed.replace(/^\/+/, '');
+  const normalized = trimmed.replace(/^\/+/, "");
   return appendCacheBust(`${API_BASE_URL}/${normalized}`, version);
 }
 

@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Button, Avatar, Modal, Tooltip } from 'antd';
+import { Tag, Modal } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import EntityNameCell from '../../Components/common/EntityNameCell';
 import { getMinisters, deleteMinister } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageMinistersProps, Minister } from '@/types';
@@ -82,21 +84,18 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       title: 'Name',
       key: 'name',
       render: (_: unknown, record: Minister) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Avatar
-            src={getImageUrl(record.image_url) || undefined}
-            style={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 600 }}
-            crossOrigin="use-credentials"
-          >
-            {getInitials(record.first_name, record.last_name, record.middle_name)}
-          </Avatar>
-          <div>
-            <span style={{ fontWeight: 600 }}>
-              {record.first_name} {record.middle_name ? `${record.middle_name} ` : ''}{record.last_name}
-            </span>
-            <div style={{ fontSize: '12px', color: '#94A3B8' }}>{record.email}</div>
-          </div>
-        </div>
+        <EntityNameCell
+          title={
+            <>
+              {record.first_name}{' '}
+              {record.middle_name ? `${record.middle_name} ` : ''}
+              {record.last_name}
+            </>
+          }
+          subtitle={record.email || undefined}
+          avatarSrc={getImageUrl(record.image_url)}
+          initials={getInitials(record.first_name, record.last_name, record.middle_name)}
+        />
       ),
     },
     {
@@ -135,38 +134,37 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
     },
     {
       title: 'Action',
-      key: 'action',
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: Minister) => (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <Tooltip title="View Details">
-            <Button
-              icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-              onClick={() => router.push(`/ministers/details/${record.id}`)}
-            />
-          </Tooltip>
-          <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
-          {canUpdate && (
-            <Tooltip title="Edit">
-              <Button
-                icon={<EditOutlined />}
-                type="text"
-                size="small"
-                onClick={() => router.push(`/ministers/edit/${record.id}`)}
-              />
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Delete">
-              <Button
-                icon={<DeleteOutlined />}
-                type="text"
-                danger
-                size="small"
-                onClick={() => handleDelete(record)}
-              />
-            </Tooltip>
-          )}
-        </div>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.first_name}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+              onClick: () => router.push(`/ministers/details/${record.id}`),
+            },
+            ...(canUpdate
+              ? [{
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => router.push(`/ministers/edit/${record.id}`),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDelete(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
@@ -175,6 +173,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
     <div className="manage-page">
       <DataTable
         title="Manage Ministers"
+        subtitle="Track ministers, assignments, and pastoral leadership records."
         columns={columns}
         dataSource={ministers}
         loading={loading}

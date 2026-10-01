@@ -414,8 +414,10 @@ const Settings = () => {
     <PermissionGate permission="settings.read" pageLabel="Settings">
       <div className="settings-page">
         <div className="settings-header">
-          <h2>Settings</h2>
-          <p>Manage your account, security, and system configuration.</p>
+          <div className="settings-header-text">
+            <h2>Settings</h2>
+            <p>Manage your account, security, and system configuration.</p>
+          </div>
         </div>
 
         <Tabs className="settings-tabs" defaultActiveKey="profile" items={items} />

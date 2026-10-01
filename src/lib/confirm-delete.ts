@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { Modal } from 'antd';
+import { Modal } from "antd";
+import { globalModal } from "@/Components/common/AntdAppExtractor";
 
 type ConfirmDeleteOptions = {
   title?: string;
@@ -11,17 +12,19 @@ type ConfirmDeleteOptions = {
 
 /** Shared destructive-action confirmation used across the CMS. */
 export function confirmDelete({
-  title = 'Delete this item?',
-  content = 'This action cannot be undone.',
-  okText = 'Delete',
+  title = "Delete this item?",
+  content = "This action cannot be undone.",
+  okText = "Delete",
   onOk,
 }: ConfirmDeleteOptions): void {
-  Modal.confirm({
+  const modalFn = globalModal ? globalModal.confirm : Modal.confirm;
+
+  modalFn({
     title,
     content,
     okText,
-    okType: 'danger',
-    cancelText: 'Cancel',
+    okType: "danger",
+    cancelText: "Cancel",
     centered: true,
     onOk,
   });

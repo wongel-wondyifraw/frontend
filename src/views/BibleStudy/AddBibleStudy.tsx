@@ -156,12 +156,12 @@ const AddBibleStudy = () => {
                 <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Location
               </h3>
               <Row gutter={24}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="leader_key" label="Assign Leader">
                     <LeaderSelect />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="schedule" label="Schedule Details">
                     <Input size="large" placeholder="e.g. Every Friday 7:00 PM" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
                   </Form.Item>
@@ -241,8 +241,7 @@ const AddBibleStudy = () => {
                 members={members}
                 selectedKeys={selectedMemberKeys}
                 onChange={setSelectedMemberKeys}
-                titles={['Available Members', 'Selected Members']}
-                description="Select members to add to this Bible study."
+                description="Search and check members to add them to this Bible study."
               />
             </div>
 
@@ -259,7 +258,7 @@ const AddBibleStudy = () => {
                       ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                       : 'Not assigned';
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: 13 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
                         <div><strong>Name:</strong> {values.name || '—'}</div>
                         <div><strong>Leader:</strong> {leaderName}</div>
                         <div><strong>Location:</strong> {values.location || '—'}</div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, Modal, Tag, Tooltip } from 'antd';
+import { Form, Input, Modal, Tag } from 'antd';
 import { message } from '@/lib/app-message';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -11,8 +11,9 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import DataTable from '@/Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import PermissionPicker from './PermissionPicker';
-import { Can, useCan } from '@/Components/auth/Can';
+import { useCan } from '@/Components/auth/Can';
 import {
   createRole,
   deleteRole,
@@ -189,30 +190,31 @@ const RoleManagementPanel = () => {
     },
     {
       title: 'Actions',
-      key: 'actions',
-      width: 120,
-      render: (_: unknown, record: Role) => (
-        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-          <Can permission="roles.manage">
-            <Tooltip title="Edit role">
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-            </Tooltip>
-          </Can>
-          <Can permission="roles.manage">
-            {!record.is_system && (
-              <Tooltip title="Delete role">
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDelete(record)}
-                />
-              </Tooltip>
-            )}
-          </Can>
-        </div>
-      ),
+            key: 'actions',
+            ...TABLE_ACTIONS_COLUMN,
+      render: (_: unknown, record: Role) =>
+        canManageRoles ? (
+          <TableRowActions
+            ariaLabel={`Actions for ${record.name}`}
+            items={[
+              {
+                key: 'edit',
+                label: 'Edit role',
+                icon: <EditOutlined />,
+                onClick: () => openEdit(record),
+              },
+              ...(!record.is_system
+                ? [{
+                    key: 'delete',
+                    label: 'Delete role',
+                    icon: <DeleteOutlined />,
+                    danger: true,
+                    onClick: () => handleDelete(record),
+                  }]
+                : []),
+            ]}
+          />
+        ) : null,
     },
   ];
 
@@ -221,6 +223,8 @@ const RoleManagementPanel = () => {
   return (
     <div className="manage-page settings-section--wide">
       <DataTable
+        title="Roles"
+        subtitle="Configure permission sets that control what each user can do."
         columns={columns}
         dataSource={filteredRoles}
         loading={loading}

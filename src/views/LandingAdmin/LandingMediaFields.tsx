@@ -30,6 +30,7 @@ type MediaFieldsProps = {
     video_file_url?: string | null;
   }) => void;
   compact?: boolean;
+  imageOnly?: boolean;
 };
 
 export default function LandingMediaFields({
@@ -39,6 +40,7 @@ export default function LandingMediaFields({
   videoUrl,
   videoFileUrl,
   onChange,
+  imageOnly,
 }: MediaFieldsProps) {
   const uploadImage = async (file: File) => {
     try {
@@ -121,8 +123,9 @@ export default function LandingMediaFields({
         />
       </div>
 
-      <div className="la-media-stack">
-        <div className="la-media-card">
+      {!imageOnly && (
+        <div className="la-media-stack">
+          <div className="la-media-card">
           <div className="la-media-card-header">
             <LinkOutlined />
             <div>
@@ -206,6 +209,7 @@ export default function LandingMediaFields({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

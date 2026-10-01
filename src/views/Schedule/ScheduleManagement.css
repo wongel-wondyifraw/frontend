@@ -21,15 +21,24 @@
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.calendar-header-section h3 {
+.calendar-header-section h2 {
+    margin: 0 0 4px;
+    color: var(--text-main, #0f172a);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.calendar-header-section p {
     margin: 0;
-    color: #020617;
-    /* Abyssal Black-Blue */
-    font-size: 18px;
-    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .calendar-wrapper {

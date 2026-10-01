@@ -6,6 +6,8 @@ import { UserProvider } from '@/context/UserContext';
 import { ToastProvider } from '@/context/ToastContext';
 import type { ReactNode } from 'react';
 
+import { AntdAppExtractor } from '@/Components/common/AntdAppExtractor';
+
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
@@ -19,10 +21,12 @@ export default function Providers({ children }: { children: ReactNode }) {
               controlHeightSM: 36,
               fontSize: 14,
               borderRadius: 8,
+              fontFamily: "'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif",
             },
           }}
         >
           <App>
+            <AntdAppExtractor />
             <ToastProvider>{children}</ToastProvider>
           </App>
         </ConfigProvider>

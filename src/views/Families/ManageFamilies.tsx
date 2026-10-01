@@ -3,16 +3,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Avatar,
-  Button,
   Card,
   Col,
   Modal,
   Row,
-  Space,
   Statistic,
   Tag,
-  Tooltip,
 } from 'antd';
 import { message } from '@/lib/app-message';
 import {
@@ -24,6 +20,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import DataTable from '../../Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import EntityNameCell from '../../Components/common/EntityNameCell';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import {
@@ -139,19 +137,17 @@ const ManageFamiliesContent = () => {
               : null;
 
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar icon={<TeamOutlined />} style={{ backgroundColor: '#1565c0' }} />
-            <div>
-              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span>{record.name || 'Family'}</span>
-                {singleParentTag && (
-                  <Tag color={singleParentTag === 'Single mom' ? 'magenta' : 'blue'} style={{ marginInlineEnd: 0 }}>
-                    {singleParentTag}
-                  </Tag>
-                )}
-              </div>
-            </div>
-          </div>
+          <EntityNameCell
+            title={record.name || 'Family'}
+            initials={(record.name || 'F').charAt(0).toUpperCase()}
+            meta={
+              singleParentTag ? (
+                <Tag color={singleParentTag === 'Single mom' ? 'magenta' : 'blue'} style={{ marginInlineEnd: 0 }}>
+                  {singleParentTag}
+                </Tag>
+              ) : undefined
+            }
+          />
         );
       },
     },
@@ -183,37 +179,37 @@ const ManageFamiliesContent = () => {
     },
     {
       title: 'Action',
-      key: 'action',
-      width: 160,
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: Family) => (
-        <Space>
-          <Tooltip title="View details">
-            <Button
-              type="text"
-              icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-              onClick={() => router.push(`/families/details/${record.id}`)}
-            />
-          </Tooltip>
-          {canUpdate && (
-            <Tooltip title="Edit family">
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => router.push(`/families/edit/${record.id}`)}
-              />
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Delete">
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteFamily(record)}
-              />
-            </Tooltip>
-          )}
-        </Space>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.name || 'family'}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+              onClick: () => router.push(`/families/details/${record.id}`),
+            },
+            ...(canUpdate
+              ? [{
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => router.push(`/families/edit/${record.id}`),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDeleteFamily(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
@@ -250,6 +246,7 @@ const ManageFamiliesContent = () => {
 
       <DataTable
         title="Family Management"
+        subtitle="Track family units, relationships, and household members."
         columns={columns}
         dataSource={families}
         loading={loading}

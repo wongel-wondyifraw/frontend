@@ -263,15 +263,15 @@ const AddMember = () => {
                 <UserOutlined style={{ color: '#1E40AF' }} /> Personal Information
               </h3>
 
-              <div style={{ display: 'flex', gap: 24, marginBottom: 24, alignItems: 'flex-start' }}>
-                <div style={{ textAlign: 'center' }}>
+              <div className="member-identity-row">
+                <div className="member-avatar-block">
                   <Avatar
-                    size={100}
+                    size={128}
                     src={avatarPreview}
                     icon={<UserOutlined />}
                     style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
                   />
-                  <div style={{ marginTop: 8, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  <div className="member-avatar-actions">
                     <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange} accept="image/*">
                       <Button size="small" icon={<UploadOutlined />}>
                         Photo
@@ -282,8 +282,8 @@ const AddMember = () => {
                     )}
                   </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="member-name-fields">
+                  <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
                       <Input size="large" placeholder="John" />
                     </Form.Item>
@@ -298,12 +298,12 @@ const AddMember = () => {
               </div>
 
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
                     <DatePicker style={{ width: '100%' }} size="large" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Gender" name="gender" rules={[{ required: true, message: 'Gender is required' }]}>
                     <Select placeholder="Select gender" size="large">
                       <Option value="male">Male</Option>
@@ -313,7 +313,7 @@ const AddMember = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Marital Status" name="marital_status">
                     <Select placeholder="Select status" size="large" allowClear>
                       <Option value="single">Single</Option>
@@ -323,7 +323,7 @@ const AddMember = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="When did you receive Jesus as a Saviour?" name="salvation_date">
                     <DatePicker style={{ width: '100%' }} size="large" />
                   </Form.Item>
@@ -338,24 +338,24 @@ const AddMember = () => {
                 <EnvironmentOutlined style={{ color: '#1E40AF' }} /> Contact & Location
               </h3>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Phone Number" name="phone" rules={[{ required: true, message: 'Phone number is required' }]}>
                     <Input size="large" placeholder="+251 9XX XXX XXXX" prefix={<PhoneOutlined />} />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Email Address" name="email" rules={[{ type: 'email', message: 'Please enter a valid email' }]}>
                     <Input size="large" placeholder="john@example.com" prefix={<MailOutlined />} />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Telegram Username" name="telegram_username">
                     <Input size="large" placeholder="@username" prefix="@" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Location" name="location_id">
                     <AutoComplete
                       options={locations.map((loc) => ({ value: loc.name }))}
@@ -370,17 +370,17 @@ const AddMember = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={8}>
+                <Col xs={24} sm={12} md={8}>
                   <Form.Item label="Facebook" name="facebook_username">
                     <Input size="large" placeholder="Optional handle or URL" />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col xs={24} sm={12} md={8}>
                   <Form.Item label="Instagram" name="instagram_username">
                     <Input size="large" placeholder="Optional @username" />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col xs={24} sm={12} md={8}>
                   <Form.Item label="WhatsApp" name="whatsapp_number">
                     <Input size="large" placeholder="Optional number" />
                   </Form.Item>
@@ -397,24 +397,24 @@ const AddMember = () => {
                 <IdcardOutlined style={{ color: '#1E40AF' }} /> Professional Information
               </h3>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Employment Status" name="employment_status">
                     <Select placeholder="Select status" size="large" allowClear options={EMPLOYMENT_OPTIONS} />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Profession / Job title" name="profession">
                     <Input size="large" placeholder="e.g. Teacher, Engineer" />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Employer / Organization" name="employer">
                     <Input size="large" placeholder="Optional" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Education Level" name="education_level">
                     <Select placeholder="Select level" size="large" allowClear options={EDUCATION_OPTIONS} />
                   </Form.Item>
@@ -438,7 +438,7 @@ const AddMember = () => {
                 <Select size="large" options={MEMBER_TYPE_OPTIONS} />
               </Form.Item>
               <Row gutter={24}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="baptized" label="Water Baptized?">
                     <Radio.Group buttonStyle="solid" size="large">
                       <Radio.Button value="yes">Yes</Radio.Button>
@@ -446,7 +446,7 @@ const AddMember = () => {
                     </Radio.Group>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="holy_spirit_baptized" label="Holy Spirit Baptized?">
                     <Radio.Group buttonStyle="solid" size="large">
                       <Radio.Button value="yes">Yes</Radio.Button>
@@ -456,7 +456,7 @@ const AddMember = () => {
                 </Col>
               </Row>
               <Row gutter={24}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     noStyle
                     shouldUpdate={(prev, cur) => prev.member_type !== cur.member_type}
@@ -501,7 +501,7 @@ const AddMember = () => {
                     }}
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="joined_date" label="Joined Date">
                     <DatePicker style={{ width: '100%' }} size="large" />
                   </Form.Item>
@@ -521,7 +521,7 @@ const AddMember = () => {
                       ? ministries.map((m) => m.name)
                       : ['Prayer', 'Worship', 'Preaching', 'Music', 'Deacons', 'Bible Study', 'Ushering', 'Youth', 'Children', 'Media/Tech', 'Evangelism']
                     ).map((name) => (
-                      <Col span={8} key={name}>
+                      <Col xs={24} sm={12} md={8} key={name}>
                         <Checkbox value={name}>{name}</Checkbox>
                       </Col>
                     ))}
@@ -541,7 +541,7 @@ const AddMember = () => {
                   {() => {
                     const values = form.getFieldsValue();
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: 13 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
                         <div><strong>Name:</strong> {values.first_name || '—'} {values.last_name || ''}</div>
                         <div><strong>Phone:</strong> {values.phone || '—'}</div>
                         <div><strong>Member Type:</strong> {MEMBER_TYPE_OPTIONS.find((o) => o.value === values.member_type)?.label || values.member_type || '—'}</div>

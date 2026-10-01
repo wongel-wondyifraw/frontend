@@ -1,13 +1,15 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Avatar, Modal, Tooltip, Tag } from 'antd';
+import { Modal, Tag } from 'antd';
 import { message } from '@/lib/app-message';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, BookOutlined, InfoCircleOutlined,
-  EnvironmentOutlined, FileTextOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined,
+  EnvironmentOutlined, FileTextOutlined, BookOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import EntityNameCell from '../../Components/common/EntityNameCell';
 import { getBibleStudies, deleteBibleStudy } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageBibleStudiesProps, BibleStudy } from '@/types';
@@ -79,15 +81,11 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
       title: 'Bible Study',
       key: 'name',
       render: (_: unknown, record: BibleStudy) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Avatar icon={<BookOutlined />} style={{ backgroundColor: '#1565c0' }} />
-          <div>
-            <span style={{ fontWeight: 600 }}>{record.name}</span>
-            {record.schedule && (
-              <div style={{ fontSize: 12, color: '#94A3B8' }}>{record.schedule}</div>
-            )}
-          </div>
-        </div>
+        <EntityNameCell
+          title={record.name}
+          subtitle={record.schedule || undefined}
+          initials={(record.name || '?').charAt(0).toUpperCase()}
+        />
       ),
     },
     {
@@ -123,37 +121,37 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
     },
     {
       title: 'Action',
-      key: 'action',
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: BibleStudy) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Tooltip title="View Details">
-            <Button
-              icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-              onClick={() => router.push(`/bible-study/details/${record.id}`)}
-            />
-          </Tooltip>
-          {canUpdate && (
-            <Tooltip title="Edit">
-              <Button
-                icon={<EditOutlined />}
-                type="text"
-                size="small"
-                onClick={() => router.push(`/bible-study/edit/${record.id}`)}
-              />
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Delete">
-              <Button
-                icon={<DeleteOutlined />}
-                type="text"
-                danger
-                size="small"
-                onClick={() => handleDelete(record)}
-              />
-            </Tooltip>
-          )}
-        </div>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.name}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+              onClick: () => router.push(`/bible-study/details/${record.id}`),
+            },
+            ...(canUpdate
+              ? [{
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => router.push(`/bible-study/edit/${record.id}`),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDelete(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
@@ -162,6 +160,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
     <div className="manage-page">
       <DataTable
         title="Manage Bible Studies"
+        subtitle="Manage study groups, schedules, and participant lists."
         columns={columns}
         dataSource={studies}
         loading={loading}

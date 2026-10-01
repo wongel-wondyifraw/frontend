@@ -11,7 +11,7 @@
   margin-bottom: 16px;
 }
 
-/* Title (optional) above · filters + search + actions on one row */
+/* Title + primary action on one row · filters/search below */
 .data-table-toolbar {
   display: flex;
   flex-direction: column;
@@ -20,12 +20,71 @@
   width: 100%;
 }
 
+.data-table-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.data-table-header-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .data-table-title {
-  margin: 0;
-  font-size: 22px;
+  margin: 0 0 4px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-main, #0f172a);
+  line-height: 1.25;
+}
+
+.data-table-subtitle {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Shared section header pattern (Planning / Settings / DataTable) */
+.page-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.page-section-header-text {
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.page-section-header-text h2,
+.planning-header h2,
+.settings-header h2,
+.dashboard-header h2,
+.landing-admin-header h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main, #0f172a);
+  line-height: 1.25;
+}
+
+.page-section-header-text p,
+.planning-header p,
+.settings-header p,
+.dashboard-header p,
+.landing-admin-header p {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .data-table-controls {
@@ -43,23 +102,22 @@
   min-width: 0;
 }
 
-/* Filters stay left-aligned next to search */
+/* Filters sit on the trailing edge, opposite search */
 .data-table-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 10px;
-  margin-left: 0;
+  margin-left: auto;
   flex: 0 0 auto;
-  order: -1;
 }
 
 /* Action cluster — always pushed to the trailing edge */
 .data-table-end,
 .page-header-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
@@ -157,22 +215,49 @@
 }
 
 @media (max-width: 768px) {
+  .data-table-header-row,
+  .page-section-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .data-table-header-text,
+  .page-section-header-text {
+    flex: 1 1 100%;
+  }
+
   .data-table-title {
-    font-size: 18px;
+    font-size: 20px;
     line-height: 1.25;
+  }
+
+  .data-table-subtitle {
+    font-size: 13px;
   }
 
   .data-table-end,
   .page-header-actions {
     gap: 8px;
+    margin-left: 0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: stretch;
   }
 
   .data-table-end .ant-btn,
   .page-header-actions .ant-btn,
   .data-table-action {
     height: 42px;
-    width: auto;
-    flex: 0 0 auto;
+    min-width: 0;
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .data-table-end .ant-select,
+  .page-header-actions .ant-select {
+    width: 100% !important;
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .data-table-controls {
@@ -183,29 +268,20 @@
     width: 100%;
   }
 
-  /* Filters left, Add right on the first mobile row */
   .data-table-filters {
     width: auto;
-    margin-left: 0;
+    margin-left: auto;
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: flex-end;
     gap: 10px;
     flex: 0 0 auto;
-    order: 0;
-  }
-
-  .data-table-end,
-  .page-header-actions {
-    order: 1;
-    margin-left: auto;
   }
 
   .data-table-search {
     width: 100% !important;
     max-width: none;
     flex: 1 1 100%;
-    order: 2;
   }
 
   .data-table-filters > * {
@@ -223,7 +299,6 @@
     width: 100% !important;
   }
 
-  /* Inline single filters (not popup) still full-width when alone on small screens */
   .data-table-filters > .ant-select,
   .data-table-filters > .ant-picker {
     min-width: 140px;
@@ -235,6 +310,19 @@
   .roles-table-card {
     padding: 12px;
     border-radius: 12px;
+  }
+
+  /* Give the primary name column room; keep status/action tight */
+  .data-table-card .ant-table-thead > tr > th:first-child,
+  .data-table-card .ant-table-tbody > tr > td:first-child,
+  .members-table-card .ant-table-thead > tr > th:first-child,
+  .members-table-card .ant-table-tbody > tr > td:first-child {
+    min-width: 0;
+    width: auto;
+  }
+
+  .data-table-card .ant-table {
+    table-layout: auto;
   }
 
   .manage-page-stats .ant-col {

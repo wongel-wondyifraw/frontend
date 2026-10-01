@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface Permission {
   id?: string;
@@ -49,35 +49,47 @@ export interface PageContent {
   updated_at?: string;
 }
 
-export type LandingDisplayStyle = 'grid' | 'carousel' | 'marquee' | 'static' | 'feed';
-
 export interface LandingMediaItem {
   title: string;
   text?: string;
   tag?: string;
   ref?: string;
-  /** Program / event date (display string, e.g. "October 28, 2026") */
+  /** Program / event start date (YYYY-MM-DD) or legacy display string */
   event_date?: string;
-  /** Program / event time (display string, e.g. "08:00 PM") */
+  /** Program / event end date (YYYY-MM-DD) for ranges */
+  event_date_end?: string;
+  /** Program / event time (HH:mm) or legacy display string */
   event_time?: string;
   /** Optional venue or location line */
   location?: string;
+  /** One or more minister / lead names */
+  ministers?: string[];
+  /** Legacy single lead line — kept in sync with ministers when editing */
+  lead?: string;
   image_url?: string | null;
   file_url?: string | null;
   file_name?: string | null;
   video_url?: string | null;
   video_file_url?: string | null;
-}
-
-export interface LandingPostItem {
-  author: string;
-  time: string;
-  body: string;
-  image_url?: string | null;
-  video_url?: string | null;
-  video_file_url?: string | null;
-  file_url?: string | null;
-  file_name?: string | null;
+  /** Banner card specific display enhancements */
+  status?: string;
+  variantLabel?: string;
+  cohort?: string;
+  capacity?: number;
+  enrolled?: number;
+  progress?: number;
+  avatars?: string[];
+  quotaLabel?: string;
+  quotaValue?: string;
+  fulfilledLabel?: string;
+  fulfilledValue?: string;
+  cadenceLabel?: string;
+  cadenceValue?: string;
+  milestoneLabel?: string;
+  teamLabel?: string;
+  primaryActionLabel?: string;
+  secondaryActionLabel?: string;
+  icon?: string;
 }
 
 export interface LandingPageContent {
@@ -96,13 +108,15 @@ export interface LandingPageContent {
     verse_ref?: string;
     verse_text?: string;
   };
+  /** Mission section (#about) */
   about?: {
     enabled?: boolean;
+    label?: string;
     title?: string;
     subtitle?: string;
-    display_style?: LandingDisplayStyle;
     items?: LandingMediaItem[];
   };
+  /** ABOUT OUR CALLING / vision cards (#vision) */
   vision?: {
     enabled?: boolean;
     title?: string;
@@ -115,59 +129,45 @@ export interface LandingPageContent {
     video_file_url?: string | null;
     file_url?: string | null;
     file_name?: string | null;
+    items?: LandingMediaItem[];
   };
+  /** Homepage ministries hover-scroll (#ministries) — migrated from legacy `projects` */
+  ministries?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    items?: LandingMediaItem[];
+  };
+  /** Homepage project cards (#projects) — migrated from legacy `homepage_projects` */
   projects?: {
     enabled?: boolean;
     title?: string;
     subtitle?: string;
-    display_style?: LandingDisplayStyle;
     items?: LandingMediaItem[];
   };
   programs?: {
     enabled?: boolean;
     title?: string;
     subtitle?: string;
-    display_style?: LandingDisplayStyle;
-    default_poster_style?: 'navy' | 'emerald' | 'warm';
     items?: LandingMediaItem[];
-  };
-  updates?: {
-    enabled?: boolean;
-    title?: string;
-    subtitle?: string;
-    display_style?: LandingDisplayStyle;
-    /** Show recent programs strip above posts */
-    show_programs_strip?: boolean;
-    programs_strip_title?: string;
-    programs_display?: LandingDisplayStyle;
-    posts?: LandingPostItem[];
   };
   contact?: {
     enabled?: boolean;
-    title?: string;
-    subtitle?: string;
-    visit_title?: string;
-    visit_lines?: string[];
     touch_title?: string;
     touch_body?: string;
+    location_title?: string;
+    location_services_heading?: string;
+    location_services?: { name: string; time: string }[];
+    office_phone?: string;
+    map_title?: string;
+    map_subtitle?: string;
+    map_note?: string;
+    map_url?: string;
+    directions_url?: string;
   };
   footer?: {
     blurb?: string;
-    visit_lines?: string[];
-    office_lines?: string[];
   };
-}
-
-export interface CommunityProject {
-  id: string;
-  title: string;
-  description: string;
-  image_url?: string | null;
-  status: string;
-  start_date?: string | null;
-  end_date?: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export function hasPermission(
@@ -256,7 +256,7 @@ export interface MinistryMemberLink {
   ministry?: Ministry;
 }
 
-export type LeaderType = 'member' | 'minister';
+export type LeaderType = "member" | "minister";
 
 export interface LeaderSummary {
   id: string;
@@ -306,7 +306,7 @@ export interface HomeGroupMember {
   member?: Member;
 }
 
-export type BibleStudyContentType = 'book' | 'study_material';
+export type BibleStudyContentType = "book" | "study_material";
 
 export interface BibleStudy {
   id: string;
@@ -330,7 +330,7 @@ export interface BibleStudyMember {
   member?: Member;
 }
 
-export type TaskStatus = 'pending' | 'completed' | 'cancelled';
+export type TaskStatus = "pending" | "completed" | "cancelled";
 
 export interface TaskDefinition {
   id: string;
@@ -348,10 +348,16 @@ export interface TaskAssignment {
   definition_id: string;
   definition?: TaskDefinition;
   minister_id: string;
-  minister?: Pick<Minister, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email'>;
+  minister?: Pick<
+    Minister,
+    "id" | "first_name" | "middle_name" | "last_name" | "email"
+  >;
   assigned_by_user_id?: string | null;
   target_member_id?: string | null;
-  target_member?: Pick<Member, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email' | 'phone'>;
+  target_member?: Pick<
+    Member,
+    "id" | "first_name" | "middle_name" | "last_name" | "email" | "phone"
+  >;
   start_date: string;
   end_date: string;
   status: TaskStatus;
@@ -362,20 +368,23 @@ export interface TaskAssignment {
 }
 
 export type PlanType =
-  | 'program'
-  | 'crusade'
-  | 'general_assembly'
-  | 'training'
-  | 'fasting_day'
-  | 'gospel_campaign';
+  | "program"
+  | "crusade"
+  | "general_assembly"
+  | "training"
+  | "fasting_day"
+  | "gospel_campaign";
 
-export type PlanStatus = 'planned' | 'completed' | 'cancelled';
+export type PlanStatus = "planned" | "completed" | "cancelled";
 
 export interface PlanMinisterLink {
   plan_id: string;
   minister_id: string;
   assigned_at?: string;
-  minister?: Pick<Minister, 'id' | 'first_name' | 'middle_name' | 'last_name' | 'email' | 'phone'>;
+  minister?: Pick<
+    Minister,
+    "id" | "first_name" | "middle_name" | "last_name" | "email" | "phone"
+  >;
 }
 
 export interface Plan {
@@ -474,15 +483,15 @@ export interface PaginationParams {
   marital_status?: string;
   joined_from?: string;
   joined_to?: string;
-  sort_by?: 'created_at' | 'joined_date' | 'visit_count';
-  sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
+  sort_by?: "created_at" | "joined_date" | "visit_count";
+  sort_order?: "ASC" | "DESC" | "asc" | "desc";
 }
 
 export interface ApiSearchResult {
   id: string;
   label: string;
   sublabel: string;
-  category: 'Members' | 'Ministries' | 'Users';
+  category: "Members" | "Ministries" | "Users";
   path: string;
 }
 
@@ -496,7 +505,7 @@ export interface UserContextValue {
 }
 
 export interface ThemeContextValue {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   toggleTheme: () => void;
 }
 
@@ -576,7 +585,10 @@ export interface DashboardContextValue {
   isEditMode: boolean;
   widgets: DashboardWidget[];
   layouts: Record<string, DashboardLayoutItem[]>;
-  onLayoutChange: (currentLayout: DashboardLayoutItem[], allLayouts: Record<string, DashboardLayoutItem[]>) => void;
+  onLayoutChange: (
+    currentLayout: DashboardLayoutItem[],
+    allLayouts: Record<string, DashboardLayoutItem[]>,
+  ) => void;
   toggleEditMode: () => void;
   addWidget: (type: string, settings?: Record<string, unknown>) => void;
   removeWidget: (id: string) => void;

@@ -1,6 +1,9 @@
 .dashboard-layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   overflow: hidden;
   background-color: var(--bg-body);
 }
@@ -10,16 +13,20 @@
   display: flex;
   flex-direction: column;
   margin-left: 220px;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
 .content-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px 24px;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .content-scrollable::-webkit-scrollbar {
@@ -44,11 +51,12 @@
     margin-left: 0;
     /* Bottom nav + safe area so content never sits under the bar */
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   .content-scrollable {
     padding: 12px 16px;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 }

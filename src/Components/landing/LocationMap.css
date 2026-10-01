@@ -1,0 +1,66 @@
+/* LocationMap.css — Google Maps embed styled identically to lp-location-card */
+
+.lp-location-card--map {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-location-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lp-location-card-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lp-on-surface, #191c20);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lp-location-card-head h3 .anticon {
+  color: var(--lp-primary-container, #003198);
+  font-size: 1.25rem;
+}
+
+.lp-location-card-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--lp-secondary, #5b5d72);
+}
+
+.lp-map-embed-frame {
+  width: 100%;
+  height: 290px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(196, 197, 214, 0.5);
+  background: var(--lp-canvas, #fbf8ff);
+  position: relative;
+}
+
+.lp-map-embed-frame iframe,
+.lp-google-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.lp-map-skeleton {
+  height: 290px;
+  width: 100%;
+  background: var(--lp-canvas, #fbf8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lp-secondary, #5b5d72);
+  font-size: 0.8125rem;
+  border-radius: 8px;
+}

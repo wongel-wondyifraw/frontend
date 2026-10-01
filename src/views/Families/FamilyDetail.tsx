@@ -16,9 +16,9 @@ import {
   Spin,
   Table,
   Tag,
-  Tooltip,
 } from 'antd';
 import { message } from '@/lib/app-message';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -209,18 +209,27 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
     },
     {
       title: 'Action',
-      key: 'action',
-      width: 140,
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: FamilyChild) =>
         canUpdate ? (
-          <Space>
-            <Tooltip title="Edit">
-              <Button type="text" icon={<EditOutlined />} onClick={() => openEditChild(record)} />
-            </Tooltip>
-            <Tooltip title="Remove">
-              <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteChild(record)} />
-            </Tooltip>
-          </Space>
+          <TableRowActions
+            items={[
+              {
+                key: 'edit',
+                label: 'Edit',
+                icon: <EditOutlined />,
+                onClick: () => openEditChild(record),
+              },
+              {
+                key: 'remove',
+                label: 'Remove',
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => handleDeleteChild(record),
+              },
+            ]}
+          />
         ) : null,
     },
   ];

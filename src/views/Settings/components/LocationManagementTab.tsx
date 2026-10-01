@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Modal, Form, Input, Select, Tag, Tooltip } from 'antd';
+import { Modal, Form, Input, Select, Tag } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import DataTable from '@/Components/common/DataTable';
 import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import { getLocations, createLocation, updateLocation } from '../../../services/api';
 import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -143,33 +144,32 @@ const LocationManagementTab: React.FC = () => {
     },
     {
       title: 'Actions',
-      key: 'actions',
+            key: 'actions',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: Location) =>
         canManage ? (
-          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-            <Tooltip title="Edit">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => openModal(record)}
-              />
-            </Tooltip>
-            <Tooltip title={record.status === 'active' ? 'Deactivate' : 'Activate'}>
-              <Button
-                type="text"
-                size="small"
-                icon={
+          <TableRowActions
+            ariaLabel={`Actions for ${record.name}`}
+            items={[
+              {
+                key: 'edit',
+                label: 'Edit',
+                icon: <EditOutlined />,
+                onClick: () => openModal(record),
+              },
+              {
+                key: 'toggle-status',
+                label: record.status === 'active' ? 'Deactivate' : 'Activate',
+                icon:
                   record.status === 'active' ? (
                     <StopOutlined style={{ color: '#faad14' }} />
                   ) : (
                     <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                  )
-                }
-                onClick={() => handleToggleStatus(record)}
-              />
-            </Tooltip>
-          </div>
+                  ),
+                onClick: () => handleToggleStatus(record),
+              },
+            ]}
+          />
         ) : null,
     },
   ];
@@ -177,6 +177,8 @@ const LocationManagementTab: React.FC = () => {
   return (
     <div className="manage-page settings-section--wide">
       <DataTable
+        title="Locations"
+        subtitle="Define church campuses and meeting places used across the app."
         columns={columns}
         dataSource={filteredLocations}
         loading={loading}

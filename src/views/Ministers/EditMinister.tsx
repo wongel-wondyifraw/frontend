@@ -169,17 +169,17 @@ const EditMinister = () => {
           >
             <div>
               <h3 style={{ marginBottom: 20 }}><UserOutlined style={{ color: '#1565c0' }} /> Personal Information</h3>
-              <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Avatar size={100} src={avatarPreview} icon={<UserOutlined />} style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }} />
-                  <div style={{ marginTop: 8 }}>
+              <div className="member-identity-row">
+                <div className="member-avatar-block">
+                  <Avatar size={128} src={avatarPreview} icon={<UserOutlined />} style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }} />
+                  <div className="member-avatar-actions">
                     <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
                       <Button size="small" icon={<UploadOutlined />}>Photo</Button>
                     </Upload>
                   </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="member-name-fields">
+                  <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true }]}>
                       <Input size="large" />
                     </Form.Item>
@@ -193,12 +193,12 @@ const EditMinister = () => {
                 </div>
               </div>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
                     <DatePicker style={{ width: '100%' }} size="large" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Gender"
                     name="gender"
@@ -212,7 +212,7 @@ const EditMinister = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Marital Status" name="marital_status">
                     <Select allowClear size="large">
                       <Option value="single">Single</Option>
@@ -227,12 +227,12 @@ const EditMinister = () => {
             <div>
               <h3 style={{ marginBottom: 20 }}><PhoneOutlined style={{ color: '#1565c0' }} /> Contact & Address</h3>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Email Address" name="email">
                     <Input size="large" disabled prefix={<MailOutlined />} />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Phone Number" name="phone" rules={[{ required: true }]}>
                     <Input size="large" prefix={<PhoneOutlined />} />
                   </Form.Item>
@@ -245,12 +245,12 @@ const EditMinister = () => {
             <div>
               <h3 style={{ marginBottom: 20 }}><GlobalOutlined style={{ color: '#1565c0' }} /> Role Details</h3>
               <Row gutter={24}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="title" label="Title / Designation">
                     <Input size="large" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="status" label="Account Status">
                     <Radio.Group buttonStyle="solid" size="large">
                       <Radio.Button value="active">Active</Radio.Button>
@@ -269,7 +269,7 @@ const EditMinister = () => {
                 {() => {
                   const values = form.getFieldsValue();
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: 13 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
                       <div><strong>Name:</strong> {values.first_name} {values.last_name}</div>
                       <div><strong>Email:</strong> {values.email}</div>
                       <div><strong>Phone:</strong> {values.phone || '—'}</div>

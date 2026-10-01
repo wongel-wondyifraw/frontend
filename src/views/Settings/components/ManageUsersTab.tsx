@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { Avatar, Upload, Button, Tag, Tooltip, Select } from 'antd';
+import { Avatar, Upload, Button, Tag, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   UserOutlined,
@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import DataTable from '@/Components/common/DataTable';
 import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
 import type { User } from '@/types';
@@ -149,37 +150,38 @@ const ManageUsersTab = ({
       },
       {
         title: 'Actions',
-        key: 'actions',
+            key: 'actions',
+            ...TABLE_ACTIONS_COLUMN,
         render: (_: unknown, record: User) =>
           canManage ? (
-            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-              <Tooltip title="Edit">
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEditUser(record)} />
-              </Tooltip>
-              <Tooltip title={record.is_active ? 'Deactivate' : 'Activate'}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={
-                    record.is_active ? (
-                      <StopOutlined style={{ color: '#faad14' }} />
-                    ) : (
-                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                    )
-                  }
-                  onClick={() => onToggleStatus(record)}
-                />
-              </Tooltip>
-              <Tooltip title="Delete">
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => onDeleteUser(record)}
-                />
-              </Tooltip>
-            </div>
+            <TableRowActions
+              ariaLabel={`Actions for ${record.first_name || 'user'}`}
+              items={[
+                {
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => onEditUser(record),
+                },
+                {
+                  key: 'toggle-status',
+                  label: record.is_active ? 'Deactivate' : 'Activate',
+                  icon: record.is_active ? (
+                    <StopOutlined style={{ color: '#faad14' }} />
+                  ) : (
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  ),
+                  onClick: () => onToggleStatus(record),
+                },
+                {
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => onDeleteUser(record),
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -192,6 +194,8 @@ const ManageUsersTab = ({
   return (
     <div className="manage-page settings-section--wide">
       <DataTable
+        title="Users"
+        subtitle="Create accounts and control who can access the system."
         columns={userColumns}
         dataSource={filteredUsers}
         loading={loading}

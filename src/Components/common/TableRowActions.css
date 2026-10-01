@@ -1,0 +1,32 @@
+.table-row-actions-trigger {
+  color: var(--text-secondary, #64748b) !important;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-row-actions-trigger:hover {
+  color: var(--text-main, #0f172a) !important;
+  background: var(--bg-hover, #f1f5f9) !important;
+}
+
+/* Action column — keep header on one line system-wide */
+th.table-col-actions,
+td.table-col-actions,
+.ant-table-cell.table-col-actions,
+.ant-table-cell:has(.table-row-actions-trigger) {
+  white-space: nowrap !important;
+  width: 80px !important;
+  min-width: 80px !important;
+  max-width: 88px !important;
+  padding-left: 8px !important;
+  padding-right: 12px !important;
+  text-align: right !important;
+}
+
+th.table-col-actions {
+  overflow: visible !important;
+}

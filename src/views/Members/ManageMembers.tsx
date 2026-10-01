@@ -1,13 +1,22 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Button, Avatar, Modal, Tooltip, Select, DatePicker } from 'antd';
+import { Tag, Modal, Select, DatePicker } from 'antd';
 import { message } from '@/lib/app-message';
-import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs, { type Dayjs } from 'dayjs';
 import DataTable from '../../Components/common/DataTable';
 import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import EntityNameCell from '../../Components/common/EntityNameCell';
+import DataImportExport from '../../Components/common/DataImportExport';
 import { getMembers, deleteMember, updateMember } from '../../services/api';
+import {
+    downloadMemberTemplate,
+    exportMembersExcel,
+    exportMembersPdf,
+    importMembersFromFile,
+} from '@/lib/data-io/members-io';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageMembersProps, Member, PaginationParams } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -155,31 +164,28 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             title: 'Name',
             key: 'name',
             render: (_: unknown, record: Member) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Avatar
-                        src={getImageUrl(record.image_url) || undefined}
-                        style={{ backgroundColor: '#1565c0', color: '#fff', fontWeight: 600 }}
-                        crossOrigin="use-credentials"
-                    >
-                        {getInitials(record.first_name, record.last_name, record.middle_name)}
-                    </Avatar>
-                    <div>
-                        <span style={{ fontWeight: 600 }}>
-                            {record.first_name} {record.middle_name ? record.middle_name + ' ' : ''}{record.last_name}
-                        </span>
-                        {record.email && (
-                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>{record.email}</div>
-                        )}
-                        <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <EntityNameCell
+                    title={
+                        <>
+                            {record.first_name}{' '}
+                            {record.middle_name ? `${record.middle_name} ` : ''}
+                            {record.last_name}
+                        </>
+                    }
+                    subtitle={record.email || undefined}
+                    avatarSrc={getImageUrl(record.image_url)}
+                    initials={getInitials(record.first_name, record.last_name, record.middle_name)}
+                    meta={
+                        <>
                             {record.member_type && record.member_type !== 'existing' && (
                                 <Tag style={{ marginInlineEnd: 0 }}>{record.member_type}</Tag>
                             )}
                             {record.requires_follow_up && (
                                 <Tag color="orange" style={{ marginInlineEnd: 0 }}>Follow-up</Tag>
                             )}
-                        </div>
-                    </div>
-                </div>
+                        </>
+                    }
+                />
             ),
         },
         {
@@ -249,65 +255,56 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         {
             title: 'Action',
             key: 'action',
-            render: (_: unknown, record: Member) => (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <Tooltip title="View Details">
-                        <Button
-                            icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-                            onClick={() => router.push(`/members/details/${record.id}`)}
-                        />
-                    </Tooltip>
-                    
-                    {record.status === 'pending' && canApprove && (
-                        <>
-                            <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
-                            <Tooltip title="Approve">
-                                <Button
-                                    type="text"
-                                    size="small"
-                                    style={{ color: '#10b981' }}
-                                    onClick={() => handleApprove(record)}
-                                >
-                                    Approve
-                                </Button>
-                            </Tooltip>
-                            <Tooltip title="Reject">
-                                <Button
-                                    type="text"
-                                    danger
-                                    size="small"
-                                    onClick={() => handleReject(record)}
-                                >
-                                    Reject
-                                </Button>
-                            </Tooltip>
-                        </>
-                    )}
-
-                    <div style={{ width: '1px', height: '14px', background: '#cbd5e1' }} />
-                    {canUpdate && (
-                    <Tooltip title="Edit">
-                        <Button
-                            icon={<EditOutlined />}
-                            type="text"
-                            size="small"
-                            onClick={() => router.push(`/members/edit/${record.id}`)}
-                        />
-                    </Tooltip>
-                    )}
-                    {canDelete && (
-                    <Tooltip title="Delete">
-                        <Button
-                            icon={<DeleteOutlined />}
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => handleDelete(record)}
-                        />
-                    </Tooltip>
-                    )}
-                </div>
-            ),
+            ...TABLE_ACTIONS_COLUMN,
+            render: (_: unknown, record: Member) => {
+                const items = [
+                    {
+                        key: 'view',
+                        label: 'View details',
+                        icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+                        onClick: () => router.push(`/members/details/${record.id}`),
+                    },
+                    ...(record.status === 'pending' && canApprove
+                        ? [
+                            {
+                                key: 'approve',
+                                label: 'Approve',
+                                icon: <CheckOutlined style={{ color: '#10b981' }} />,
+                                onClick: () => handleApprove(record),
+                            },
+                            {
+                                key: 'reject',
+                                label: 'Reject',
+                                icon: <StopOutlined />,
+                                danger: true,
+                                onClick: () => handleReject(record),
+                            },
+                        ]
+                        : []),
+                    ...(canUpdate
+                        ? [
+                            {
+                                key: 'edit',
+                                label: 'Edit',
+                                icon: <EditOutlined />,
+                                onClick: () => router.push(`/members/edit/${record.id}`),
+                            },
+                        ]
+                        : []),
+                    ...(canDelete
+                        ? [
+                            {
+                                key: 'delete',
+                                label: 'Delete',
+                                icon: <DeleteOutlined />,
+                                danger: true,
+                                onClick: () => handleDelete(record),
+                            },
+                        ]
+                        : []),
+                ];
+                return <TableRowActions items={items} ariaLabel={`Actions for ${record.first_name}`} />;
+            },
         },
     ];
 
@@ -399,6 +396,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         <div className="manage-page">
             <DataTable
                 title="Manage Members"
+                subtitle="View and update church members, roles, and contact details."
                 columns={columns}
                 dataSource={members}
                 loading={loading}
@@ -407,6 +405,18 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 searchValue={searchText}
                 onSearchChange={handleSearchChange}
                 filterPanel={filterPanel}
+                controlsEnd={
+                    <DataImportExport
+                        entityLabel="Members"
+                        canImport={canCreate}
+                        canExport
+                        onDownloadTemplate={downloadMemberTemplate}
+                        onExportExcel={exportMembersExcel}
+                        onExportPdf={exportMembersPdf}
+                        onImportFile={importMembersFromFile}
+                        onImportComplete={() => loadMembers(1, pageSize, searchText, filters)}
+                    />
+                }
                 serverPagination={{
                     current: page,
                     pageSize,

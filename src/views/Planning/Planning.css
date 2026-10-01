@@ -61,6 +61,16 @@
   margin-bottom: 16px;
 }
 
+.planning-controls-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 .planning-search {
   width: 250px;
   flex: 1 1 200px;
@@ -120,6 +130,12 @@
 
   .planning-controls {
     gap: 10px;
+  }
+
+  .planning-controls-end {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
   }
 
   .planning-search {

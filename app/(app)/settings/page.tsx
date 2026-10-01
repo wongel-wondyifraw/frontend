@@ -4,12 +4,10 @@ export const metadata = {
   title: 'Settings — Goro Full Gospel Church',
 };
 
+import AppSkeleton from '@/Components/common/skeletons/AppSkeleton';
+
 const SettingsClient = dynamic(() => import('@/views/Settings/Settings'), {
-  loading: () => (
-    <div className="page-loading">
-      <div className="page-loading-spinner" aria-label="Loading settings" />
-    </div>
-  ),
+  loading: () => <AppSkeleton />,
 });
 
 export default function SettingsPage() {

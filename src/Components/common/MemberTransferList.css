@@ -1,0 +1,119 @@
+.member-check-list {
+  width: 100%;
+  min-width: 0;
+}
+
+.member-check-list-desc {
+  color: #64748b;
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.member-check-list-search {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.member-check-list-search.ant-input-affix-wrapper {
+  min-height: 42px;
+}
+
+.member-check-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.member-check-list-count {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.member-check-list-body {
+  overflow: auto;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-card, #fff);
+  -webkit-overflow-scrolling: touch;
+}
+
+.member-check-list-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.member-check-list-item {
+  border-bottom: 1px solid var(--divider, #f1f5f9);
+}
+
+.member-check-list-item:last-child {
+  border-bottom: none;
+}
+
+.member-check-list-item.is-selected {
+  background: #f0f7ff;
+}
+
+.member-check-list-item .ant-checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px 14px;
+  margin: 0;
+  gap: 10px;
+}
+
+.member-check-list-item .ant-checkbox {
+  margin-top: 8px;
+}
+
+.member-check-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.member-check-list-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.member-check-list-name {
+  font-weight: 600;
+  color: var(--text-main, #0f172a);
+  line-height: 1.35;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.member-check-list-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.member-check-list-body .ant-empty {
+  padding: 32px 16px;
+}
+
+@media (max-width: 768px) {
+  .member-check-list-item .ant-checkbox-wrapper {
+    padding: 14px 12px;
+  }
+
+  .member-check-list-body {
+    max-height: min(50vh, 360px);
+  }
+}

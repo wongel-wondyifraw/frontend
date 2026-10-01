@@ -136,22 +136,22 @@ const AddMinister = () => {
               <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserOutlined style={{ color: '#1565c0' }} /> Personal Information
               </h3>
-              <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', alignItems: 'flex-start' }}>
-                <div style={{ textAlign: 'center' }}>
+              <div className="member-identity-row">
+                <div className="member-avatar-block">
                   <Avatar
-                    size={100}
+                    size={128}
                     src={avatarPreview}
                     icon={<UserOutlined />}
                     style={{ backgroundColor: '#f0f2f5', border: '2px solid #d9d9d9' }}
                   />
-                  <div style={{ marginTop: '8px' }}>
+                  <div className="member-avatar-actions">
                     <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
                       <Button size="small" icon={<UploadOutlined />}>Photo</Button>
                     </Upload>
                   </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="member-name-fields">
+                  <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
                       <Input size="large" placeholder="John" />
                     </Form.Item>
@@ -165,12 +165,12 @@ const AddMinister = () => {
                 </div>
               </div>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
                     <DatePicker style={{ width: '100%' }} size="large" placeholder="Select date" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Gender"
                     name="gender"
@@ -184,7 +184,7 @@ const AddMinister = () => {
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Marital Status" name="marital_status">
                     <Select placeholder="Select status" size="large" allowClear>
                       <Option value="single">Single</Option>
@@ -202,7 +202,7 @@ const AddMinister = () => {
                 <PhoneOutlined style={{ color: '#1565c0' }} /> Contact & Address
               </h3>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Email Address"
                     name="email"
@@ -215,7 +215,7 @@ const AddMinister = () => {
                     <Input size="large" placeholder="minister@example.com" prefix={<MailOutlined style={{ color: '#bfbfbf' }} />} />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item label="Phone Number" name="phone" rules={[{ required: true, message: 'Phone number is required' }]}>
                     <Input size="large" placeholder="+251 9XX XXX XXXX" prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />} />
                   </Form.Item>
@@ -231,12 +231,12 @@ const AddMinister = () => {
                 <GlobalOutlined style={{ color: '#1565c0' }} /> Role Details
               </h3>
               <Row gutter={24}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="title" label="Title / Designation">
                     <Input size="large" placeholder="e.g. Senior Pastor, Associate Minister" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item name="status" label="Account Status">
                     <Radio.Group buttonStyle="solid" size="large">
                       <Radio.Button value="active">Active</Radio.Button>
@@ -262,7 +262,7 @@ const AddMinister = () => {
                   {() => {
                     const values = form.getFieldsValue();
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: '13px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: '13px' }}>
                         <div><strong>Name:</strong> {values.first_name || '—'} {values.middle_name || ''} {values.last_name || ''}</div>
                         <div><strong>Email:</strong> {values.email || '—'}</div>
                         <div><strong>Phone:</strong> {values.phone || '—'}</div>

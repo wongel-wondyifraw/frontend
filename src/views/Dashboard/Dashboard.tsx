@@ -32,6 +32,16 @@ const DashboardContent = () => {
 
   return (
     <div className="dashboard-page">
+      <div className="dashboard-header">
+        <div className="dashboard-header-text">
+          <h2>Dashboard</h2>
+          <p>
+            {user?.first_name
+              ? `Welcome back, ${user.first_name}. Here's what's happening in your ministry.`
+              : "Overview of members, ministries, and recent activity."}
+          </p>
+        </div>
+      </div>
       <div className="dashboard-stage">
         <AnalysisDashboard />
       </div>

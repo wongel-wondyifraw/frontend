@@ -5,7 +5,6 @@ import {
   Users,
   Briefcase,
   Settings,
-  HelpCircle,
   ChevronDown,
   LogOut,
   BookOpen,
@@ -170,7 +169,7 @@ const Sidebar = () => {
             icon: <Globe size={18} />,
             path: '/landing',
             type: 'link',
-            anyOf: ['website.manage', 'projects.manage'],
+            permission: 'website.manage',
           },
         ],
       },
@@ -180,7 +179,6 @@ const Sidebar = () => {
 
   const bottomItems = [
     { label: 'Settings', icon: <Settings size={18} />, path: '/settings', permission: 'settings.read' },
-    { label: 'Help Center', icon: <HelpCircle size={18} />, path: '/help', permission: 'dashboard.read' },
   ];
 
   const can = (permission?: string) => !permission || hasPermission(user, permission);

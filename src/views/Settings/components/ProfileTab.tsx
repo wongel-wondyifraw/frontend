@@ -40,7 +40,25 @@ const ProfileTab = ({
   return (
     <div className="settings-section settings-section--wide">
       <div className="settings-profile">
-        <div>
+        <div className="settings-avatar-panel">
+          <h3 className="settings-section-title">Profile picture</h3>
+          <Avatar
+            className="settings-avatar"
+            size={140}
+            icon={<UserOutlined />}
+            src={avatarPreview || getAvatarUrl(profile?.avatar_url, avatarVersion)}
+          />
+          <Upload
+            showUploadList={false}
+            accept="image/jpeg,image/png,image/webp"
+            beforeUpload={(file) => onAvatarUpload(file, profile?.id ?? '')}
+          >
+            <Button icon={<UploadOutlined />}>Change photo</Button>
+          </Upload>
+          <p className="settings-avatar-hint">JPG, PNG, or WebP. Max 800KB.</p>
+        </div>
+
+        <div className="settings-profile-form">
           <h3 className="settings-section-title">Personal information</h3>
           <Form layout="vertical" form={form} onFinish={onProfileUpdate}>
             <Row gutter={16}>
@@ -84,24 +102,6 @@ const ProfileTab = ({
               </Button>
             </div>
           </Form>
-        </div>
-
-        <div className="settings-avatar-panel">
-          <h3 className="settings-section-title">Profile picture</h3>
-          <Avatar
-            className="settings-avatar"
-            size={140}
-            icon={<UserOutlined />}
-            src={avatarPreview || getAvatarUrl(profile?.avatar_url, avatarVersion)}
-          />
-          <Upload
-            showUploadList={false}
-            accept="image/jpeg,image/png,image/webp"
-            beforeUpload={(file) => onAvatarUpload(file, profile?.id ?? '')}
-          >
-            <Button icon={<UploadOutlined />}>Change photo</Button>
-          </Upload>
-          <p className="settings-avatar-hint">JPG, PNG, or WebP. Max 800KB.</p>
         </div>
       </div>
     </div>

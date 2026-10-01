@@ -1,159 +1,321 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button, Tag, Typography, Space, ConfigProvider, theme, Spin, Drawer } from 'antd';
+import dynamic from 'next/dynamic';
+import { Button, Typography, Space, ConfigProvider, theme, Spin, Drawer, message } from 'antd';
 import {
-  ClockCircleOutlined,
   EnvironmentOutlined,
   GlobalOutlined,
   MailOutlined,
   MenuOutlined,
-  PhoneOutlined,
+  RightOutlined,
+  SendOutlined,
+  CarOutlined,
+  LockOutlined,
+  CompassOutlined,
+  BookOutlined,
+  HeartOutlined,
+  TeamOutlined,
+  SmileOutlined,
+  StarOutlined,
+  FireOutlined,
+  BulbOutlined,
+  HomeOutlined,
+  SoundOutlined,
+  CrownOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined,
+  PlayCircleOutlined,
+  SafetyOutlined,
+  ThunderboltOutlined,
+  TrophyOutlined,
+  UserOutlined,
+  WifiOutlined,
+  CoffeeOutlined,
+  ReadOutlined,
+  BankOutlined,
+  GiftOutlined,
+  MessageOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
+import { motion, useReducedMotion, useInView, AnimatePresence } from 'framer-motion';
 import AppLogo from '@/Components/common/AppLogo';
-import ProgramPoster, { posterStyleToVariant } from '@/Components/landing/ProgramPoster';
-import SectionDisplay from '@/Components/landing/SectionDisplay';
-import { TENANT } from '@/lib/tenant';
-import { getLandingContent } from '@/services/api';
+import LandingBannerCard from '@/Components/landing/LandingBannerCard';
+import CustomSelect, { type CustomSelectOption } from '@/Components/common/CustomSelect';
+import { PLATFORM, TENANT } from '@/lib/tenant';
+import { getLandingContent, submitContactRequest } from '@/services/api';
 import type { LandingMediaItem, LandingPageContent } from '@/types';
 import {
   DEFAULT_LANDING_CONTENT,
-  isDirectVideoFile,
   mergeLandingContent,
-  youtubeEmbedUrl,
 } from '@/lib/landing-defaults';
 import { getImageUrl } from '@/lib/media-url';
 import './ChurchFeed.css';
 
 const { Title, Paragraph, Text } = Typography;
 
+const LocationMap = dynamic(
+  () => import('@/Components/landing/LocationMap'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="lp-map-skeleton">Loading Goro Full Gospel Church map...</div>
+    ),
+  }
+);
+
+/* ────────────────────────────────────────────
+   Configuration & Constants
+   ──────────────────────────────────────────── */
 const NAV_LINKS = [
   { href: '#vision', label: 'Vision' },
-  { href: '#projects', label: 'Projects' },
   { href: '#programs', label: 'Programs' },
-  { href: '#updates', label: 'Updates' },
+  { href: '#ministries', label: 'Ministries' },
+  { href: '#projects', label: 'Projects' },
   { href: '#contact', label: 'Contact' },
   { href: '#about', label: 'About' },
 ] as const;
 
 const landingTheme = {
   token: {
-    colorPrimary: '#1E40AF',
-    colorLink: '#1E40AF',
-    borderRadius: 8,
-    fontFamily:
-      "'Outfit', 'Noto Sans Ethiopic', system-ui, sans-serif",
+    colorPrimary: '#003198',
+    colorLink: '#003198',
+    borderRadius: 4,
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   },
   algorithm: theme.defaultAlgorithm,
 };
 
-function MediaBlock({
-  item,
-  showPosterFallback = false,
-  posterStyle = 'navy',
-}: {
-  item: LandingMediaItem;
-  showPosterFallback?: boolean;
-  posterStyle?: 'navy' | 'emerald' | 'warm';
-}) {
-  const imageSrc = getImageUrl(item.image_url);
-  const embed = youtubeEmbedUrl(item.video_url);
-  const fileVideo = item.video_file_url || (isDirectVideoFile(item.video_url) ? item.video_url : null);
-  const fileHref = getImageUrl(item.file_url);
+/* Static stats for the ribbon */
+const STATIC_STATS = [
+  { value: '4,500+', label: 'Active Church Members' },
+  { value: '32', label: 'Community Cell Groups' },
+  { value: '18', label: 'Ongoing Ministry Programs' },
+  { value: '99.8%', label: 'ChMS System Reliability' },
+];
 
-  return (
-    <div className="lp-media-block">
-      {imageSrc ? (
-        <div className="lp-card-media">
-          <Image
-            src={imageSrc}
-            alt={item.title}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            quality={55}
-            loading="lazy"
-            className="lp-card-photo"
-            unoptimized={imageSrc.startsWith('http') && !imageSrc.includes('unsplash')}
-          />
-          {item.tag && (
-            <Tag color="#1E40AF" className="lp-card-tag">
-              {item.tag}
-            </Tag>
-          )}
-        </div>
-      ) : showPosterFallback ? (
-        <ProgramPoster
-          title={item.title}
-          tag={item.tag}
-          variant={posterStyleToVariant(posterStyle)}
-        />
-      ) : null}
-      {embed && (
-        <div className="lp-video-frame">
-          <iframe
-            src={embed}
-            title={item.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )}
-      {fileVideo && !embed && (
-        <video className="lp-video-file" controls src={getImageUrl(fileVideo) || undefined} />
-      )}
-      {fileHref && (
-        <a className="lp-file-link" href={fileHref} target="_blank" rel="noreferrer">
-          {item.file_name || 'Download attachment'}
-        </a>
-      )}
-    </div>
-  );
-}
+/* Vision card icons mapping */
+const VISION_ICONS = [
+  { icon: <CompassOutlined />, fallbackTitle: 'Great Commission & Evangelism' },
+  { icon: <BookOutlined />, fallbackTitle: 'Holistic Discipleship' },
+  { icon: <HeartOutlined />, fallbackTitle: 'Community Compassion' },
+];
 
-function infoLineIcon(line: string) {
-  const value = line.trim();
-  if (/@|email/i.test(value)) return <MailOutlined aria-hidden />;
-  if (/\+?\d[\d\s().-]{6,}|phone|tel\b/i.test(value)) return <PhoneOutlined aria-hidden />;
-  if (/https?:|www\./i.test(value)) return <GlobalOutlined aria-hidden />;
-  if (/\b(am|pm)\b|\d{1,2}:\d{2}|sunday|monday|tuesday|wednesday|thursday|friday|saturday|hours/i.test(value)) {
-    return <ClockCircleOutlined aria-hidden />;
+const renderVisionMedia = (item: LandingMediaItem, i: number) => {
+  if (item.image_url) {
+    return (
+      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden' }}>
+        <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+    );
   }
-  return <EnvironmentOutlined aria-hidden />;
+  
+  if (item.icon) {
+    switch (item.icon) {
+      case 'compass': return <CompassOutlined />;
+      case 'book': return <BookOutlined />;
+      case 'heart': return <HeartOutlined />;
+      case 'star': return <StarOutlined />;
+      case 'team': return <TeamOutlined />;
+      case 'fire': return <FireOutlined />;
+      case 'bulb': return <BulbOutlined />;
+      case 'globe': return <GlobalOutlined />;
+      case 'home': return <HomeOutlined />;
+      case 'sound': return <SoundOutlined />;
+      case 'crown': return <CrownOutlined />;
+      case 'check': return <CheckCircleOutlined />;
+      case 'info': return <InfoCircleOutlined />;
+      case 'play': return <PlayCircleOutlined />;
+      case 'shield': return <SafetyOutlined />;
+      case 'lightning': return <ThunderboltOutlined />;
+      case 'trophy': return <TrophyOutlined />;
+      case 'user': return <UserOutlined />;
+      case 'wifi': return <WifiOutlined />;
+      case 'coffee': return <CoffeeOutlined />;
+      case 'read': return <ReadOutlined />;
+      case 'bank': return <BankOutlined />;
+      case 'gift': return <GiftOutlined />;
+      case 'message': return <MessageOutlined />;
+      case 'rocket': return <RocketOutlined />;
+    }
+  }
+  
+  return VISION_ICONS[i]?.icon || <CompassOutlined />;
+};
+
+/* Program card color tags */
+const TAG_COLORS = ['blue', 'green', 'purple', 'amber'] as const;
+
+/* Contact form ministry request category options */
+const CONTACT_CATEGORY_OPTIONS: CustomSelectOption[] = [
+  {
+    value: 'prayer',
+    label: 'Pastoral Prayer Request (Confidential)',
+    icon: <HeartOutlined />,
+  },
+  {
+    value: 'cell',
+    label: 'Join a Cell Group in Goro',
+    icon: <TeamOutlined />,
+  },
+  {
+    value: 'baptism',
+    label: 'Water Baptism & Membership Class',
+    icon: <BookOutlined />,
+  },
+  {
+    value: 'counseling',
+    label: 'Family & Premarital Counseling',
+    icon: <SmileOutlined />,
+  },
+  {
+    value: 'general',
+    label: 'General Church Inquiry',
+    icon: <MailOutlined />,
+  },
+];
+
+/* ────────────────────────────────────────────
+   Scroll-triggered animation hook
+   ──────────────────────────────────────────── */
+function useFadeInRef<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px 0px' });
+  return { ref, inView };
 }
 
-function ProgramCard({
-  item,
-  posterStyle,
+/* ────────────────────────────────────────────
+   Framer Motion variants
+   ──────────────────────────────────────────── */
+const fadeUpVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      delay: i * 0.1,
+      ease: [0.4, 0, 0.2, 1],
+    },
+  }),
+};
+
+const scaleInVariant = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
+  },
+};
+
+/* ────────────────────────────────────────────
+   AnimatedSection — scroll-triggered wrapper
+   ──────────────────────────────────────────── */
+function AnimatedSection({
+  children,
+  className = '',
+  delay = 0,
 }: {
-  item: LandingMediaItem;
-  posterStyle?: 'navy' | 'emerald' | 'warm';
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
 }) {
-  const imageSrc = getImageUrl(item.image_url);
+  const prefersReducedMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-80px 0px' });
+
   return (
-    <article key={item.title} className="lp-program">
-      <ProgramPoster
-        title={item.title}
-        text={item.text}
-        tag={item.tag}
-        eventDate={item.event_date}
-        eventTime={item.event_time}
-        location={item.location}
-        imageUrl={imageSrc}
-        variant={posterStyleToVariant(posterStyle)}
-        siteLabel={TENANT.shortName}
-      />
-    </article>
+    <motion.div
+      ref={ref}
+      className={className}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 32 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.65, delay, ease: [0.4, 0, 0.2, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
-export default function ChurchFeed() {
-  const [content, setContent] = useState<LandingPageContent>(DEFAULT_LANDING_CONTENT);
-  const [loading, setLoading] = useState(true);
-  const [navOpen, setNavOpen] = useState(false);
+/* ────────────────────────────────────────────
+   AnimatedCounter — counts up on scroll
+   ──────────────────────────────────────────── */
+function AnimatedCounter({ value }: { value: string }) {
+  const prefersReducedMotion = useReducedMotion();
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const [displayValue, setDisplayValue] = useState(prefersReducedMotion ? value : '0');
 
   useEffect(() => {
+    if (!inView || prefersReducedMotion) {
+      if (inView) setDisplayValue(value);
+      return;
+    }
+
+    // Extract numeric part
+    const numericMatch = value.match(/[\d,.]+/);
+    if (!numericMatch) {
+      setDisplayValue(value);
+      return;
+    }
+
+    const numericStr = numericMatch[0].replace(/,/g, '');
+    const target = parseFloat(numericStr);
+    const prefix = value.slice(0, value.indexOf(numericMatch[0]));
+    const suffix = value.slice(value.indexOf(numericMatch[0]) + numericMatch[0].length);
+    const hasCommas = numericMatch[0].includes(',');
+    const isDecimal = numericMatch[0].includes('.');
+
+    const duration = 1200;
+    const startTime = performance.now();
+
+    function animate(currentTime: number) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const current = target * easedProgress;
+
+      let formatted: string;
+      if (isDecimal) {
+        formatted = current.toFixed(1);
+      } else {
+        const rounded = Math.round(current);
+        formatted = hasCommas ? rounded.toLocaleString() : String(rounded);
+      }
+
+      setDisplayValue(`${prefix}${formatted}${suffix}`);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }, [inView, value, prefersReducedMotion]);
+
+  return <span ref={ref}>{displayValue}</span>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ══════════════════════════════════════════════════════════ */
+export default function ChurchFeed({ previewContent }: { previewContent?: LandingPageContent }) {
+  const [fetchedContent, setFetchedContent] = useState<LandingPageContent>(DEFAULT_LANDING_CONTENT);
+  const [loading, setLoading] = useState(!previewContent);
+  const [navOpen, setNavOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('');
+  const [selectedVision, setSelectedVision] = useState<any>(null);
+  const prefersReducedMotion = useReducedMotion();
+
+  const content = previewContent || fetchedContent;
+
+  useEffect(() => {
+    if (previewContent) return; // Skip fetching if in preview mode
+    
     let cancelled = false;
     (async () => {
       try {
@@ -164,9 +326,9 @@ export default function ChurchFeed() {
           raw && typeof raw === 'object' && !Array.isArray(raw)
             ? (raw as LandingPageContent)
             : {};
-        setContent(mergeLandingContent(parsed));
+        setFetchedContent(mergeLandingContent(parsed));
       } catch {
-        if (!cancelled) setContent(DEFAULT_LANDING_CONTENT);
+        if (!cancelled) setFetchedContent(DEFAULT_LANDING_CONTENT);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -174,19 +336,99 @@ export default function ChurchFeed() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [previewContent]);
+
+  /* Active nav tracking via intersection observer */
+  useEffect(() => {
+    const sections = document.querySelectorAll<HTMLElement>('section[id]');
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveNav(`#${entry.target.id}`);
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, [loading]);
 
   const hero = content.hero;
   const about = content.about;
   const vision = content.vision;
+  const ministries = content.ministries;
   const projects = content.projects;
   const programs = content.programs;
-  const updates = content.updates;
   const contact = content.contact;
   const footer = content.footer;
 
   const heroImage = getImageUrl(hero?.image_url) || '';
-  const posterStyle = programs?.default_poster_style || 'navy';
+
+  const aboutItems = about?.items || [];
+  const ministryItems = ministries?.items || [];
+  const homepageProjectItems = projects?.items || [];
+  const programItems = programs?.items || [];
+
+  const displayedPrograms = programItems;
+
+  const hasVisionBody = Boolean(
+    vision?.heading || vision?.body || vision?.image_url || vision?.title || vision?.subtitle,
+  );
+
+  /* Build stats from data or use defaults */
+  const stats = useMemo(() => {
+    const rows: { value: string; label: string }[] = [];
+    if (displayedPrograms.length) {
+      rows.push({ value: String(displayedPrograms.length), label: programs?.title || 'Programs' });
+    }
+    if (ministryItems.length) {
+      rows.push({ value: String(ministryItems.length), label: ministries?.title || 'Ministries' });
+    }
+    if (aboutItems.length) {
+      rows.push({ value: String(aboutItems.length), label: about?.title || 'About' });
+    }
+    return rows.length > 0 ? rows : STATIC_STATS;
+  }, [displayedPrograms.length, ministryItems.length, aboutItems.length, programs?.title, ministries?.title, about?.title]);
+
+  const [submittingContact, setSubmittingContact] = useState(false);
+
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const fullName = String(formData.get('full_name') || '').trim();
+    const phone = String(formData.get('phone') || '').trim();
+    const messageText = String(formData.get('message') || '').trim();
+
+    if (!fullName || !phone || !messageText) {
+      message.error('Please enter your name, phone number, and message.');
+      return;
+    }
+
+    setSubmittingContact(true);
+    try {
+      await submitContactRequest({
+        full_name: fullName,
+        phone,
+        email: String(formData.get('email') || '').trim() || undefined,
+        category: (formData.get('category') as any) || 'general',
+        message: messageText,
+        is_confidential: formData.get('is_confidential') === 'on',
+      });
+      message.success('Thank you! Your message has been sent to our pastoral team.');
+      form.reset();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to send your message. Please try again.');
+    } finally {
+      setSubmittingContact(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -196,38 +438,64 @@ export default function ChurchFeed() {
     );
   }
 
-  const aboutItems = about?.items || [];
-  const projectItems = projects?.items || [];
-  const programItems = programs?.items || [];
-  const hasVisionBody = Boolean(
-    vision?.heading || vision?.body || vision?.image_url,
-  );
-
   return (
     <ConfigProvider theme={landingTheme}>
       <div className="lp-shell">
+        {/* ═══════ HEADER ═══════ */}
         <header className="lp-header">
           <div className="lp-header-inner">
-            <AppLogo variant="full" href="/" priority showPoweredBy />
+            <Link href="/" className="lp-header-brand" aria-label={`${TENANT.name} Home`}>
+              <Image
+                src="/full-gospel-logo.png"
+                alt={TENANT.name}
+                width={38}
+                height={38}
+                className="lp-header-logo"
+                priority
+              />
+              <span className="lp-header-brand-name">{TENANT.name}</span>
+            </Link>
+
             <nav className="lp-nav" aria-label="Primary">
               {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href}>
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className={activeNav === link.href ? 'active' : ''}
+                >
                   {link.label}
                 </a>
               ))}
             </nav>
-            <Button
-              type="text"
-              className="lp-nav-toggle"
-              icon={<MenuOutlined />}
-              aria-label="Open menu"
-              onClick={() => setNavOpen(true)}
-            />
+
+            <div className="lp-header-actions">
+              <Button
+                type="text"
+                className="lp-nav-toggle"
+                icon={<MenuOutlined />}
+                aria-label="Open menu"
+                onClick={() => setNavOpen(true)}
+              />
+            </div>
           </div>
         </header>
 
+        {/* Mobile drawer */}
         <Drawer
-          title={TENANT.name}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+              <Image
+                src="/full-gospel-logo.png"
+                alt={TENANT.name}
+                width={30}
+                height={30}
+                style={{ objectFit: 'contain' }}
+              />
+              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--lp-primary-container)' }}>
+                {TENANT.name}
+              </span>
+            </div>
+          }
           placement="right"
           open={navOpen}
           onClose={() => setNavOpen(false)}
@@ -235,333 +503,675 @@ export default function ChurchFeed() {
         >
           <nav className="lp-mobile-nav" aria-label="Mobile">
             {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setNavOpen(false)}
-              >
+              <a key={link.href} href={link.href} onClick={() => setNavOpen(false)}>
                 {link.label}
               </a>
             ))}
-            <Link href="/login" onClick={() => setNavOpen(false)}>
-              Staff login
-            </Link>
           </nav>
         </Drawer>
 
         <main className="lp-main">
+          {/* ═══════ HERO SECTION ═══════ */}
           {hero?.enabled !== false && (
-            <section className={`lp-hero${!heroImage ? ' lp-hero--plain' : ''}`}>
-              {heroImage ? (
-                <Image
-                  src={heroImage}
-                  alt=""
-                  fill
-                  priority
-                  sizes="100vw"
-                  quality={60}
-                  className="lp-hero-img"
-                  unoptimized={heroImage.startsWith('http') && !heroImage.includes('unsplash')}
-                />
-              ) : null}
-              <div className="lp-hero-overlay">
-                {(hero?.verse_ref || hero?.verse_text) && (
-                  <div className="lp-hero-verse-crawl" aria-label="Scripture">
-                    <div className="lp-hero-verse-track">
-                      {[0, 1].map((copy) => (
-                        <span key={copy} className="lp-hero-verse-item">
-                          {hero.verse_ref && (
-                            <span className="lp-hero-verse-ref">{hero.verse_ref}</span>
-                          )}
-                          {hero.verse_text && (
-                            <span className="lp-hero-verse-text">
-                              &ldquo;{hero.verse_text}&rdquo;
-                            </span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <section
+              className={`lp-hero${!heroImage ? ' lp-hero--plain' : ''}`}
+              id="hero"
+              style={
+                heroImage
+                  ? {
+                      backgroundImage: `linear-gradient(rgba(10,18,45,0.78), rgba(10,18,45,0.88)), url("${heroImage}")`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : undefined
+              }
+            >
+              {!heroImage && <div className="lp-hero-shade" aria-hidden />}
               <div className="lp-hero-copy">
                 {hero?.kicker && (
-                  <Text className="lp-kicker">
-                    {hero?.kicker}
-                  </Text>
+                  <motion.div
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  >
+                    <Text className="lp-kicker">{hero.kicker}</Text>
+                  </motion.div>
                 )}
-                <Title level={1} className="lp-hero-title">
-                  {hero?.title || TENANT.name}
-                </Title>
+
+                <motion.div
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  <Title level={1} className="lp-hero-title">
+                    {hero?.title || TENANT.name}
+                  </Title>
+                </motion.div>
+
                 {hero?.lede && (
-                  <Paragraph className="lp-hero-lede">
-                    {hero?.lede}
-                  </Paragraph>
+                  <motion.div
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                  >
+                    <Paragraph className="lp-hero-lede">{hero.lede}</Paragraph>
+                  </motion.div>
                 )}
-                <Space size="middle" wrap className="lp-hero-actions">
+
+                <motion.div
+                  className="lp-hero-actions"
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                >
                   <Link href="/login">
                     <Button type="primary" size="large" className="lp-cta-primary">
-                      Staff login
+                      <LockOutlined style={{ fontSize: 14 }} />
+                      {hero?.cta_label || 'Staff Login'}
                     </Button>
                   </Link>
-                  <Button ghost size="large" href="#about" className="lp-cta-ghost">
-                    Explore the page
+                  <Button ghost size="large" href="#vision" className="lp-cta-ghost">
+                    <CompassOutlined style={{ fontSize: 14 }} />
+                    {hero?.secondary_cta_label || 'Explore Page'}
                   </Button>
-                </Space>
-              </div>
-            </section>
-          )}
+                </motion.div>
 
-          {vision?.enabled !== false && hasVisionBody && (
-            <section id="vision" className="lp-band lp-band--flush">
-              <div className="lp-vision-block">
-                <div className="lp-vision-bg" aria-hidden={!vision?.image_url}>
-                  <MediaBlock
-                    item={{
-                      title: vision?.heading || 'Vision',
-                      image_url: vision?.image_url,
-                      video_url: vision?.video_url,
-                      video_file_url: vision?.video_file_url,
-                      file_url: vision?.file_url,
-                      file_name: vision?.file_name,
+                {(hero?.verse_text || hero?.verse_ref) && (
+                  <motion.div
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.7 }}
+                    className="lp-hero-verse-container"
+                    style={{
+                      position: 'absolute',
+                      bottom: '2rem',
+                      left: '0',
+                      width: '100%',
+                      fontFamily: "'Poppins', var(--lp-font)",
+                      color: 'rgba(255,255,255,0.95)',
+                      textAlign: 'center'
                     }}
-                  />
-                </div>
-                <div className="lp-vision-shade" />
-                <div className="lp-vision-copy">
-                  {vision?.label && (
-                    <Text className="lp-vision-label">
-                      {vision.label}
-                    </Text>
-                  )}
-                  <Title level={2} className="lp-band-title lp-band-title--left">
-                    {vision?.title || 'Our vision'}
-                  </Title>
-                  {vision?.subtitle && (
-                    <Paragraph className="lp-band-sub lp-band-sub--left">
-                      {vision?.subtitle}
-                    </Paragraph>
-                  )}
-                  {vision?.heading && (
-                    <Title level={3} className="lp-vision-heading">
-                      {vision?.heading}
-                    </Title>
-                  )}
-                  {vision?.body && (
-                    <Paragraph className="lp-vision-body">
-                      {vision?.body}
-                    </Paragraph>
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {projects?.enabled !== false && projectItems.length > 0 && (
-            <section id="projects" className="lp-band lp-band--tone">
-              <div className="lp-band-intro">
-                <Title level={2} className="lp-band-title">
-                  {projects?.title || 'Projects & ministries'}
-                </Title>
-                {projects?.subtitle && (
-                  <Paragraph className="lp-band-sub">
-                    {projects?.subtitle}
-                  </Paragraph>
-                )}
-              </div>
-              <div className="lp-band-bleed">
-                <SectionDisplay style={projects?.display_style || 'grid'} className="lp-strip-display">
-                  {projectItems.map((item) => (
-                    <article key={item.title} className="lp-story">
-                      <MediaBlock item={item} />
-                      <div className="lp-story-body">
-                        <Title level={4} className="lp-story-title">
-                          {item.title}
-                        </Title>
-                        {item.text && (
-                          <Paragraph className="lp-story-text">
-                            {item.text}
-                          </Paragraph>
-                        )}
-                        {item.ref && (
-                          <cite className="lp-card-cite">
-                            {item.ref}
-                          </cite>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </SectionDisplay>
-              </div>
-            </section>
-          )}
-
-          {programs?.enabled !== false && programItems.length > 0 && (
-            <section id="programs" className="lp-band">
-              <div className="lp-band-intro">
-                <Title level={2} className="lp-band-title">
-                  {programs?.title || 'Programs'}
-                </Title>
-                {programs?.subtitle && (
-                  <Paragraph className="lp-band-sub">
-                    {programs?.subtitle}
-                  </Paragraph>
-                )}
-              </div>
-              <div className="lp-band-bleed">
-                <SectionDisplay style={programs?.display_style || 'carousel'} className="lp-programs-display">
-                  {programItems.map((item) => (
-                    <ProgramCard key={item.title} item={item} posterStyle={posterStyle} />
-                  ))}
-                </SectionDisplay>
-              </div>
-            </section>
-          )}
-
-          {updates?.enabled !== false &&
-            updates?.show_programs_strip !== false &&
-            programItems.length > 0 && (
-            <section id="updates" className="lp-updates-bar" aria-label="Recent programs">
-              <div className="lp-updates-bar-inner">
-                <span className="lp-updates-bar-label">
-                  {updates?.programs_strip_title || 'Recent'}
-                </span>
-                <div className="lp-updates-bar-list">
-                  {programItems.map((item, index) => (
-                    <span key={`update-${item.title}`} className="lp-updates-bar-item">
-                      {index > 0 && <span className="lp-updates-bar-sep" aria-hidden>·</span>}
-                      <span className="lp-updates-bar-title">{item.title}</span>
-                      {(item.event_date || item.event_time) && (
-                        <span className="lp-updates-bar-meta">
-                          {[item.event_date, item.event_time].filter(Boolean).join(' ')}
+                  >
+                    <div>
+                      {hero.verse_text && (
+                        <span style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.4, marginRight: '0.75rem' }}>
+                          "{hero.verse_text}"
                         </span>
                       )}
-                    </span>
-                  ))}
-                </div>
+                      {hero.verse_ref && (
+                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          — {hero.verse_ref}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </section>
           )}
 
-          {contact?.enabled !== false && (
-            <section id="contact" className="lp-band lp-band--flush">
-              <div className="lp-contact-block">
-                <div className="lp-contact-inner">
-                  <div className="lp-contact-col">
-                    <Text className="lp-vision-label">
-                      {contact?.title || 'Contact'}
-                    </Text>
-                    <Title level={3} className="lp-contact-heading">
-                      {contact?.touch_title || 'Get in touch'}
+          {/* ═══════ STATS RIBBON ═══════ */}
+          <section className="lp-stats-ribbon">
+            <div className="lp-stats-ribbon-inner">
+              <div className="lp-stats-grid">
+                {stats.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    className="lp-stat"
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                  >
+                    <span className="lp-stat-value">
+                      <AnimatedCounter value={stat.value} />
+                    </span>
+                    <span className="lp-stat-label">{stat.label}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ═══════ VISION & CORE MANDATE ═══════ */}
+          {vision?.enabled !== false && hasVisionBody && (
+            <section id="vision" className="lp-section">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <span className="lp-section-badge">ABOUT OUR CALLING</span>
+                    <Title level={2} className="lp-section-title">
+                      {vision?.heading || vision?.title || 'Our Vision & Core Mandate'}
                     </Title>
-                    {contact?.touch_body && (
-                      <Paragraph className="lp-contact-line">
-                        {contact.touch_body}
+                    {(vision?.body || vision?.subtitle) && (
+                      <Paragraph className="lp-section-sub">
+                        {vision?.body || vision?.subtitle}
                       </Paragraph>
                     )}
                   </div>
+                </AnimatedSection>
+
+                {/* Vision cards */}
+                <div className="lp-vision-grid lp-stagger">
+                  {(vision?.items || []).map((item, i) => (
+                    <motion.div
+                      key={item.title || i}
+                      className="lp-vision-card"
+                      onClick={() => setSelectedVision({ ...item, index: i })}
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-60px' }}
+                      transition={{
+                        duration: 0.6,
+                        delay: i * 0.15,
+                        ease: [0.4, 0, 0.2, 1],
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div>
+                        <div className="lp-vision-card-icon">
+                          {renderVisionMedia(item, i)}
+                        </div>
+                        <h3>{item.title}</h3>
+                        {item.text && <p>{item.text}</p>}
+                      </div>
+                      <div className="lp-vision-card-footer">
+                        <span>Learn More</span>
+                        <RightOutlined />
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </section>
           )}
 
-          {about?.enabled !== false && aboutItems.length > 0 && (
-            <section id="about" className="lp-band">
-              <div className="lp-band-intro">
-                <Title level={2} className="lp-band-title">
-                  {about?.title || 'About us'}
-                </Title>
-                {about?.subtitle && (
-                  <Paragraph className="lp-band-sub">
-                    {about?.subtitle}
-                  </Paragraph>
-                )}
+          {/* ═══════ PROGRAMS ═══════ */}
+          {programs?.enabled !== false && displayedPrograms.length > 0 && (
+            <section id="programs" className="lp-section lp-section--canvas lp-section--card-scroll">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <span className="lp-section-badge">OUR PROGRAMS</span>
+                    <Title level={2} className="lp-section-title">
+                      {programs?.title || 'Ministry & Spiritual Programs'}
+                    </Title>
+                    {programs?.subtitle && (
+                      <Paragraph className="lp-section-sub">
+                        {programs.subtitle}
+                      </Paragraph>
+                    )}
+                  </div>
+                </AnimatedSection>
               </div>
-              <div className="lp-band-bleed">
-                <SectionDisplay style={about?.display_style || 'carousel'} className="lp-strip-display">
-                  {aboutItems.map((item) => (
-                    <article key={item.title} className="lp-feature">
-                      <MediaBlock item={item} />
-                      <div className="lp-feature-body">
-                        <Title level={4} className="lp-feature-title">
-                          {item.title}
-                        </Title>
-                        {item.tag && (
-                          <Text className="lp-feature-tag">
-                            {item.tag}
-                          </Text>
-                        )}
-                        {item.text && (
-                          <Paragraph className="lp-feature-text">
-                            {item.text}
-                          </Paragraph>
-                        )}
-                      </div>
-                    </article>
+
+              <div className="lp-card-scroll" tabIndex={0} aria-label="Programs">
+                <div className="lp-card-scroll-track">
+                  {displayedPrograms.map((item, i) => (
+                    <div key={`${item.title || 'prog'}-${i}`} className="lp-card-scroll-slide">
+                      <LandingBannerCard
+                        item={item}
+                        index={i}
+                        type="program"
+                        prefersReducedMotion={prefersReducedMotion}
+                      />
+                    </div>
                   ))}
-                </SectionDisplay>
+                </div>
               </div>
             </section>
           )}
+
+          {/* ═══════ MINISTRIES ═══════ */}
+          {ministries?.enabled !== false && ministryItems.length > 0 && (
+            <section id="ministries" className="lp-section lp-section--card-scroll">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <Title level={2} className="lp-section-title">
+                      Ministries
+                    </Title>
+                    {ministries?.subtitle && (
+                      <Paragraph className="lp-section-sub">{ministries.subtitle}</Paragraph>
+                    )}
+                  </div>
+                </AnimatedSection>
+              </div>
+
+              <div className="lp-card-scroll" tabIndex={0} aria-label="Ministries">
+                <div className="lp-card-scroll-track">
+                  {ministryItems.map((item, i) => (
+                    <div key={`${item.title || 'm'}-${i}`} className="lp-card-scroll-slide">
+                      <LandingBannerCard
+                        item={item}
+                        index={i}
+                        type="ministry"
+                        prefersReducedMotion={prefersReducedMotion}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ═══════ PROJECTS ═══════ */}
+          {projects?.enabled !== false && homepageProjectItems.length > 0 && (
+            <section id="projects" className="lp-section lp-section--canvas">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <Title level={2} className="lp-section-title">
+                      {projects?.title || 'Projects'}
+                    </Title>
+                    {projects?.subtitle && (
+                      <Paragraph className="lp-section-sub">
+                        {projects.subtitle}
+                      </Paragraph>
+                    )}
+                  </div>
+                </AnimatedSection>
+
+                <div className="lp-projects-grid-full">
+                  {homepageProjectItems.map((project, i) => {
+                    const img = getImageUrl(project.image_url);
+                    const dates = [project.event_date, project.event_date_end]
+                      .filter(Boolean)
+                      .join(' – ');
+                    return (
+                      <article
+                        key={`${project.title || 'p'}-${i}`}
+                        className="lp-project-card-lg"
+                      >
+                        <div className="lp-project-card-lg-media">
+                          {img ? (
+                            <Image
+                              src={img}
+                              alt={project.title}
+                              fill
+                              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                              className="lp-project-card-lg-img"
+                              unoptimized={
+                                img.startsWith('http') && !img.includes('unsplash')
+                              }
+                            />
+                          ) : (
+                            <div className="lp-project-card-lg-fallback" aria-hidden />
+                          )}
+                          <div className="lp-project-card-lg-shade" aria-hidden />
+                          {project.tag && (
+                            <span className="lp-project-card-lg-tag">{project.tag}</span>
+                          )}
+                        </div>
+                        <div className="lp-project-card-lg-body">
+                          <h4 className="lp-project-card-lg-title">{project.title}</h4>
+                          {project.text && (
+                            <p className="lp-project-card-lg-text">{project.text}</p>
+                          )}
+                          {dates && (
+                            <p className="lp-project-card-lg-dates">{dates}</p>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ═══════ CONTACT & MAP ═══════ */}
+          {contact?.enabled !== false && (
+            <section id="contact" className="lp-contact-section">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <span className="lp-section-badge">CONNECT WITH US</span>
+                    <Title level={2} className="lp-section-title">
+                      {contact?.touch_title || 'Get in Touch & Visit Us'}
+                    </Title>
+                    {contact?.touch_body && (
+                      <Paragraph className="lp-section-sub">{contact.touch_body}</Paragraph>
+                    )}
+                  </div>
+                </AnimatedSection>
+
+                <div className="lp-contact-grid">
+                  {/* Left: Contact Form */}
+                  <AnimatedSection delay={0.1} className="lp-contact-left-col">
+                    <div className="lp-form-card">
+                      <div className="lp-form-card-header">
+                        <h3>Send a Message or Prayer Request</h3>
+                        <p>Our pastoral care team responds within 24 hours.</p>
+                      </div>
+                      <form
+                        className="lp-form"
+                        onSubmit={handleContactSubmit}
+                      >
+                        <div className="lp-form-row">
+                          <div className="lp-form-group">
+                            <label>Full Name *</label>
+                            <input
+                              type="text"
+                              name="full_name"
+                              required
+                              placeholder="e.g. Yohannes Bekele"
+                            />
+                          </div>
+                          <div className="lp-form-group">
+                            <label>Phone Number *</label>
+                            <input
+                              type="tel"
+                              name="phone"
+                              required
+                              placeholder="+251 9xx xxx xxx"
+                            />
+                          </div>
+                        </div>
+                        <div className="lp-form-group">
+                          <label>Email Address</label>
+                          <input
+                            type="email"
+                            name="email"
+                            placeholder="yohannes@example.com"
+                          />
+                        </div>
+                        <div className="lp-form-group">
+                          <label>Ministry / Request Category</label>
+                          <CustomSelect
+                            name="category"
+                            defaultValue="prayer"
+                            options={CONTACT_CATEGORY_OPTIONS}
+                          />
+                        </div>
+                        <div className="lp-form-group lp-form-group--message">
+                          <label>Your Message / Prayer Need *</label>
+                          <textarea
+                            name="message"
+                            required
+                            placeholder="How may our church family stand with you in faith?"
+                            rows={4}
+                          />
+                        </div>
+                        <div className="lp-form-checkbox">
+                          <input type="checkbox" id="confidential" name="is_confidential" />
+                          <label htmlFor="confidential">
+                            Keep this prayer request strictly confidential with Senior Pastors
+                          </label>
+                        </div>
+                        <motion.button
+                          type="submit"
+                          className="lp-form-submit"
+                          disabled={submittingContact}
+                          whileHover={prefersReducedMotion ? {} : { scale: 1.01 }}
+                          whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                        >
+                          {submittingContact ? (
+                            <Spin size="small" />
+                          ) : (
+                            <>
+                              <SendOutlined style={{ fontSize: 14 }} />
+                              Send Message
+                            </>
+                          )}
+                        </motion.button>
+                      </form>
+                    </div>
+                  </AnimatedSection>
+
+                  {/* Right: Location + Map */}
+                  <div className="lp-contact-right">
+                    <AnimatedSection delay={0.2}>
+                      <div className="lp-location-card">
+                        <h3>
+                          <EnvironmentOutlined />
+                          {contact?.location_title ||
+                            'Sanctuary Location & Gathering Hours'}
+                        </h3>
+                        <div className="lp-location-info-grid">
+                          <div className="lp-location-info-box">
+                            <strong>
+                              {contact?.location_services_heading ||
+                                'Weekly Services & Gathering Times'}
+                            </strong>
+                            <div className="lp-weekly-services-row">
+                              {(
+                                contact?.location_services?.filter(
+                                  (s) => s.name || s.time,
+                                ) || [
+                                  {
+                                    name: 'Sunday Worship',
+                                    time: '9:00 AM – 12:30 PM',
+                                  },
+                                  { name: 'Tuesday', time: '5:30 PM – 7:30 PM' },
+                                  { name: 'Thursday', time: '5:30 PM – 7:30 PM' },
+                                ]
+                              ).map((service) => (
+                                <div
+                                  key={`${service.name}-${service.time}`}
+                                  className="lp-weekly-service-item"
+                                >
+                                  <span className="lp-weekly-service-name">
+                                    {service.name}
+                                  </span>
+                                  <span className="lp-weekly-service-time">
+                                    {service.time}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="lp-location-footer">
+                          <span>
+                            Church Office Direct:{' '}
+                            <strong style={{ color: 'var(--lp-on-surface)' }}>
+                              {contact?.office_phone || '+251 11 645 8820'}
+                            </strong>
+                          </span>
+                          <a
+                            className="lp-location-directions"
+                            href={
+                              contact?.directions_url ||
+                              'https://www.google.com/maps?cid=15714397395026925129'
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <CarOutlined style={{ fontSize: 12 }} />
+                            Get Directions
+                          </a>
+                        </div>
+                      </div>
+                    </AnimatedSection>
+
+                    <AnimatedSection delay={0.3}>
+                      <LocationMap
+                        title={contact?.map_title}
+                        subtitle={contact?.map_subtitle}
+                        note={contact?.map_note}
+                        mapUrl={contact?.map_url}
+                        directionsUrl={contact?.directions_url}
+                      />
+                    </AnimatedSection>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ═══════ ABOUT / MISSION ═══════ */}
+          {about?.enabled !== false && aboutItems.length > 0 && (
+            <section className="lp-section lp-section--grey" id="about">
+              <div className="lp-section-inner">
+                <AnimatedSection>
+                  <div className="lp-section-header">
+                    <span className="lp-section-badge">
+                      {about?.label || 'MISSION'}
+                    </span>
+                    <Title level={2} className="lp-section-title">
+                      {about?.title || 'Our vision'}
+                    </Title>
+                    {about?.subtitle && (
+                      <Paragraph className="lp-section-sub">
+                        {about.subtitle}
+                      </Paragraph>
+                    )}
+                  </div>
+                </AnimatedSection>
+
+                <div className="lp-vision-grid lp-stagger">
+                  {aboutItems.map((item, i) => (
+                    <motion.div
+                      key={item.title || i}
+                      className="lp-vision-card"
+                      onClick={() => setSelectedVision({ ...item, index: i })}
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-60px' }}
+                      transition={{
+                        duration: 0.6,
+                        delay: i * 0.15,
+                        ease: [0.4, 0, 0.2, 1],
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div>
+                        <div className="lp-vision-card-icon">
+                          {renderVisionMedia(item, i)}
+                        </div>
+                        <h3>{item.title}</h3>
+                        {item.text && <p>{item.text}</p>}
+                      </div>
+                      <div className="lp-vision-card-footer">
+                        <span>Learn More</span>
+                        <RightOutlined />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
         </main>
 
+        {/* ═══════ VISION MODAL ═══════ */}
+        <AnimatePresence>
+          {selectedVision && (
+            <React.Fragment>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="lp-vision-modal-overlay"
+                onClick={() => setSelectedVision(null)}
+              />
+              <div className="lp-vision-modal-container" onClick={() => setSelectedVision(null)}>
+                <motion.div
+                  className="lp-vision-card lp-vision-card--expanded"
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div>
+                    <div className="lp-vision-card-icon">
+                      {renderVisionMedia(selectedVision, selectedVision.index)}
+                    </div>
+                    <h3>{selectedVision.title}</h3>
+                    {selectedVision.text && <p>{selectedVision.text}</p>}
+                  </div>
+                  
+                  <div className="lp-vision-expanded-details">
+                    <p>This is a core pillar of our ministry. By focusing on {selectedVision.title.toLowerCase()}, we believe we can impact the community deeply. Join us in this mandate as we expand our programs and outreach efforts.</p>
+                  </div>
+                  
+                  <div className="lp-vision-card-footer" onClick={() => setSelectedVision(null)}>
+                    <span>Close</span>
+                  </div>
+                </motion.div>
+              </div>
+            </React.Fragment>
+          )}
+        </AnimatePresence>
+
+        {/* ═══════ FOOTER ═══════ */}
         <footer className="lp-footer">
           <div className="lp-footer-inner">
+            {/* Brand Column */}
             <div className="lp-footer-brand">
-              <Link href="/" className="lp-footer-logo-wrap" aria-label={`${TENANT.name} home`}>
-                <AppLogo variant="full" />
-              </Link>
-              <Text className="lp-footer-name">{TENANT.name}</Text>
-              <Text className="lp-footer-tagline">{TENANT.tagline}</Text>
-              <Text className="lp-footer-blurb">
-                {footer?.blurb || ''}
-              </Text>
+              <div className="lp-footer-brand-row">
+                <div className="lp-footer-brand-icon">
+                  <Image
+                    src="/full-gospel-logo.png"
+                    alt={TENANT.name}
+                    width={40}
+                    height={40}
+                    className="lp-footer-logo-img"
+                  />
+                </div>
+                <div>
+                  <Text className="lp-footer-name">{TENANT.name}</Text>
+                  <Text className="lp-footer-tagline">
+                    Integrated ChMS Portal & Ministry Hub
+                  </Text>
+                </div>
+              </div>
+              {footer?.blurb ? (
+                <Text className="lp-footer-blurb">{footer.blurb}</Text>
+              ) : (
+                <Text className="lp-footer-blurb">
+                  A biblical congregation in Addis Ababa dedicated to honoring Jesus Christ,
+                  cultivating passionate disciples, and serving our surrounding neighborhoods with
+                  genuine Christian love.
+                </Text>
+              )}
             </div>
 
+            {/* Shepherd.One platform */}
             <div className="lp-footer-col">
-              <Text className="lp-footer-heading">Explore</Text>
-              <nav className="lp-footer-nav" aria-label="Footer">
-                <a href="#vision">Vision</a>
-                <a href="#projects">Projects</a>
-                <a href="#programs">Programs</a>
-                <a href="#updates">Updates</a>
-                <a href="#contact">Contact</a>
-                <a href="#about">About</a>
-                <Link href="/privacy">Privacy</Link>
+              <h4>{PLATFORM.name}</h4>
+              <p className="lp-footer-col-blurb">{PLATFORM.blurb}</p>
+              <nav className="lp-footer-nav" aria-label="Shepherd.One">
+                <a
+                  href={PLATFORM.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {PLATFORM.poweredByLabel}
+                </a>
+                <a
+                  href={PLATFORM.requestUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Request this system
+                </a>
               </nav>
             </div>
 
-            <div className="lp-footer-col">
-              <Text className="lp-footer-heading">
-                <EnvironmentOutlined aria-hidden /> Visit
-              </Text>
-              <ul className="lp-footer-list">
-                {(footer?.visit_lines || []).map((line) => (
-                  <li key={line} className="lp-info-line">
-                    <span className="lp-info-icon">{infoLineIcon(line)}</span>
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="lp-footer-col">
-              <Text className="lp-footer-heading">
-                <ClockCircleOutlined aria-hidden /> Office
-              </Text>
-              <ul className="lp-footer-list">
-                {(footer?.office_lines || []).map((line) => (
-                  <li key={line} className="lp-info-line">
-                    <span className="lp-info-icon">{infoLineIcon(line)}</span>
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Ministries from CMS */}
+            {ministryItems.length > 0 && (
+              <div className="lp-footer-col">
+                <h4>{ministries?.title || 'Ministries'}</h4>
+                <nav className="lp-footer-nav" aria-label="Footer Ministries">
+                  {ministryItems.map((item) => (
+                    <a key={item.title} href="#ministries">
+                      {item.title}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            )}
           </div>
+
+          {/* Bottom copyright */}
           <div className="lp-footer-bottom">
             <Text className="lp-copyright">
-              &copy; {new Date().getFullYear()} {TENANT.name}. All rights reserved.
+              © {new Date().getFullYear()} {TENANT.name}. All rights reserved. Empowering faith,
+              administration, and community.
             </Text>
           </div>
         </footer>

@@ -55,8 +55,11 @@ const ScheduleManagement = () => {
     return (
         <div className="schedule-container">
             <div className="calendar-card">
-                <div className="calendar-header-section">
-                    <h3>Church Schedule</h3>
+                <div className="calendar-header-section page-section-header">
+                    <div className="page-section-header-text">
+                        <h2>Church Schedule</h2>
+                        <p>View and manage church events on the calendar.</p>
+                    </div>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}

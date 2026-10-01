@@ -17,7 +17,6 @@ const PROTECTED_PREFIXES = [
   '/landing',
   '/families',
   '/schedule',
-  '/help',
   '/subscription',
 ];
 

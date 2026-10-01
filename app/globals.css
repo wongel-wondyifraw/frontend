@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Inter', 'Noto Sans Ethiopic', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -90,7 +90,7 @@ body {
   min-height: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif;
   box-sizing: border-box;
   background-color: var(--bg-body);
   color: var(--text-primary);
@@ -222,17 +222,37 @@ textarea.ant-input,
   height: 40px;
 }
 
-/* No horizontal scrollbars; tables must not create nested vertical scroll */
+/* No horizontal scrollbars; tables must not create nested vertical scroll.
+   Setting only overflow-x makes overflow-y compute to auto — pin both axes
+   on the app shell so the topbar never sits beside a page scrollbar. */
 html,
-body,
-.dashboard-layout,
-.main-content {
+body {
   overflow-x: hidden !important;
   max-width: 100%;
 }
 
+html:has(.dashboard-layout),
+body:has(.dashboard-layout) {
+  height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden !important;
+}
+
+.dashboard-layout,
+.main-content {
+  overflow: hidden !important;
+  max-width: 100%;
+}
+
+.topbar-container {
+  overflow: hidden !important;
+  flex-shrink: 0;
+}
+
 .content-scrollable {
   overflow-x: hidden !important;
+  overflow-y: auto !important;
   max-width: 100%;
 }
 
@@ -276,7 +296,7 @@ body,
 .planning-header,
 .landing-admin-header,
 .settings-header,
-.help-header,
+.dashboard-header,
 .subscription-header,
 .calendar-header-section {
   display: flex;
@@ -302,7 +322,7 @@ body,
   flex-shrink: 0;
 }
 
-/* Filters always trail left next to search / toolbar start */
+/* Filter selects keep natural width in trailing filter cluster */
 .page-header-actions .ant-select,
 .planning-header-actions .ant-select,
 .data-table-filters .ant-select,

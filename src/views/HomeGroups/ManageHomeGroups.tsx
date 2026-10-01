@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Avatar, Modal, Tooltip } from 'antd';
+import { Modal } from 'antd';
 import { message } from '@/lib/app-message';
-import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
+import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import EntityNameCell from '../../Components/common/EntityNameCell';
 import { getHomeGroups, deleteHomeGroup } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
 import type { ManageHomeGroupsProps, HomeGroup } from '@/types';
@@ -81,15 +83,11 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
       title: 'Home Group',
       key: 'name',
       render: (_: unknown, record: HomeGroup) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Avatar icon={<HomeOutlined />} style={{ backgroundColor: '#1565c0' }} />
-          <div>
-            <span style={{ fontWeight: 600 }}>{record.name}</span>
-            {record.schedule && (
-              <div style={{ fontSize: '12px', color: '#94A3B8' }}>{record.schedule}</div>
-            )}
-          </div>
-        </div>
+        <EntityNameCell
+          title={record.name}
+          subtitle={record.schedule || undefined}
+          initials={(record.name || '?').charAt(0).toUpperCase()}
+        />
       ),
     },
     {
@@ -120,37 +118,37 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
     },
     {
       title: 'Action',
-      key: 'action',
+            key: 'action',
+            ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: HomeGroup) => (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <Tooltip title="View Details">
-            <Button
-              icon={<InfoCircleOutlined style={{ color: '#1565c0' }} />}
-              onClick={() => router.push(`/members/home-groups/details/${record.id}`)}
-            />
-          </Tooltip>
-          {canUpdate && (
-            <Tooltip title="Edit">
-              <Button
-                icon={<EditOutlined />}
-                type="text"
-                size="small"
-                onClick={() => router.push(`/members/home-groups/edit/${record.id}`)}
-              />
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Delete">
-              <Button
-                icon={<DeleteOutlined />}
-                type="text"
-                danger
-                size="small"
-                onClick={() => handleDelete(record)}
-              />
-            </Tooltip>
-          )}
-        </div>
+        <TableRowActions
+          ariaLabel={`Actions for ${record.name}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              icon: <InfoCircleOutlined style={{ color: '#1565c0' }} />,
+              onClick: () => router.push(`/members/home-groups/details/${record.id}`),
+            },
+            ...(canUpdate
+              ? [{
+                  key: 'edit',
+                  label: 'Edit',
+                  icon: <EditOutlined />,
+                  onClick: () => router.push(`/members/home-groups/edit/${record.id}`),
+                }]
+              : []),
+            ...(canDelete
+              ? [{
+                  key: 'delete',
+                  label: 'Delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDelete(record),
+                }]
+              : []),
+          ]}
+        />
       ),
     },
   ];
@@ -159,6 +157,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
     <div className="manage-page">
       <DataTable
         title="Manage Home Groups"
+        subtitle="Coordinate home groups, hosts, and member participation."
         columns={columns}
         dataSource={homeGroups}
         loading={loading}
