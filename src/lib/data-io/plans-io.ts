@@ -1,5 +1,5 @@
 import type { Plan } from "@/types";
-import { createPlan, getPlans } from "@/services/api";
+import { createPlansBulk, getPlans } from "@/services/api";
 import { getApiErrorMessage } from "@/lib/errors";
 import { splitList } from "@/lib/csv";
 import {
@@ -44,6 +44,7 @@ const PLAN_TYPES = new Set([
 ]);
 
 const PLAN_STATUSES = new Set(["planned", "completed", "cancelled"]);
+const BULK_CHUNK = 200;
 
 function formatTime(t?: string | null): string {
   if (!t) return "";
@@ -80,8 +81,8 @@ async function fetchAllPlans(): Promise<Plan[]> {
   return all;
 }
 
-export function downloadPlanTemplate(): void {
-  downloadExcelTemplate(
+export async function downloadPlanTemplate(): Promise<void> {
+  await downloadExcelTemplate(
     "plans-template.xlsx",
     [...PLAN_CSV_HEADERS],
     PLAN_CSV_SAMPLE,
@@ -91,7 +92,7 @@ export function downloadPlanTemplate(): void {
 export async function exportPlansExcel(): Promise<void> {
   const all = await fetchAllPlans();
   const rows = all.map(planToCsvRow);
-  downloadExcelData(
+  await downloadExcelData(
     `plans-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
     [...PLAN_CSV_HEADERS],
     rows,
@@ -111,7 +112,7 @@ export async function exportPlansPdf(): Promise<void> {
     "location",
     "status",
   ];
-  downloadPdfTable({
+  await downloadPdfTable({
     filename: `plans-export-${new Date().toISOString().slice(0, 10)}.pdf`,
     title: "Plans export",
     headers: pdfHeaders,
@@ -167,7 +168,10 @@ function rowToPlanPayload(
   return payload;
 }
 
-export async function importPlansFromFile(file: File): Promise<{
+export async function importPlansFromFile(
+  file: File,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{
   ok: number;
   failed: number;
   errors: string[];
@@ -183,21 +187,45 @@ export async function importPlansFromFile(file: File): Promise<{
     );
   }
 
-  let ok = 0;
-  let failed = 0;
-  const errors: string[] = [];
+  const payloads: Record<string, unknown>[] = [];
+  const parseErrors: string[] = [];
 
   for (let i = 0; i < rows.length; i += 1) {
     const line = i + 2;
     try {
-      const payload = rowToPlanPayload(rows[i]);
-      await createPlan(payload);
-      ok += 1;
+      payloads.push(rowToPlanPayload(rows[i]));
     } catch (err) {
-      failed += 1;
-      errors.push(`Row ${line}: ${getApiErrorMessage(err)}`);
+      parseErrors.push(`Row ${line}: ${getApiErrorMessage(err)}`);
     }
   }
 
+  let ok = 0;
+  let failed = parseErrors.length;
+  const errors = [...parseErrors];
+  const total = rows.length;
+  onProgress?.(0, total);
+
+  let processed = parseErrors.length;
+  for (let offset = 0; offset < payloads.length; offset += BULK_CHUNK) {
+    const chunk = payloads.slice(offset, offset + BULK_CHUNK);
+    const baseIndex = offset;
+    try {
+      const result = await createPlansBulk(chunk);
+      ok += result.created;
+      failed += result.failed;
+      for (const e of result.errors) {
+        errors.push(`Row ${baseIndex + e.index + 2}: ${e.message}`);
+      }
+    } catch (err) {
+      failed += chunk.length;
+      errors.push(
+        `Rows ${baseIndex + 2}–${baseIndex + chunk.length + 1}: ${getApiErrorMessage(err)}`,
+      );
+    }
+    processed = Math.min(total, processed + chunk.length);
+    onProgress?.(processed, total);
+  }
+
+  onProgress?.(total, total);
   return { ok, failed, errors };
 }

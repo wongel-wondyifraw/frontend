@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, Card, Tooltip, Empty } from 'antd';
+import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
     TeamOutlined,
@@ -14,13 +14,12 @@ import {
     MailOutlined,
     PhoneOutlined,
 } from '@ant-design/icons';
-import { getMinistry, deleteMinistry, getMinistryMembers, getMembersList, addMinistryMember } from '../../services/api';
-import type { MinistryDetailProps, Ministry, MinistryMember, Member } from '@/types';
+import { getMinistry, deleteMinistry, getMinistryMembers, addMinistryMember } from '../../services/api';
+import type { MinistryDetailProps, Ministry, MinistryMember } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { LeaderNameWithTag } from '../../Components/common/LeaderLabel';
+import MemberSearchSelect from '../../Components/common/MemberSearchSelect';
 import './MinistryDetail.css';
-
-const { Option } = Select;
 
 const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: MinistryDetailProps) => {
     const params = useParams();
@@ -33,7 +32,6 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
 
     // Add Member Modal State
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-    const [allMembers, setAllMembers] = useState<Member[]>([]);
     const [addingMember, setAddingMember] = useState(false);
     const [form] = Form.useForm();
 
@@ -42,7 +40,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
             setLoading(true);
             const data = await getMinistry(id);
             setMinistry(data);
-        } catch (error) {
+        } catch (_error) {
             message.error('Failed to load ministry details');
             router.push('/ministries/manage');
         } finally {
@@ -71,20 +69,8 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
         loadMinistryMembers();
     }, [initialMinistry, loadMinistry, loadMinistryMembers]);
 
-    const loadAllMembers = async () => {
-        try {
-            const data = await getMembersList();
-            setAllMembers(data);
-        } catch (error) {
-            console.warn('Failed to load members for add modal:', error);
-        }
-    };
-
     const openAddMemberModal = async () => {
         setIsAddModalVisible(true);
-        if (allMembers.length === 0) {
-            await loadAllMembers();
-        }
     };
 
     const handleDelete = () => {
@@ -132,10 +118,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
 
     if (!ministry) return null;
 
-    // Filter out members that are already in the ministry
-    const availableMembers = allMembers.filter(
-        m => !ministryMembers.some(mm => mm.member_id === m.id)
-    );
+    const excludeMemberIds = ministryMembers.map((mm) => mm.member_id);
 
     return (
         <>
@@ -318,22 +301,10 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
                         label="Select Member"
                         rules={[{ required: true, message: 'Please select a member to add' }]}
                     >
-                        <Select
-                            placeholder="Search and select a member"
-                            size="large"
-                            showSearch
-                            allowClear
-                            optionFilterProp="children"
-                            filterOption={(input, option) =>
-                                String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                        >
-                            {availableMembers.map(member => (
-                                <Option key={member.id} value={member.id}>
-                                    {member.first_name} {member.middle_name ? member.middle_name + ' ' : ''}{member.last_name}
-                                </Option>
-                            ))}
-                        </Select>
+                        <MemberSearchSelect
+                            excludeIds={excludeMemberIds}
+                            placeholder="Type to search members"
+                        />
                     </Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
                         <Button onClick={() => setIsAddModalVisible(false)}>

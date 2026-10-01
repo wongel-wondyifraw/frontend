@@ -21,7 +21,7 @@ import {
   getRoles,
   updateRole,
 } from '@/services/api';
-import type { Role } from '@/types';
+import type { Permission, Role } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 
 interface RoleFormValues {
@@ -34,7 +34,7 @@ interface RoleFormValues {
 const RoleManagementPanel = () => {
   const canManageRoles = useCan('roles.manage');
   const [roles, setRoles] = useState<Role[]>([]);
-  const [grouped, setGrouped] = useState<Record<string, import('@/types').Permission[]>>({});
+  const [grouped, setGrouped] = useState<Record<string, Permission[]>>({});
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);

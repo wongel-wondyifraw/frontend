@@ -35,16 +35,16 @@ import {
   createTaskDefinition,
   deleteTask,
   deleteTaskDefinition,
-  getMembersList,
-  getMinisters,
   getTaskDefinitions,
+  getMinisters,
   getTasks,
   updateTaskDefinition,
 } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
-import type { Member, Minister, TaskAssignment, TaskDefinition } from '@/types';
+import type { Minister, TaskAssignment, TaskDefinition } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
+import MemberSearchSelect from '../../Components/common/MemberSearchSelect';
 import './ManageTasks.css';
 
 const { RangePicker } = DatePicker;
@@ -81,7 +81,6 @@ const ManageTasksContent = () => {
 
   const [definitions, setDefinitions] = useState<TaskDefinition[]>([]);
   const [ministers, setMinisters] = useState<Minister[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
@@ -129,10 +128,9 @@ const ManageTasksContent = () => {
     const results = await Promise.allSettled([
       getTaskDefinitions(false),
       getMinisters({ page: 1, limit: 100 }),
-      getMembersList(),
     ]);
 
-    const [defsResult, ministersResult, membersResult] = results;
+    const [defsResult, ministersResult] = results;
     let failed = false;
 
     if (defsResult.status === 'fulfilled') {
@@ -147,13 +145,6 @@ const ManageTasksContent = () => {
     } else {
       failed = true;
       setMinisters([]);
-    }
-
-    if (membersResult.status === 'fulfilled') {
-      setMembers(membersResult.value);
-    } else {
-      failed = true;
-      setMembers([]);
     }
 
     if (failed) {
@@ -564,19 +555,14 @@ const ManageTasksContent = () => {
                 name="target_member_id"
                 label="Who to visit"
                 rules={[{ required: true, message: 'Select the member to visit' }]}
-                extra="Members listed by visit count (highest first)."
+                extra="Type to search — results sorted by visit count when available."
               >
-                <Select
-                  showSearch
-                  placeholder="Select member to visit"
-                  optionFilterProp="label"
-                  options={members
-                    .slice()
-                    .sort((a, b) => (b.visit_count || 0) - (a.visit_count || 0))
-                    .map((m) => ({
-                      value: m.id,
-                      label: `${personName(m)} — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`,
-                    }))}
+                <MemberSearchSelect
+                  placeholder="Type to search member to visit"
+                  optionExtra={(m) =>
+                    ` — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`
+                  }
+                  sortBy={(a, b) => (b.visit_count || 0) - (a.visit_count || 0)}
                 />
               </Form.Item>
               <Form.Item name="visitation_methods" label="Visitation method(s)">

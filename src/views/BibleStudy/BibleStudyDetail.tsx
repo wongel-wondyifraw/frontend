@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, Card, Tooltip, Empty } from 'antd';
+import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   TeamOutlined, CalendarOutlined, EditOutlined, DeleteOutlined, UserOutlined,
@@ -9,15 +9,14 @@ import {
   BookOutlined, FileTextOutlined, LinkOutlined,
 } from '@ant-design/icons';
 import {
-  getBibleStudy, deleteBibleStudy, getBibleStudyMembers, getMembersList, addBibleStudyMember,
+  getBibleStudy, deleteBibleStudy, getBibleStudyMembers, addBibleStudyMember,
 } from '../../services/api';
-import type { BibleStudyDetailProps, BibleStudy, BibleStudyMember, Member } from '@/types';
+import type { BibleStudyDetailProps, BibleStudy, BibleStudyMember } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
 import { LeaderNameWithTag } from '../../Components/common/LeaderLabel';
+import MemberSearchSelect from '../../Components/common/MemberSearchSelect';
 import './BibleStudyDetail.css';
-
-const { Option } = Select;
 
 const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = null }: BibleStudyDetailProps) => {
   const params = useParams();
@@ -28,7 +27,6 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
   const [groupMembers, setGroupMembers] = useState<BibleStudyMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [addingMember, setAddingMember] = useState(false);
   const [form] = Form.useForm();
 
@@ -66,13 +64,6 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
 
   const openAddMemberModal = async () => {
     setIsAddModalVisible(true);
-    if (allMembers.length === 0) {
-      try {
-        setAllMembers(await getMembersList());
-      } catch {
-        /* ignore */
-      }
-    }
   };
 
   const handleDelete = () => {
@@ -120,7 +111,7 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
 
   if (!study) return null;
 
-  const availableMembers = allMembers.filter((m) => !groupMembers.some((mm) => mm.member_id === m.id));
+  const excludeMemberIds = groupMembers.map((mm) => mm.member_id);
   const materialHref = study.material_url ? getImageUrl(study.material_url) : null;
 
   return (
@@ -279,12 +270,7 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
       <Modal title="Add Member to Bible Study" open={isAddModalVisible} onCancel={() => setIsAddModalVisible(false)} footer={null} forceRender>
         <Form form={form} layout="vertical" onFinish={handleAddMember}>
           <Form.Item name="member_id" label="Select Member" rules={[{ required: true }]}>
-            <Select showSearch size="large" optionFilterProp="children"
-              filterOption={(input, option) => String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())}>
-              {availableMembers.map((m) => (
-                <Option key={m.id} value={m.id}>{m.first_name} {m.middle_name ? `${m.middle_name} ` : ''}{m.last_name}</Option>
-              ))}
-            </Select>
+            <MemberSearchSelect excludeIds={excludeMemberIds} placeholder="Type to search members" />
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <Button onClick={() => setIsAddModalVisible(false)}>Cancel</Button>

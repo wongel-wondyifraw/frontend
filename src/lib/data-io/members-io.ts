@@ -1,5 +1,5 @@
 import type { Member } from "@/types";
-import { createMember, getMembers } from "@/services/api";
+import { createMembersBulk, getMembers } from "@/services/api";
 import { getApiErrorMessage } from "@/lib/errors";
 import { parseBool, splitList } from "@/lib/csv";
 import {
@@ -72,6 +72,8 @@ export const MEMBER_CSV_SAMPLE: Record<string, string> = {
   interested_ministries: "Worship|Youth",
 };
 
+const BULK_CHUNK = 200;
+
 function boolToCsv(v: boolean | string | undefined): string {
   if (v === true || v === "true" || v === "yes") return "yes";
   if (v === false || v === "false" || v === "no") return "no";
@@ -126,8 +128,8 @@ async function fetchAllMembers(): Promise<Member[]> {
   return all;
 }
 
-export function downloadMemberTemplate(): void {
-  downloadExcelTemplate(
+export async function downloadMemberTemplate(): Promise<void> {
+  await downloadExcelTemplate(
     "members-template.xlsx",
     [...MEMBER_CSV_HEADERS],
     MEMBER_CSV_SAMPLE,
@@ -137,7 +139,7 @@ export function downloadMemberTemplate(): void {
 export async function exportMembersExcel(): Promise<void> {
   const all = await fetchAllMembers();
   const rows = all.map(memberToCsvRow);
-  downloadExcelData(
+  await downloadExcelData(
     `members-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
     [...MEMBER_CSV_HEADERS],
     rows,
@@ -148,7 +150,6 @@ export async function exportMembersExcel(): Promise<void> {
 export async function exportMembersPdf(): Promise<void> {
   const all = await fetchAllMembers();
   const rows = all.map(memberToCsvRow);
-  // Keep PDF readable: core identity + contact columns
   const pdfHeaders = [
     "first_name",
     "last_name",
@@ -159,7 +160,7 @@ export async function exportMembersPdf(): Promise<void> {
     "joined_date",
     "marital_status",
   ];
-  downloadPdfTable({
+  await downloadPdfTable({
     filename: `members-export-${new Date().toISOString().slice(0, 10)}.pdf`,
     title: "Members export",
     headers: pdfHeaders,
@@ -227,7 +228,10 @@ function rowToMemberPayload(
   return payload;
 }
 
-export async function importMembersFromFile(file: File): Promise<{
+export async function importMembersFromFile(
+  file: File,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{
   ok: number;
   failed: number;
   errors: string[];
@@ -239,21 +243,45 @@ export async function importMembersFromFile(file: File): Promise<{
     );
   }
 
-  let ok = 0;
-  let failed = 0;
-  const errors: string[] = [];
+  const payloads: Record<string, unknown>[] = [];
+  const parseErrors: string[] = [];
 
   for (let i = 0; i < rows.length; i += 1) {
     const line = i + 2;
     try {
-      const payload = rowToMemberPayload(rows[i]);
-      await createMember(payload);
-      ok += 1;
+      payloads.push(rowToMemberPayload(rows[i]));
     } catch (err) {
-      failed += 1;
-      errors.push(`Row ${line}: ${getApiErrorMessage(err)}`);
+      parseErrors.push(`Row ${line}: ${getApiErrorMessage(err)}`);
     }
   }
 
+  let ok = 0;
+  let failed = parseErrors.length;
+  const errors = [...parseErrors];
+  const total = rows.length;
+  onProgress?.(0, total);
+
+  let processed = parseErrors.length;
+  for (let offset = 0; offset < payloads.length; offset += BULK_CHUNK) {
+    const chunk = payloads.slice(offset, offset + BULK_CHUNK);
+    const baseIndex = offset;
+    try {
+      const result = await createMembersBulk(chunk);
+      ok += result.created;
+      failed += result.failed;
+      for (const e of result.errors) {
+        errors.push(`Row ${baseIndex + e.index + 2}: ${e.message}`);
+      }
+    } catch (err) {
+      failed += chunk.length;
+      errors.push(
+        `Rows ${baseIndex + 2}–${baseIndex + chunk.length + 1}: ${getApiErrorMessage(err)}`,
+      );
+    }
+    processed = Math.min(total, processed + chunk.length);
+    onProgress?.(processed, total);
+  }
+
+  onProgress?.(total, total);
   return { ok, failed, errors };
 }

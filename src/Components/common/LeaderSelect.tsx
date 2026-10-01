@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Select, Tag, Space, Spin } from 'antd';
-import { getMembersList, getMinisters } from '@/services/api';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Select, Tag, Space } from 'antd';
+import { getMembers, getMinisters } from '@/services/api';
 import type { LeaderType, Member, Minister } from '@/types';
+import { useDebouncedCallback } from '@/lib/debounce';
 
 export type LeaderSelectValue = {
   leader_id: string | null;
@@ -50,52 +51,54 @@ interface LeaderSelectProps {
 const LeaderSelect = ({
   value,
   onChange,
-  placeholder = 'Select a member or minister as leader',
+  placeholder = 'Type to search members or ministers',
   size = 'large',
   allowClear = true,
 }: LeaderSelectProps) => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const [members, ministersPage] = await Promise.all([
-          getMembersList(),
-          getMinisters({ page: 1, limit: 100 }),
-        ]);
-        if (cancelled) return;
-        const memberCandidates: Candidate[] = members.map((m: Member) => ({
-          key: `member:${m.id}`,
-          id: m.id,
-          first_name: m.first_name,
-          middle_name: m.middle_name,
-          last_name: m.last_name,
-          email: m.email,
-          type: 'member',
-        }));
-        const ministerCandidates: Candidate[] = ministersPage.data.map((m: Minister) => ({
-          key: `minister:${m.id}`,
-          id: m.id,
-          first_name: m.first_name,
-          middle_name: m.middle_name,
-          last_name: m.last_name,
-          email: m.email,
-          type: 'minister',
-        }));
-        setCandidates([...memberCandidates, ...ministerCandidates]);
-      } catch {
-        if (!cancelled) setCandidates([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const search = useCallback(async (q: string) => {
+    setLoading(true);
+    try {
+      const term = q.trim();
+      const [membersPage, ministersPage] = await Promise.all([
+        getMembers({ page: 1, limit: 20, search: term || undefined }),
+        getMinisters({ page: 1, limit: 20, search: term || undefined }),
+      ]);
+      const memberCandidates: Candidate[] = membersPage.data.map((m: Member) => ({
+        key: `member:${m.id}`,
+        id: m.id,
+        first_name: m.first_name,
+        middle_name: m.middle_name,
+        last_name: m.last_name,
+        email: m.email,
+        type: 'member',
+      }));
+      const ministerCandidates: Candidate[] = ministersPage.data.map((m: Minister) => ({
+        key: `minister:${m.id}`,
+        id: m.id,
+        first_name: m.first_name,
+        middle_name: m.middle_name,
+        last_name: m.last_name,
+        email: m.email,
+        type: 'minister',
+      }));
+      setCandidates([...memberCandidates, ...ministerCandidates]);
+    } catch {
+      setCandidates([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const debouncedSearch = useDebouncedCallback((q: string) => {
+    void search(q);
+  }, 300);
+
+  useEffect(() => {
+    void search('');
+  }, [search]);
 
   const options = useMemo(
     () =>
@@ -114,24 +117,20 @@ const LeaderSelect = ({
     [candidates],
   );
 
-  if (loading) {
-    return <Spin size="small" />;
-  }
-
   return (
     <Select
       showSearch
+      filterOption={false}
       allowClear={allowClear}
       size={size}
       placeholder={placeholder}
       value={value}
       options={options}
-      optionFilterProp="searchText"
-      filterOption={(input, option) =>
-        String(option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
-      }
+      loading={loading}
+      onSearch={(q) => debouncedSearch(q)}
       onChange={(next) => onChange?.(next)}
       optionLabelProp="label"
+      notFoundContent={loading ? 'Searching…' : 'Type to search members or ministers'}
       style={{ width: '100%' }}
     />
   );

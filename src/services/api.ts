@@ -250,6 +250,25 @@ export const createMember = async (
   }
 };
 
+export type BulkCreateResult = {
+  created: number;
+  failed: number;
+  errors: { index: number; message: string }[];
+};
+
+export const createMembersBulk = async (
+  items: Record<string, unknown>[],
+): Promise<BulkCreateResult> => {
+  try {
+    const response = await api.post<BulkCreateResult>("/members/bulk", {
+      items,
+    });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const updateMember = async (
   id: string,
   memberData: Record<string, unknown>,
@@ -824,6 +843,19 @@ export const createPlan = async (
 ): Promise<Plan> => {
   try {
     const response = await api.post<Plan>("/plans", data);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const createPlansBulk = async (
+  items: Record<string, unknown>[],
+): Promise<BulkCreateResult> => {
+  try {
+    const response = await api.post<BulkCreateResult>("/plans/bulk", {
+      items,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);

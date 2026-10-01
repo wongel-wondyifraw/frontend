@@ -16,12 +16,11 @@ import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
 import {
   createHomeGroup,
-  getMembersList,
   addHomeGroupMember,
   getLocations,
   createLocation,
 } from '../../services/api';
-import type { Member, Location } from '@/types';
+import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
 import { type Dayjs } from 'dayjs';
@@ -61,22 +60,12 @@ const AddHomeGroup = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [members, setMembers] = useState<Member[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    loadMembers();
     getLocations('active').then(setLocations).catch(() => {});
   }, []);
-
-  const loadMembers = async () => {
-    try {
-      setMembers(await getMembersList());
-    } catch {
-      message.error('Failed to load members');
-    }
-  };
 
   const resolveLocationName = async (raw?: string): Promise<string | undefined> => {
     const trimmed = raw?.trim();
@@ -238,7 +227,7 @@ const AddHomeGroup = () => {
                 <span style={{ fontWeight: 400, fontSize: 13, color: '#94a3b8' }}>(Optional)</span>
               </h3>
               <MemberTransferList
-                members={members}
+                remoteSearch
                 selectedKeys={selectedMemberKeys}
                 onChange={setSelectedMemberKeys}
                 description="Search and check members to add them to this home group."
@@ -258,10 +247,7 @@ const AddHomeGroup = () => {
                     const leaderName = leader.leader_id
                       ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                       : 'Not assigned';
-                    const selectedNames = selectedMemberKeys.map((key) => {
-                      const m = members.find((mem) => mem.id === key);
-                      return m ? `${m.first_name} ${m.last_name}` : key;
-                    });
+                    const selectedCount = selectedMemberKeys.length;
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
                         <div><strong>Name:</strong> {values.name || '—'}</div>
@@ -271,7 +257,7 @@ const AddHomeGroup = () => {
                           <strong>Schedule:</strong>{' '}
                           {formatSchedule(values.schedule_day, values.schedule_time) || '—'}
                         </div>
-                        <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
+                        <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                       </div>
                     );

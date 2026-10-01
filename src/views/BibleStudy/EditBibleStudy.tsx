@@ -11,10 +11,9 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
 import {
-  updateBibleStudy, getBibleStudy, getMembersList, getBibleStudyMembers,
+  updateBibleStudy, getBibleStudy, getBibleStudyMembers,
   addBibleStudyMember, removeBibleStudyMember, uploadDocument,
 } from '../../services/api';
-import type { Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
@@ -41,7 +40,6 @@ const EditBibleStudy = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [members, setMembers] = useState<Member[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
   const initialMemberKeysRef = useRef<string[]>([]);
@@ -53,12 +51,10 @@ const EditBibleStudy = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [study, membersData, studyMembers] = await Promise.all([
+        const [study, studyMembers] = await Promise.all([
           getBibleStudy(id),
-          getMembersList(),
           getBibleStudyMembers(id),
         ]);
-        setMembers(membersData);
         form.setFieldsValue({
           name: study.name,
           about: study.about,
@@ -243,7 +239,7 @@ const EditBibleStudy = () => {
             <div>
               <h3 style={{ marginBottom: 20 }}><UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members</h3>
               <MemberTransferList
-                members={members}
+                remoteSearch
                 selectedKeys={selectedMemberKeys}
                 onChange={setSelectedMemberKeys}
                 description="Search and check members to update who belongs to this Bible study."

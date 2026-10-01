@@ -9,7 +9,6 @@ import { updateFamily, getFamilyById } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import SpouseSelect, { encodeLeaderValue, decodeLeaderValue } from '../../Components/common/SpouseSelect';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
-import type { Family } from '@/types';
 import './AddFamily.css';
 
 const { Option } = Select;

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { Calendar, Badge, Modal, Form, Input, DatePicker, TimePicker, Button, Select, Card } from 'antd';
-import { PlusOutlined, ClockCircleOutlined, EnvironmentOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { Calendar, Badge, Modal, Form, Input, DatePicker, TimePicker, Button, Select } from 'antd';
+import { PlusOutlined, EnvironmentOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import './ScheduleManagement.css';
 

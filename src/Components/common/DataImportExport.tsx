@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Dropdown, Modal, Upload, Alert, Space, Typography } from 'antd';
+import { Button, Dropdown, Modal, Upload, Alert, Space, Typography, Progress } from 'antd';
 import {
   DownloadOutlined,
   UploadOutlined,
@@ -28,10 +28,13 @@ type DataImportExportProps = {
   entityLabel: string;
   canImport?: boolean;
   canExport?: boolean;
-  onDownloadTemplate: () => void;
+  onDownloadTemplate: () => void | Promise<void>;
   onExportExcel: () => Promise<void>;
   onExportPdf: () => Promise<void>;
-  onImportFile: (file: File) => Promise<ImportResult>;
+  onImportFile: (
+    file: File,
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<ImportResult>;
   onImportComplete?: () => void;
 };
 
@@ -50,6 +53,7 @@ export default function DataImportExport({
   const [importing, setImporting] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
@@ -71,6 +75,7 @@ export default function DataImportExport({
   const openImport = () => {
     setResult(null);
     setFileList([]);
+    setProgress(null);
     setImportOpen(true);
   };
 
@@ -82,7 +87,10 @@ export default function DataImportExport({
     }
     try {
       setImporting(true);
-      const res = await onImportFile(file);
+      setProgress({ done: 0, total: 0 });
+      const res = await onImportFile(file, (done, total) => {
+        setProgress({ done, total });
+      });
       setResult(res);
       if (res.ok > 0) {
         message.success(`Imported ${res.ok} ${entityLabel.toLowerCase()}`);
@@ -97,6 +105,7 @@ export default function DataImportExport({
         setImportOpen(false);
         setFileList([]);
         setResult(null);
+        setProgress(null);
       }
     } catch (err) {
       message.error(getApiErrorMessage(err, `Failed to import ${entityLabel.toLowerCase()}`));
@@ -107,10 +116,22 @@ export default function DataImportExport({
 
   if (!canImport && !canExport) return null;
 
+  const percent =
+    progress && progress.total > 0
+      ? Math.round((progress.done / progress.total) * 100)
+      : importing
+        ? 0
+        : undefined;
+
   return (
     <>
       <div className="data-io-actions">
-        <Button icon={<DownloadOutlined />} onClick={onDownloadTemplate}>
+        <Button
+          icon={<DownloadOutlined />}
+          onClick={() => {
+            void onDownloadTemplate();
+          }}
+        >
           Template
         </Button>
         {canImport ? (
@@ -158,7 +179,12 @@ export default function DataImportExport({
       >
         <div className="data-io-modal">
           <div className="data-io-template-row">
-            <Button icon={<FileExcelOutlined />} onClick={onDownloadTemplate}>
+            <Button
+              icon={<FileExcelOutlined />}
+              onClick={() => {
+                void onDownloadTemplate();
+              }}
+            >
               Download template
             </Button>
             <Text type="secondary">Excel (.xlsx) with required columns</Text>
@@ -181,6 +207,17 @@ export default function DataImportExport({
             <p className="ant-upload-text">Click or drag CSV / Excel here</p>
             <p className="ant-upload-hint">Use the template columns for a successful import</p>
           </Upload.Dragger>
+
+          {importing && percent !== undefined ? (
+            <div>
+              <Progress percent={percent} size="small" status="active" />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {progress && progress.total > 0
+                  ? `Importing ${progress.done} of ${progress.total} rows…`
+                  : 'Preparing import…'}
+              </Text>
+            </div>
+          ) : null}
 
           {result ? (
             <Alert

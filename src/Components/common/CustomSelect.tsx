@@ -53,14 +53,7 @@ export default function CustomSelect({
 
   const selectedOption = options.find((opt) => opt.value === currentValue);
 
-  // Sync internal state if defaultValue changes
-  useEffect(() => {
-    if (!isControlled && defaultValue !== undefined) {
-      setInternalValue(defaultValue);
-    }
-  }, [defaultValue, isControlled]);
-
-  // Form reset listener
+  // Form reset listener (setState is fine in event callbacks, not sync effect bodies)
   useEffect(() => {
     const form = containerRef.current?.closest('form');
     if (!form) return;

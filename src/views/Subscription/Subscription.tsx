@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Typography, Row, Col, Space } from 'antd';
+import { Button, Card, Typography, Row, Col } from 'antd';
 import { CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import './Subscription.css';
 import Footer from '../../Components/Footer/Footer';

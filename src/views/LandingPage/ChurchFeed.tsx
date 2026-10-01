@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { Button, Typography, Space, ConfigProvider, theme, Spin, Drawer, message } from 'antd';
+import { Button, Typography, ConfigProvider, theme, Spin, Drawer, message } from 'antd';
 import {
   EnvironmentOutlined,
   GlobalOutlined,
@@ -41,7 +41,6 @@ import {
   RocketOutlined,
 } from '@ant-design/icons';
 import { motion, useReducedMotion, useInView, AnimatePresence } from 'framer-motion';
-import AppLogo from '@/Components/common/AppLogo';
 import LandingBannerCard from '@/Components/landing/LandingBannerCard';
 import CustomSelect, { type CustomSelectOption } from '@/Components/common/CustomSelect';
 import { PLATFORM, TENANT } from '@/lib/tenant';
@@ -106,8 +105,15 @@ const VISION_ICONS = [
 const renderVisionMedia = (item: LandingMediaItem, i: number) => {
   if (item.image_url) {
     return (
-      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden' }}>
-        <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+        <Image
+          src={item.image_url}
+          alt=""
+          width={48}
+          height={48}
+          style={{ objectFit: 'cover' }}
+          unoptimized
+        />
       </div>
     );
   }
@@ -145,9 +151,6 @@ const renderVisionMedia = (item: LandingMediaItem, i: number) => {
   return VISION_ICONS[i]?.icon || <CompassOutlined />;
 };
 
-/* Program card color tags */
-const TAG_COLORS = ['blue', 'green', 'purple', 'amber'] as const;
-
 /* Contact form ministry request category options */
 const CONTACT_CATEGORY_OPTIONS: CustomSelectOption[] = [
   {
@@ -176,40 +179,6 @@ const CONTACT_CATEGORY_OPTIONS: CustomSelectOption[] = [
     icon: <MailOutlined />,
   },
 ];
-
-/* ────────────────────────────────────────────
-   Scroll-triggered animation hook
-   ──────────────────────────────────────────── */
-function useFadeInRef<T extends HTMLElement = HTMLDivElement>() {
-  const ref = useRef<T>(null);
-  const inView = useInView(ref, { once: true, margin: '-60px 0px' });
-  return { ref, inView };
-}
-
-/* ────────────────────────────────────────────
-   Framer Motion variants
-   ──────────────────────────────────────────── */
-const fadeUpVariant = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      delay: i * 0.1,
-      ease: [0.4, 0, 0.2, 1],
-    },
-  }),
-};
-
-const scaleInVariant = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
-  },
-};
 
 /* ────────────────────────────────────────────
    AnimatedSection — scroll-triggered wrapper
@@ -247,19 +216,16 @@ function AnimatedCounter({ value }: { value: string }) {
   const prefersReducedMotion = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
-  const [displayValue, setDisplayValue] = useState(prefersReducedMotion ? value : '0');
+  const [displayValue, setDisplayValue] = useState('0');
 
   useEffect(() => {
-    if (!inView || prefersReducedMotion) {
-      if (inView) setDisplayValue(value);
-      return;
-    }
+    if (!inView || prefersReducedMotion) return;
 
     // Extract numeric part
     const numericMatch = value.match(/[\d,.]+/);
     if (!numericMatch) {
-      setDisplayValue(value);
-      return;
+      const frame = requestAnimationFrame(() => setDisplayValue(value));
+      return () => cancelAnimationFrame(frame);
     }
 
     const numericStr = numericMatch[0].replace(/,/g, '');
@@ -271,6 +237,7 @@ function AnimatedCounter({ value }: { value: string }) {
 
     const duration = 1200;
     const startTime = performance.now();
+    let frameId = 0;
 
     function animate(currentTime: number) {
       const elapsed = currentTime - startTime;
@@ -290,14 +257,17 @@ function AnimatedCounter({ value }: { value: string }) {
       setDisplayValue(`${prefix}${formatted}${suffix}`);
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        frameId = requestAnimationFrame(animate);
       }
     }
 
-    requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
   }, [inView, value, prefersReducedMotion]);
 
-  return <span ref={ref}>{displayValue}</span>;
+  return (
+    <span ref={ref}>{prefersReducedMotion ? value : displayValue}</span>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -308,7 +278,9 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
   const [loading, setLoading] = useState(!previewContent);
   const [navOpen, setNavOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('');
-  const [selectedVision, setSelectedVision] = useState<any>(null);
+  const [selectedVision, setSelectedVision] = useState<
+    (LandingMediaItem & { index: number }) | null
+  >(null);
   const prefersReducedMotion = useReducedMotion();
 
   const content = previewContent || fetchedContent;
@@ -413,18 +385,37 @@ export default function ChurchFeed({ previewContent }: { previewContent?: Landin
 
     setSubmittingContact(true);
     try {
+      const rawCategory = String(formData.get('category') || 'general');
+      const categories = [
+        'prayer',
+        'cell',
+        'baptism',
+        'counseling',
+        'chms',
+        'general',
+      ] as const;
+      type ContactCategory = (typeof categories)[number];
+      const category: ContactCategory = categories.includes(
+        rawCategory as ContactCategory,
+      )
+        ? (rawCategory as ContactCategory)
+        : 'general';
       await submitContactRequest({
         full_name: fullName,
         phone,
         email: String(formData.get('email') || '').trim() || undefined,
-        category: (formData.get('category') as any) || 'general',
+        category,
         message: messageText,
         is_confidential: formData.get('is_confidential') === 'on',
       });
       message.success('Thank you! Your message has been sent to our pastoral team.');
       form.reset();
-    } catch (err: any) {
-      message.error(err?.message || 'Failed to send your message. Please try again.');
+    } catch (err: unknown) {
+      message.error(
+        err instanceof Error
+          ? err.message
+          : 'Failed to send your message. Please try again.',
+      );
     } finally {
       setSubmittingContact(false);
     }

@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Avatar, Checkbox, Empty, Input } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Avatar, Checkbox, Empty, Input, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { Member } from '@/types';
+import { getMembers } from '@/services/api';
 import { getImageUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
+import { useDebouncedCallback } from '@/lib/debounce';
 import './MemberTransferList.css';
 
 interface MemberTransferListProps {
+  /** Local list mode (legacy). Prefer remoteSearch. */
   members?: Member[];
+  /** When true, fetches members via search API instead of using `members`. */
+  remoteSearch?: boolean;
   selectedKeys?: string[];
   onChange: (targetKeys: string[]) => void;
   /** Kept for API compatibility; second title unused in checkbox UI */
@@ -24,43 +29,77 @@ function memberLabel(m: Member): string {
 
 /**
  * Mobile-friendly searchable checkbox list for picking members.
- * Replaces the dual-pane Transfer control in wizard steppers.
+ * With remoteSearch, queries the API so directories >100 remain reachable.
  */
 const MemberTransferList = ({
   members = [],
+  remoteSearch = false,
   selectedKeys = [],
   onChange,
   listHeight = 320,
   description = 'Search and check members to include them.',
 }: MemberTransferListProps) => {
   const [query, setQuery] = useState('');
+  const [remoteMembers, setRemoteMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCache, setSelectedCache] = useState<Record<string, Member>>({});
 
   const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
 
+  const fetchRemote = useCallback(async (q: string) => {
+    setLoading(true);
+    try {
+      const result = await getMembers({
+        page: 1,
+        limit: 40,
+        search: q.trim() || undefined,
+      });
+      setRemoteMembers(result.data);
+      setSelectedCache((prev) => {
+        const next = { ...prev };
+        for (const m of result.data) next[m.id] = m;
+        return next;
+      });
+    } catch {
+      setRemoteMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const debouncedFetch = useDebouncedCallback((q: string) => {
+    void fetchRemote(q);
+  }, 300);
+
+  useEffect(() => {
+    if (!remoteSearch) return;
+    void fetchRemote('');
+  }, [remoteSearch, fetchRemote]);
+
+  const listSource = remoteSearch ? remoteMembers : members;
+
   const filtered = useMemo(() => {
+    if (remoteSearch) return listSource;
     const q = query.trim().toLowerCase();
     if (!q) return members;
     return members.filter((m) => {
-      const hay = [
-        m.first_name,
-        m.middle_name,
-        m.last_name,
-        m.email,
-        m.phone,
-      ]
+      const hay = [m.first_name, m.middle_name, m.last_name, m.email, m.phone]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [members, query]);
+  }, [remoteSearch, listSource, members, query]);
 
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((m) => selectedSet.has(m.id));
   const someFilteredSelected =
     filtered.some((m) => selectedSet.has(m.id)) && !allFilteredSelected;
 
-  const toggleOne = (id: string, checked: boolean) => {
+  const toggleOne = (id: string, checked: boolean, member?: Member) => {
+    if (member) {
+      setSelectedCache((prev) => ({ ...prev, [id]: member }));
+    }
     if (checked) {
       if (selectedSet.has(id)) return;
       onChange([...selectedKeys, id]);
@@ -81,6 +120,11 @@ const MemberTransferList = ({
     onChange(selectedKeys.filter((id) => !drop.has(id)));
   };
 
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    if (remoteSearch) debouncedFetch(value);
+  };
+
   return (
     <div className="member-check-list">
       {description ? <p className="member-check-list-desc">{description}</p> : null}
@@ -91,7 +135,7 @@ const MemberTransferList = ({
         prefix={<SearchOutlined />}
         placeholder="Search members by name, email, or phone…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => handleQueryChange(e.target.value)}
       />
 
       <div className="member-check-list-toolbar">
@@ -105,15 +149,25 @@ const MemberTransferList = ({
         </Checkbox>
         <span className="member-check-list-count">
           {selectedKeys.length} selected
-          {members.length ? ` · ${members.length} total` : ''}
+          {!remoteSearch && members.length ? ` · ${members.length} total` : ''}
         </span>
       </div>
 
       <div className="member-check-list-body" style={{ maxHeight: listHeight }}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            <Spin size="small" />
+          </div>
+        ) : filtered.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={query.trim() ? 'No members match your search' : 'No members available'}
+            description={
+              query.trim()
+                ? 'No members match your search'
+                : remoteSearch
+                  ? 'Type to search members'
+                  : 'No members available'
+            }
           />
         ) : (
           <ul className="member-check-list-items">
@@ -125,7 +179,7 @@ const MemberTransferList = ({
                 <li key={m.id} className={`member-check-list-item${checked ? ' is-selected' : ''}`}>
                   <Checkbox
                     checked={checked}
-                    onChange={(e) => toggleOne(m.id, e.target.checked)}
+                    onChange={(e) => toggleOne(m.id, e.target.checked, m)}
                   >
                     <span className="member-check-list-row">
                       <Avatar
@@ -150,6 +204,15 @@ const MemberTransferList = ({
           </ul>
         )}
       </div>
+
+      {remoteSearch && selectedKeys.length > 0 && query.trim() ? (
+        <p className="member-check-list-desc" style={{ marginTop: 8 }}>
+          {selectedKeys.length} selected
+          {Object.keys(selectedCache).length
+            ? ` (including names outside current results)`
+            : ''}
+        </p>
+      ) : null}
     </div>
   );
 };

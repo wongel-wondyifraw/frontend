@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { DashboardContextValue, DashboardLayoutItem, DashboardWidget } from '@/types';
 

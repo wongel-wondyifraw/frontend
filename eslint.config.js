@@ -12,12 +12,19 @@ const eslintConfig = defineConfig([
       'react/prop-types': 'off',
       'react/no-unescaped-entities': 'off',
       'react/jsx-key': 'warn',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Base rule false-positives on TS callback/interface params — use TS version only
+      'no-unused-vars': 'off',
       '@next/next/no-img-element': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'warn',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/consistent-type-imports': 'warn',
     },
   },
 ]);

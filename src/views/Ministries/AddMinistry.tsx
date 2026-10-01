@@ -1,7 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Select, Button, Row, Col } from 'antd';
+import { Form, Input, Button, Row, Col } from 'antd';
 import { message } from '@/lib/app-message';
 import {
     ArrowLeftOutlined,
@@ -13,13 +13,11 @@ import {
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
-import { createMinistry, getMembersList, addMinistryMember } from '../../services/api';
-import type { Member } from '@/types';
+import { createMinistry, addMinistryMember } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
 import './AddMinistry.css';
 
-const { Option } = Select;
 const { TextArea } = Input;
 
 const STEPS = [
@@ -36,21 +34,7 @@ const AddMinistry = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
-    const [members, setMembers] = useState<Member[]>([]);
     const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
-
-    useEffect(() => {
-        loadMembers();
-    }, []);
-
-    const loadMembers = async () => {
-        try {
-            const data = await getMembersList();
-            setMembers(data);
-        } catch (error) {
-            message.error('Failed to load members');
-        }
-    };
 
     const next = async () => {
         try {
@@ -58,7 +42,7 @@ const AddMinistry = () => {
                 await form.validateFields(['name']);
             }
             setCurrentStep(currentStep + 1);
-        } catch (error) {
+        } catch (_error) {
             message.error('Please correct the errors before proceeding.');
         }
     };
@@ -179,7 +163,7 @@ const AddMinistry = () => {
                                     <span style={{ fontWeight: 400, fontSize: '13px', color: '#94a3b8' }}>(Optional)</span>
                                 </h3>
                                 <MemberTransferList
-                                    members={members}
+                                    remoteSearch
                                     selectedKeys={selectedMemberKeys}
                                     onChange={setSelectedMemberKeys}
                                     description="Search and check members to add them to this ministry."
@@ -203,16 +187,13 @@ const AddMinistry = () => {
                                             const leaderLabel = leader.leader_id
                                                 ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                                                 : 'Not assigned';
-                                            const selectedNames = selectedMemberKeys.map(key => {
-                                                const m = members.find(mem => mem.id === key);
-                                                return m ? `${m.first_name} ${m.last_name}` : key;
-                                            });
+                                            const selectedCount = selectedMemberKeys.length;
                                             return (
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: '13px' }}>
                                                     <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
                                                     <div><strong>Leader:</strong> {leaderLabel}</div>
                                                     <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
-                                                    <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
+                                                    <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                                                     <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                                                 </div>
                                             );

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Select, Tag, Space, Spin } from 'antd';
-import { getMembersList, getMinisters } from '@/services/api';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Select, Tag, Space } from 'antd';
+import { getMembers, getMinisters } from '@/services/api';
 import type { LeaderType, Member, Minister } from '@/types';
+import { useDebouncedCallback } from '@/lib/debounce';
 import {
   encodeLeaderValue,
   decodeLeaderValue,
@@ -45,21 +46,20 @@ const SpouseSelect = ({
   size = 'large',
   allowClear = true,
 }: SpouseSelectProps) => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const search = useCallback(
+    async (q: string) => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const [members, ministersPage] = await Promise.all([
-          getMembersList(),
-          getMinisters({ page: 1, limit: 100 }),
-        ]);
-        if (cancelled) return;
+        const term = q.trim();
         const wanted = gender.toLowerCase();
-        const memberCandidates: Candidate[] = members
+        const [membersPage, ministersPage] = await Promise.all([
+          getMembers({ page: 1, limit: 40, search: term || undefined }),
+          getMinisters({ page: 1, limit: 40, search: term || undefined }),
+        ]);
+        const memberCandidates: Candidate[] = membersPage.data
           .filter((m: Member) => (m.gender || '').toLowerCase() === wanted)
           .map((m: Member) => ({
             key: `member:${m.id}`,
@@ -85,15 +85,21 @@ const SpouseSelect = ({
           }));
         setCandidates([...memberCandidates, ...ministerCandidates]);
       } catch {
-        if (!cancelled) setCandidates([]);
+        setCandidates([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [gender]);
+    },
+    [gender],
+  );
+
+  const debouncedSearch = useDebouncedCallback((q: string) => {
+    void search(q);
+  }, 300);
+
+  useEffect(() => {
+    void search('');
+  }, [search]);
 
   const options = useMemo(
     () =>
@@ -107,31 +113,27 @@ const SpouseSelect = ({
             </Tag>
           </Space>
         ),
-        searchText: `${displayName(c)} ${c.email || ''} ${c.type}`,
       })),
     [candidates],
   );
 
-  if (loading) {
-    return <Spin size="small" />;
-  }
-
   return (
     <Select
       showSearch
+      filterOption={false}
       allowClear={allowClear}
       size={size}
-      placeholder={placeholder || (gender === 'male' ? 'Select husband' : 'Select wife')}
+      placeholder={placeholder || (gender === 'male' ? 'Type to search husband' : 'Type to search wife')}
       value={value}
       options={options}
-      optionFilterProp="searchText"
-      filterOption={(input, option) =>
-        String(option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
-      }
+      loading={loading}
+      onSearch={(q) => debouncedSearch(q)}
       onChange={(next) => onChange?.(next)}
       optionLabelProp="label"
+      notFoundContent={
+        loading ? 'Searching…' : `Type to search ${gender} members or ministers`
+      }
       style={{ width: '100%' }}
-      notFoundContent={`No ${gender} members or ministers found`}
     />
   );
 };

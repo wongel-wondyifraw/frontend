@@ -111,7 +111,7 @@ const PlanningContent = () => {
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [tasks, setTasks] = useState<TaskAssignment[]>([]);
   const [ministers, setMinisters] = useState<Minister[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [calendarMonth, setCalendarMonth] = useState<Dayjs>(dayjs());
@@ -191,6 +191,7 @@ const PlanningContent = () => {
 
   useEffect(() => {
     if (activeTab === 'list') void loadAllPlans(1, tablePageSize, searchText);
+    // loadAllPlans identity changes with search; intentional one-shot on tab/filter change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, typeFilter, statusFilter]);
 
@@ -238,8 +239,6 @@ const PlanningContent = () => {
     return () => {
       cancelled = true;
     };
-    // openEdit is stable enough for one-shot deep link
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, canUpdate, router]);
 
   const openCreate = (date?: Dayjs) => {

@@ -66,7 +66,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
             ]);
             setMember(data);
             setFamily(familyData);
-        } catch (error) {
+        } catch (_error) {
             message.error('Failed to load member details');
             router.push('/members/manage');
         } finally {
@@ -89,7 +89,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
             await deleteMember(id);
             message.success('Member deleted successfully');
             router.push('/members/manage');
-        } catch (error) {
+        } catch (_error) {
             message.error('Failed to delete member');
         }
     };

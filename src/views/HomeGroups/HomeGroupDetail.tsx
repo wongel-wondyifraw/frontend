@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Select, Card, Tooltip, Empty } from 'antd';
+import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   TeamOutlined,
@@ -20,15 +20,13 @@ import {
   getHomeGroup,
   deleteHomeGroup,
   getHomeGroupMembers,
-  getMembersList,
   addHomeGroupMember,
 } from '../../services/api';
-import type { HomeGroupDetailProps, HomeGroup, HomeGroupMember, Member } from '@/types';
+import type { HomeGroupDetailProps, HomeGroup, HomeGroupMember } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { LeaderNameWithTag } from '../../Components/common/LeaderLabel';
+import MemberSearchSelect from '../../Components/common/MemberSearchSelect';
 import './HomeGroupDetail.css';
-
-const { Option } = Select;
 
 const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null }: HomeGroupDetailProps) => {
   const params = useParams();
@@ -39,7 +37,6 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
   const [groupMembers, setGroupMembers] = useState<HomeGroupMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [addingMember, setAddingMember] = useState(false);
   const [form] = Form.useForm();
 
@@ -77,13 +74,6 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
 
   const openAddMemberModal = async () => {
     setIsAddModalVisible(true);
-    if (allMembers.length === 0) {
-      try {
-        setAllMembers(await getMembersList());
-      } catch {
-        console.warn('Failed to load members for add modal');
-      }
-    }
   };
 
   const handleDelete = () => {
@@ -131,9 +121,7 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
 
   if (!homeGroup) return null;
 
-  const availableMembers = allMembers.filter(
-    (m) => !groupMembers.some((mm) => mm.member_id === m.id),
-  );
+  const excludeMemberIds = groupMembers.map((mm) => mm.member_id);
 
   return (
     <>
@@ -320,22 +308,10 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
             label="Select Member"
             rules={[{ required: true, message: 'Please select a member to add' }]}
           >
-            <Select
-              placeholder="Search and select a member"
-              size="large"
-              showSearch
-              allowClear
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {availableMembers.map((member) => (
-                <Option key={member.id} value={member.id}>
-                  {member.first_name} {member.middle_name ? `${member.middle_name} ` : ''}{member.last_name}
-                </Option>
-              ))}
-            </Select>
+            <MemberSearchSelect
+              excludeIds={excludeMemberIds}
+              placeholder="Type to search members"
+            />
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
             <Button onClick={() => setIsAddModalVisible(false)}>Cancel</Button>

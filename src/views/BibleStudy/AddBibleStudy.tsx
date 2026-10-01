@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Input, Select, Button, Row, Col, Radio, Upload, Typography } from 'antd';
 import { message } from '@/lib/app-message';
@@ -18,9 +18,8 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
 import {
-  createBibleStudy, getMembersList, addBibleStudyMember, uploadDocument,
+  createBibleStudy, addBibleStudyMember, uploadDocument,
 } from '../../services/api';
-import type { Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
@@ -45,17 +44,10 @@ const AddBibleStudy = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [members, setMembers] = useState<Member[]>([]);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
   const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const contentType = Form.useWatch('content_type', form);
-
-  useEffect(() => {
-    getMembersList()
-      .then(setMembers)
-      .catch(() => message.error('Failed to load members'));
-  }, []);
 
   const next = async () => {
     try {
@@ -238,7 +230,7 @@ const AddBibleStudy = () => {
                 <span style={{ fontWeight: 400, fontSize: 13, color: '#94a3b8' }}>(Optional)</span>
               </h3>
               <MemberTransferList
-                members={members}
+                remoteSearch
                 selectedKeys={selectedMemberKeys}
                 onChange={setSelectedMemberKeys}
                 description="Search and check members to add them to this Bible study."

@@ -9,13 +9,12 @@ import './AttendanceWidget.css';
 /** Uses real weekly registration counts as an activity pulse (no attendance module yet). */
 const AttendanceWidget = () => {
   const stats = useDashboardStats();
-  const spark = stats?.registrationSpark || [];
+  const data = useMemo(() => {
+    const spark = stats?.registrationSpark || [];
+    return spark.slice(-7).map((value, i) => ({ name: `S${i + 1}`, value }));
+  }, [stats?.registrationSpark]);
   const thisWeek = stats?.membersThisWeek ?? 0;
   const lastWeek = stats?.membersLastWeek ?? 0;
-  const data = useMemo(
-    () => spark.slice(-7).map((value, i) => ({ name: `S${i + 1}`, value })),
-    [spark],
-  );
   const delta =
     lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : thisWeek > 0 ? 100 : 0;
   const up = delta >= 0;

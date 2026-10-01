@@ -1,6 +1,3 @@
-import * as XLSX from "xlsx";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { parseCsv } from "@/lib/csv";
 
 export type SheetTable = {
@@ -26,6 +23,7 @@ export async function parseSpreadsheetFile(file: File): Promise<SheetTable> {
     file.type.includes("excel");
 
   if (isExcel) {
+    const XLSX = await import("xlsx");
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
     const sheetName = workbook.SheetNames[0];
@@ -57,11 +55,12 @@ export async function parseSpreadsheetFile(file: File): Promise<SheetTable> {
   return parseCsv(text);
 }
 
-export function downloadExcelTemplate(
+export async function downloadExcelTemplate(
   filename: string,
   headers: string[],
   sampleRow: Record<string, string>,
-): void {
+): Promise<void> {
+  const XLSX = await import("xlsx");
   const sheet = XLSX.utils.json_to_sheet([sampleRow], { header: headers });
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, "Template");
@@ -71,12 +70,13 @@ export function downloadExcelTemplate(
   );
 }
 
-export function downloadExcelData(
+export async function downloadExcelData(
   filename: string,
   headers: string[],
   rows: Record<string, string>[],
   sheetName = "Data",
-): void {
+): Promise<void> {
+  const XLSX = await import("xlsx");
   const data = rows.length
     ? rows
     : [Object.fromEntries(headers.map((h) => [h, ""]))];
@@ -89,14 +89,29 @@ export function downloadExcelData(
   );
 }
 
-export function downloadPdfTable(options: {
+export async function downloadPdfTable(options: {
   filename: string;
   title: string;
   headers: string[];
   rows: Record<string, string>[];
-}): void {
+}): Promise<void> {
+  const jspdfMod = (await import("jspdf")) as unknown as {
+    jsPDF: new (opts?: { orientation?: string }) => {
+      setFontSize: (n: number) => void;
+      text: (t: string, x: number, y: number) => void;
+      save: (name: string) => void;
+    };
+    default?: new (opts?: { orientation?: string }) => {
+      setFontSize: (n: number) => void;
+      text: (t: string, x: number, y: number) => void;
+      save: (name: string) => void;
+    };
+  };
+  const autoTableMod = await import("jspdf-autotable");
+  const JsPDFCtor = jspdfMod.jsPDF || jspdfMod.default!;
+  const autoTable = autoTableMod.default;
   const { filename, title, headers, rows } = options;
-  const doc = new jsPDF({
+  const doc = new JsPDFCtor({
     orientation: headers.length > 8 ? "landscape" : "portrait",
   });
   doc.setFontSize(14);

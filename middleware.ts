@@ -3,8 +3,6 @@ import type { NextRequest } from 'next/server';
 
 const TOKEN_COOKIE = 'cms_token';
 
-const PUBLIC_PATHS = ['/', '/login'];
-
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/members',

@@ -17,14 +17,13 @@ import MemberTransferList from '../../Components/common/MemberTransferList';
 import {
   updateHomeGroup,
   getHomeGroup,
-  getMembersList,
   getHomeGroupMembers,
   addHomeGroupMember,
   removeHomeGroupMember,
   getLocations,
   createLocation,
 } from '../../services/api';
-import type { Member, Location } from '@/types';
+import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -77,7 +76,6 @@ const EditHomeGroup = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [members, setMembers] = useState<Member[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
@@ -94,13 +92,11 @@ const EditHomeGroup = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [group, membersData, groupMembers, locs] = await Promise.all([
+        const [group, groupMembers, locs] = await Promise.all([
           getHomeGroup(id),
-          getMembersList(),
           getHomeGroupMembers(id),
           getLocations('active').catch(() => [] as Location[]),
         ]);
-        setMembers(membersData);
         setLocations(locs);
         setGroupData({
           name: group.name,
@@ -333,7 +329,7 @@ const EditHomeGroup = () => {
                 <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members
               </h3>
               <MemberTransferList
-                members={members}
+                remoteSearch
                 selectedKeys={selectedMemberKeys}
                 onChange={setSelectedMemberKeys}
                 description="Search and check members to update who belongs to this home group."
@@ -352,10 +348,7 @@ const EditHomeGroup = () => {
                     const leaderName = leader.leader_id
                       ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                       : 'Not assigned';
-                    const selectedNames = selectedMemberKeys.map((key) => {
-                      const m = members.find((mem) => mem.id === key);
-                      return m ? `${m.first_name} ${m.last_name}` : key;
-                    });
+                    const selectedCount = selectedMemberKeys.length;
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
                         <div><strong>Name:</strong> {values.name || '—'}</div>
@@ -365,7 +358,7 @@ const EditHomeGroup = () => {
                           <strong>Schedule:</strong>{' '}
                           {formatSchedule(values.schedule_day, values.schedule_time) || '—'}
                         </div>
-                        <div><strong>Members:</strong> {selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}</div>
+                        <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                       </div>
                     );
