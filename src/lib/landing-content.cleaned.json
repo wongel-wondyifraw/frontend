@@ -1,0 +1,96 @@
+{
+  "hero": {
+    "enabled": true,
+    "kicker": "Welcome",
+    "title": "Goro Full Gospel Church",
+    "lede": "",
+    "image_url": "https://res.cloudinary.com/bzfnamis/image/upload/v1790164557/cms/images/eklh24l33foig0vptvy4.webp",
+    "cta_label": "Staff login",
+    "secondary_cta_label": "Explore the page",
+    "verse_ref": "Hebrews 13:8",
+    "verse_text": "Jesus Christ is the same yesterday and today and forever."
+  },
+  "about": {
+    "enabled": true,
+    "label": "MISSION",
+    "title": "About us",
+    "subtitle": "Goro Muluwongel Church is a Gospel-centred Christian community committed to worshipping God, proclaiming the Gospel of Jesus Christ, and helping people grow in faith. Through worship, discipleship, fellowship, teaching, and community service, we seek to create an environment where individuals and families can encounter Christ and grow together.\n\nOur ministry is built on biblical teaching, prayer, fellowship, and practical service. We believe that the church is not only a place of worship but also a community where believers support one another and extend God's love to those around them.",
+    "items": []
+  },
+  "vision": {
+    "enabled": true,
+    "title": "Our vision",
+    "subtitle": "",
+    "label": "",
+    "heading": "Our vision",
+    "body": "To build a Christ-centred church that faithfully proclaims the Gospel, nurtures spiritual growth, strengthens families, and serves the community with love, compassion, and integrity.\n\nWe envision a growing and united church where every believer is encouraged to discover their God-given purpose, actively participate in ministry, and become a faithful witness of Christ in their families, workplaces, and communities.",
+    "image_url": null,
+    "items": []
+  },
+  "ministries": {
+    "enabled": true,
+    "title": "Ministries",
+    "subtitle": "",
+    "items": []
+  },
+  "projects": {
+    "enabled": true,
+    "title": "Projects",
+    "subtitle": "",
+    "items": [
+      {
+        "title": "Church Development",
+        "text": "Church Development",
+        "image_url": "https://res.cloudinary.com/bzfnamis/image/upload/v1790164647/cms/images/cezio0whjdzjbt79odbn.webp"
+      },
+      {
+        "title": "Community Outreach",
+        "text": "Supporting people and families through practical assistance and Gospel-centred outreach."
+      },
+      {
+        "title": "Youth Development",
+        "text": "Creating opportunities for young people to grow spiritually, develop their talents, and participate in church ministry."
+      },
+      {
+        "title": "Children's Ministry",
+        "text": "Supporting children through biblical teaching, discipleship, and a safe environment for spiritual growth."
+      }
+    ]
+  },
+  "programs": {
+    "enabled": true,
+    "title": "Programs",
+    "subtitle": "",
+    "items": [
+      {
+        "title": "Sunday Worship Services",
+        "text": "Sunday Worship Services",
+        "tag": "",
+        "location": "Goro Full Gospel Church Main Chapel",
+        "image_url": null,
+        "event_date": "Every Monday"
+      }
+    ]
+  },
+  "contact": {
+    "enabled": true,
+    "touch_title": "Get in touch",
+    "touch_body": "We would love to hear from you. Whether you would like to learn more about our church, participate in a ministry, request prayer, or simply connect with our community, you are welcome to reach out.\n\nGoro Muluwongel Church\nLocation: Goro, Addis Ababa, Ethiopia\n\nJoin us in worship, fellowship, and serving God's purpose in our community.",
+    "location_title": "Sanctuary Location & Gathering Hours",
+    "location_services_heading": "Weekly Services & Gathering Times",
+    "location_services": [
+      { "name": "Sunday Worship", "time": "9:00 AM – 12:30 PM" },
+      { "name": "Tuesday", "time": "5:30 PM – 7:30 PM" },
+      { "name": "Thursday", "time": "5:30 PM – 7:30 PM" }
+    ],
+    "office_phone": "",
+    "map_title": "Goro Full Gospel Church",
+    "map_subtitle": "Bole Sub-City, Addis Ababa",
+    "map_note": "Goro-Sefera Station (3 min walk)",
+    "map_url": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4180.505637180854!2d38.831462852903684!3d8.992677311552113!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x164b9b02753358f5%3A0xda146d8ce451d649!2zR29yby1TZWZlcmEgRnVsbCBHb3NwZWwgQ2h1cmNofCDhjI7hiK4t4Yiw4Y2I4YirIOGImeGIiSDhi4jhipXhjIzhiI0g4Ymk4YmwIOGKreGIreGIteGJsuGLq-GKlQ!5e0!3m2!1sen!2snl!4v1790682743448!5m2!1sen!2snl",
+    "directions_url": "https://www.google.com/maps?cid=15714397395026925129"
+  },
+  "footer": {
+    "blurb": ""
+  }
+}

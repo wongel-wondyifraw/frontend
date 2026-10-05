@@ -102,11 +102,34 @@ function mergeSectionItems<T extends { items?: LandingMediaItem[] }>(
   base: T | undefined,
   stored: T | undefined,
 ): T {
-  return {
+  const merged = {
     ...(base || {}),
     ...(stored || {}),
     items: Array.isArray(stored?.items) ? stored!.items! : base?.items || [],
-  } as T;
+  } as T & Record<string, unknown>;
+
+  // Drop legacy keys that are not part of the canonical section shape so
+  // PATCH validation / saves don't trip on old production JSON.
+  const allowed = new Set([
+    "enabled",
+    "title",
+    "subtitle",
+    "label",
+    "heading",
+    "body",
+    "image_url",
+    "video_url",
+    "video_file_url",
+    "file_url",
+    "file_name",
+    "items",
+  ]);
+  for (const key of Object.keys(merged)) {
+    if (!allowed.has(key)) {
+      delete merged[key];
+    }
+  }
+  return merged as T;
 }
 
 /** Prefer CMS values; migrate legacy keys; never re-inject sample list content when CMS arrays are empty. */
@@ -142,20 +165,97 @@ export function mergeLandingContent(
   }
 
   return {
-    hero: { ...base.hero, ...stored.hero },
+    hero: pickHero(base.hero, stored.hero),
     about: mergeSectionItems(base.about, stored.about),
     vision: mergeSectionItems(base.vision, stored.vision),
     ministries: mergeSectionItems(base.ministries, ministriesSrc),
     projects: mergeSectionItems(base.projects, projectsSrc),
     programs: mergeSectionItems(base.programs, stored.programs),
-    contact: {
-      ...base.contact,
-      ...stored.contact,
-      location_services: Array.isArray(stored.contact?.location_services)
-        ? stored.contact!.location_services!
-        : base.contact?.location_services || [],
-    },
-    footer: { ...base.footer, ...stored.footer },
+    contact: pickContact(base.contact, stored.contact),
+    footer: pickFooter(base.footer, stored.footer),
+  };
+}
+
+function pickHero(
+  base: LandingPageContent["hero"],
+  stored: LandingPageContent["hero"] | undefined,
+): LandingPageContent["hero"] {
+  return {
+    enabled: stored?.enabled ?? base?.enabled,
+    kicker: stored?.kicker ?? base?.kicker,
+    title: stored?.title ?? base?.title,
+    lede: stored?.lede ?? base?.lede,
+    image_url: stored?.image_url !== undefined ? stored.image_url : base?.image_url,
+    video_url: stored?.video_url !== undefined ? stored.video_url : base?.video_url,
+    video_file_url:
+      stored?.video_file_url !== undefined
+        ? stored.video_file_url
+        : base?.video_file_url,
+    file_url: stored?.file_url !== undefined ? stored.file_url : base?.file_url,
+    file_name:
+      stored?.file_name !== undefined ? stored.file_name : base?.file_name,
+    cta_label: stored?.cta_label ?? base?.cta_label,
+    secondary_cta_label:
+      stored?.secondary_cta_label ?? base?.secondary_cta_label,
+    verse_ref: stored?.verse_ref ?? base?.verse_ref,
+    verse_text: stored?.verse_text ?? base?.verse_text,
+  };
+}
+
+function pickContact(
+  base: LandingPageContent["contact"],
+  stored: LandingPageContent["contact"] | undefined,
+): LandingPageContent["contact"] {
+  const legacy = stored as
+    | (LandingPageContent["contact"] & {
+        visit_lines?: string[];
+        visit_title?: string;
+        title?: string;
+        subtitle?: string;
+      })
+    | undefined;
+
+  let touchBody = stored?.touch_body ?? base?.touch_body ?? "";
+  if (
+    !String(touchBody || "").trim() &&
+    Array.isArray(legacy?.visit_lines) &&
+    legacy.visit_lines.length
+  ) {
+    touchBody = legacy.visit_lines
+      .map((line) => String(line || "").trim())
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  return {
+    enabled: stored?.enabled ?? base?.enabled,
+    touch_title:
+      stored?.touch_title ||
+      legacy?.visit_title ||
+      legacy?.subtitle ||
+      base?.touch_title,
+    touch_body: touchBody,
+    location_title: stored?.location_title ?? base?.location_title,
+    location_services_heading:
+      stored?.location_services_heading ?? base?.location_services_heading,
+    location_services: Array.isArray(stored?.location_services)
+      ? stored!.location_services!
+      : base?.location_services || [],
+    office_phone: stored?.office_phone ?? base?.office_phone,
+    map_title: stored?.map_title ?? base?.map_title,
+    map_subtitle: stored?.map_subtitle ?? base?.map_subtitle,
+    map_note: stored?.map_note ?? base?.map_note,
+    map_url: stored?.map_url ?? base?.map_url,
+    directions_url: stored?.directions_url ?? base?.directions_url,
+  };
+}
+
+function pickFooter(
+  base: LandingPageContent["footer"],
+  stored: LandingPageContent["footer"] | undefined,
+): LandingPageContent["footer"] {
+  return {
+    blurb: stored?.blurb ?? base?.blurb,
   };
 }
 

@@ -486,8 +486,8 @@ export default function ChurchFeed({
                 onClick={() => setNavOpen(true)}
               />
             </div>
-          </div>
-        </header>
+        </div>
+      </header>
 
         {/* Mobile drawer */}
         <Drawer
@@ -693,9 +693,9 @@ export default function ChurchFeed({
                       </div>
                     </motion.div>
                   ))}
-                </div>
-              </div>
-            </section>
+            </div>
+          </div>
+        </section>
           )}
 
           {/* ═══════ PROGRAMS ═══════ */}
@@ -715,8 +715,8 @@ export default function ChurchFeed({
                     )}
                   </div>
                 </AnimatedSection>
-              </div>
-
+          </div>
+          
               <div className="lp-card-scroll" tabIndex={0} aria-label="Programs">
                 <div className="lp-card-scroll-track">
                   {displayedPrograms.map((item, i) => (
@@ -763,8 +763,8 @@ export default function ChurchFeed({
                     </div>
                   ))}
                 </div>
-              </div>
-            </section>
+          </div>
+        </section>
           )}
 
           {/* ═══════ PROJECTS ═══════ */}
@@ -994,7 +994,7 @@ export default function ChurchFeed({
                             Get Directions
                           </a>
                         </div>
-                      </div>
+            </div>
                     </AnimatedSection>
 
                     <AnimatedSection delay={0.3}>
@@ -1060,13 +1060,13 @@ export default function ChurchFeed({
                         <RightOutlined />
                       </div>
                     </motion.div>
-                  ))}
-                </div>
-              </div>
-            </section>
+              ))}
+            </div>
+          </div>
+        </section>
           )}
 
-        </main>
+      </main>
 
         {/* ═══════ VISION MODAL ═══════ */}
         <AnimatePresence>
@@ -1161,7 +1161,7 @@ export default function ChurchFeed({
                 >
                   Request this system
                 </a>
-              </nav>
+          </nav>
             </div>
 
             {/* Ministries from CMS */}
@@ -1177,7 +1177,7 @@ export default function ChurchFeed({
                 </nav>
               </div>
             )}
-          </div>
+        </div>
 
           {/* Bottom copyright */}
           <div className="lp-footer-bottom">
@@ -1185,9 +1185,9 @@ export default function ChurchFeed({
               © {new Date().getFullYear()} {TENANT.name}. All rights reserved. Empowering faith,
               administration, and community.
             </Text>
-          </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
+    </div>
     </ConfigProvider>
   );
 }
