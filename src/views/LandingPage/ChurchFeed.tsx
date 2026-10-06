@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -44,12 +45,12 @@ import { motion, useReducedMotion, useInView, AnimatePresence } from 'framer-mot
 import CustomSelect, { type CustomSelectOption } from '@/Components/common/CustomSelect';
 import { PLATFORM, TENANT } from '@/lib/tenant';
 import { getLandingContent, submitContactRequest } from '@/services/api';
+import { getImageUrl } from '@/lib/media-url';
 import type { LandingMediaItem, LandingPageContent } from '@/types';
 import {
   DEFAULT_LANDING_CONTENT,
   mergeLandingContent,
 } from '@/lib/landing-defaults';
-import { getImageUrl } from '@/lib/media-url';
 import './ChurchFeed.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -94,27 +95,57 @@ const landingTheme = {
   algorithm: theme.defaultAlgorithm,
 };
 
-/* Static stats for the ribbon */
-const STATIC_STATS = [
-  { value: '4,500+', label: 'Active Church Members' },
-  { value: '32', label: 'Community Cell Groups' },
-  { value: '18', label: 'Ongoing Ministry Programs' },
-  { value: '99.8%', label: 'ChMS System Reliability' },
+/* Vision card icons mapping */
+const VISION_ICON_MAP: Record<string, React.ReactNode> = {
+  compass: <CompassOutlined />,
+  book: <BookOutlined />,
+  heart: <HeartOutlined />,
+  star: <StarOutlined />,
+  team: <TeamOutlined />,
+  fire: <FireOutlined />,
+  bulb: <BulbOutlined />,
+  globe: <GlobalOutlined />,
+  home: <HomeOutlined />,
+  sound: <SoundOutlined />,
+  crown: <CrownOutlined />,
+  check: <CheckCircleOutlined />,
+  info: <InfoCircleOutlined />,
+  play: <PlayCircleOutlined />,
+  shield: <SafetyOutlined />,
+  lightning: <ThunderboltOutlined />,
+  trophy: <TrophyOutlined />,
+  user: <UserOutlined />,
+  wifi: <WifiOutlined />,
+  coffee: <CoffeeOutlined />,
+  read: <ReadOutlined />,
+  bank: <BankOutlined />,
+  gift: <GiftOutlined />,
+  message: <MessageOutlined />,
+  rocket: <RocketOutlined />,
+};
+
+const VISION_ICONS = [
+  VISION_ICON_MAP.compass,
+  VISION_ICON_MAP.book,
+  VISION_ICON_MAP.heart,
 ];
 
-/* Vision card icons mapping */
-const VISION_ICONS = [
-  { icon: <CompassOutlined />, fallbackTitle: 'Great Commission & Evangelism' },
-  { icon: <BookOutlined />, fallbackTitle: 'Holistic Discipleship' },
-  { icon: <HeartOutlined />, fallbackTitle: 'Community Compassion' },
-];
+function visionCardText(item: LandingMediaItem): string {
+  return String(item.text || '').trim();
+}
 
 const renderVisionMedia = (item: LandingMediaItem, i: number) => {
-  if (item.image_url) {
+  const iconKey = item.icon?.trim();
+  if (iconKey && VISION_ICON_MAP[iconKey]) {
+    return VISION_ICON_MAP[iconKey];
+  }
+
+  const imageSrc = getImageUrl(item.image_url);
+  if (imageSrc) {
     return (
       <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
         <Image
-          src={item.image_url}
+          src={imageSrc}
           alt=""
           width={48}
           height={48}
@@ -124,38 +155,8 @@ const renderVisionMedia = (item: LandingMediaItem, i: number) => {
       </div>
     );
   }
-  
-  if (item.icon) {
-    switch (item.icon) {
-      case 'compass': return <CompassOutlined />;
-      case 'book': return <BookOutlined />;
-      case 'heart': return <HeartOutlined />;
-      case 'star': return <StarOutlined />;
-      case 'team': return <TeamOutlined />;
-      case 'fire': return <FireOutlined />;
-      case 'bulb': return <BulbOutlined />;
-      case 'globe': return <GlobalOutlined />;
-      case 'home': return <HomeOutlined />;
-      case 'sound': return <SoundOutlined />;
-      case 'crown': return <CrownOutlined />;
-      case 'check': return <CheckCircleOutlined />;
-      case 'info': return <InfoCircleOutlined />;
-      case 'play': return <PlayCircleOutlined />;
-      case 'shield': return <SafetyOutlined />;
-      case 'lightning': return <ThunderboltOutlined />;
-      case 'trophy': return <TrophyOutlined />;
-      case 'user': return <UserOutlined />;
-      case 'wifi': return <WifiOutlined />;
-      case 'coffee': return <CoffeeOutlined />;
-      case 'read': return <ReadOutlined />;
-      case 'bank': return <BankOutlined />;
-      case 'gift': return <GiftOutlined />;
-      case 'message': return <MessageOutlined />;
-      case 'rocket': return <RocketOutlined />;
-    }
-  }
-  
-  return VISION_ICONS[i]?.icon || <CompassOutlined />;
+
+  return VISION_ICONS[i] || VISION_ICON_MAP.compass;
 };
 
 /* Contact form ministry request category options */
@@ -299,6 +300,25 @@ export default function ChurchFeed({
     (LandingMediaItem & { index: number }) | null
   >(null);
   const prefersReducedMotion = useReducedMotion();
+  const [modalMounted, setModalMounted] = useState(false);
+
+  useEffect(() => {
+    setModalMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedVision) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedVision(null);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selectedVision]);
 
   const content = previewContent || fetchedContent;
 
@@ -367,23 +387,22 @@ export default function ChurchFeed({
   const displayedPrograms = programItems;
 
   const hasVisionBody = Boolean(
-    vision?.heading || vision?.body || vision?.image_url || vision?.title || vision?.subtitle,
+    vision?.heading ||
+      vision?.body ||
+      vision?.image_url ||
+      vision?.title ||
+      vision?.subtitle ||
+      (vision?.items && vision.items.length > 0),
   );
 
-  /* Build stats from data or use defaults */
-  const stats = useMemo(() => {
-    const rows: { value: string; label: string }[] = [];
-    if (displayedPrograms.length) {
-      rows.push({ value: String(displayedPrograms.length), label: programs?.title || 'Programs' });
-    }
-    if (ministryItems.length) {
-      rows.push({ value: String(ministryItems.length), label: ministries?.title || 'Ministries' });
-    }
-    if (aboutItems.length) {
-      rows.push({ value: String(aboutItems.length), label: about?.title || 'About' });
-    }
-    return rows.length > 0 ? rows : STATIC_STATS;
-  }, [displayedPrograms.length, ministryItems.length, aboutItems.length, programs?.title, ministries?.title, about?.title]);
+  const statsRibbon = (content.stats?.items || [])
+    .filter((item) => item.title?.trim())
+    .map((item) => ({
+      value: item.title,
+      label: item.text || '',
+    }));
+  const showStatsRibbon =
+    content.stats?.enabled !== false && statsRibbon.length > 0;
 
   const [submittingContact, setSubmittingContact] = useState(false);
 
@@ -622,11 +641,11 @@ export default function ChurchFeed({
             </section>
           )}
 
-          {/* ═══════ STATS RIBBON ═══════ */}
+          {showStatsRibbon && (
           <section className="lp-stats-ribbon">
             <div className="lp-stats-ribbon-inner">
               <div className="lp-stats-grid">
-                {stats.map((stat, i) => (
+                {statsRibbon.map((stat, i) => (
                   <motion.div
                     key={stat.label}
                     className="lp-stat"
@@ -644,6 +663,7 @@ export default function ChurchFeed({
               </div>
             </div>
           </section>
+          )}
 
           {/* ═══════ VISION & CORE MANDATE ═══════ */}
           {vision?.enabled !== false && hasVisionBody && (
@@ -669,7 +689,15 @@ export default function ChurchFeed({
                     <motion.div
                       key={item.title || i}
                       className="lp-vision-card"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedVision({ ...item, index: i })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedVision({ ...item, index: i });
+                        }
+                      }}
                       initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '-60px' }}
@@ -685,7 +713,7 @@ export default function ChurchFeed({
                           {renderVisionMedia(item, i)}
                         </div>
                         <h3>{item.title}</h3>
-                        {item.text && <p>{item.text}</p>}
+                        {visionCardText(item) ? <p>{visionCardText(item)}</p> : null}
                       </div>
                       <div className="lp-vision-card-footer">
                         <span>Learn More</span>
@@ -1037,7 +1065,15 @@ export default function ChurchFeed({
                     <motion.div
                       key={item.title || i}
                       className="lp-vision-card"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedVision({ ...item, index: i })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedVision({ ...item, index: i });
+                        }
+                      }}
                       initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '-60px' }}
@@ -1053,7 +1089,7 @@ export default function ChurchFeed({
                           {renderVisionMedia(item, i)}
                         </div>
                         <h3>{item.title}</h3>
-                        {item.text && <p>{item.text}</p>}
+                        {visionCardText(item) ? <p>{visionCardText(item)}</p> : null}
                       </div>
                       <div className="lp-vision-card-footer">
                         <span>Learn More</span>
@@ -1068,46 +1104,56 @@ export default function ChurchFeed({
 
       </main>
 
-        {/* ═══════ VISION MODAL ═══════ */}
-        <AnimatePresence>
-          {selectedVision && (
-            <React.Fragment>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="lp-vision-modal-overlay"
-                onClick={() => setSelectedVision(null)}
-              />
-              <div className="lp-vision-modal-container" onClick={() => setSelectedVision(null)}>
-                <motion.div
-                  className="lp-vision-card lp-vision-card--expanded"
-                  onClick={(e) => e.stopPropagation()}
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  transition={{ duration: 0.2 }}
+        {modalMounted &&
+          createPortal(
+            <AnimatePresence>
+              {selectedVision ? (
+                <div
+                  className="lp-vision-modal-root"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="lp-vision-modal-title"
                 >
-                  <div>
-                    <div className="lp-vision-card-icon">
-                      {renderVisionMedia(selectedVision, selectedVision.index)}
-                    </div>
-                    <h3>{selectedVision.title}</h3>
-                    {selectedVision.text && <p>{selectedVision.text}</p>}
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="lp-vision-modal-overlay"
+                    aria-label="Close"
+                    onClick={() => setSelectedVision(null)}
+                  />
+                  <div className="lp-vision-modal-container">
+                    <motion.div
+                      className="lp-vision-card lp-vision-card--expanded"
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div>
+                        <div className="lp-vision-card-icon">
+                          {renderVisionMedia(selectedVision, selectedVision.index)}
+                        </div>
+                        <h3 id="lp-vision-modal-title">{selectedVision.title}</h3>
+                        {visionCardText(selectedVision) ? (
+                          <p>{visionCardText(selectedVision)}</p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        className="lp-vision-card-footer"
+                        onClick={() => setSelectedVision(null)}
+                      >
+                        <span>Close</span>
+                      </button>
+                    </motion.div>
                   </div>
-                  
-                  <div className="lp-vision-expanded-details">
-                    <p>This is a core pillar of our ministry. By focusing on {selectedVision.title.toLowerCase()}, we believe we can impact the community deeply. Join us in this mandate as we expand our programs and outreach efforts.</p>
-                  </div>
-                  
-                  <div className="lp-vision-card-footer" onClick={() => setSelectedVision(null)}>
-                    <span>Close</span>
-                  </div>
-                </motion.div>
-              </div>
-            </React.Fragment>
+                </div>
+              ) : null}
+            </AnimatePresence>,
+            document.body,
           )}
-        </AnimatePresence>
 
         {/* ═══════ FOOTER ═══════ */}
         <footer className="lp-footer">

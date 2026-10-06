@@ -15,6 +15,7 @@ import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { User } from '@/types';
 
 interface ManageUsersTabProps {
@@ -32,6 +33,8 @@ interface ManageUsersTabProps {
   onToggleStatus: (user: User) => void;
   onAvatarUpload: (file: File, userId: string) => boolean | Promise<boolean>;
   canManage?: boolean;
+  avatarUploading?: boolean;
+  avatarUploadPercent?: number;
 }
 
 const ManageUsersTab = ({
@@ -49,6 +52,8 @@ const ManageUsersTab = ({
   onToggleStatus,
   onAvatarUpload,
   canManage = true,
+  avatarUploading,
+  avatarUploadPercent = 0,
 }: ManageUsersTabProps) => {
   const filteredUsers = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -193,6 +198,7 @@ const ManageUsersTab = ({
 
   return (
     <div className="manage-page settings-section--wide">
+      <UploadProgressBar active={Boolean(avatarUploading)} percent={avatarUploadPercent} />
       <DataTable
         title="Users"
         subtitle="Create accounts and control who can access the system."

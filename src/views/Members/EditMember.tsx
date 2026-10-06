@@ -46,6 +46,7 @@ import { upsertMemberFamily, familyToFormValues } from '@/lib/member-family';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
 import { useToast } from '@/context/ToastContext';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { UploadChangeParam } from 'antd/es/upload';
 import dayjs from 'dayjs';
 import type { Location, Ministry, Member } from '@/types';
@@ -91,6 +92,7 @@ const EditMember = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -210,10 +212,10 @@ const EditMember = () => {
       setUploading(true);
 
       let imageUrl = memberData?.image_url;
-      if (avatarFile) imageUrl = await uploadMemberImage(avatarFile);
+      if (avatarFile) imageUrl = await uploadMemberImage(avatarFile, setUploadPercent);
 
       let recommendationLetterUrl = letterUrl || memberData?.recommendation_letter_url;
-      if (churchLetterFile) recommendationLetterUrl = await uploadDocument(churchLetterFile);
+      if (churchLetterFile) recommendationLetterUrl = await uploadDocument(churchLetterFile, setUploadPercent);
       setUploading(false);
 
       const locationId = await resolveLocationId(values.location_id);
@@ -293,6 +295,7 @@ const EditMember = () => {
                       <Button size="small" danger icon={<DeleteOutlined />} onClick={() => { setAvatarFile(null); setAvatarPreview(undefined); }} />
                     )}
                   </div>
+                  <UploadProgressBar active={uploading} percent={uploadPercent} />
                 </div>
                 <div className="member-name-fields">
                   <div className="member-name-grid">
@@ -483,6 +486,7 @@ const EditMember = () => {
                             <Upload showUploadList={false} beforeUpload={(file) => handleLetterSelect(file)} accept=".pdf,.doc,.docx,.txt,image/*">
                               <Button icon={<UploadOutlined />}>Upload Letter</Button>
                             </Upload>
+                            <UploadProgressBar active={uploading && Boolean(churchLetterFile)} percent={uploadPercent} />
                             {(churchLetterFile || letterUrl) && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <span style={{ color: '#16a34a' }}>

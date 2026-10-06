@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from "react";
-import { Typography, Form, Input, Button } from "antd";
+import { Typography, Form, Input, Button, Checkbox } from "antd";
 import {
   GoogleOutlined,
   LoginOutlined,
@@ -28,14 +28,19 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   // Runs ONLY when form validation passes
-  const handleLogin = async (values: { email: string; password: string }) => {
+  const handleLogin = async (values: {
+    email: string;
+    password: string;
+    remember?: boolean;
+  }) => {
     setLoading(true);
     try {
-      const data = await loginUser(values.email, values.password);
+      const remember = Boolean(values.remember);
+      const data = await loginUser(values.email, values.password, remember);
 
-      // Store token
-      localStorage.setItem('token', data.access_token);
-      setAuthCookie(data.access_token);
+      localStorage.setItem("token", data.access_token);
+      setAuthCookie(data.access_token, remember);
+      localStorage.setItem("cms_remember_me", remember ? "1" : "0");
 
       // Update user context immediately
       await refreshUser();
@@ -88,6 +93,11 @@ const LoginPage = () => {
             className="login-form"
             size="large"
             onFinish={handleLogin}
+            initialValues={{
+              remember:
+                typeof window !== "undefined" &&
+                localStorage.getItem("cms_remember_me") === "1",
+            }}
           >
             <Form.Item
               name="email"
@@ -116,7 +126,9 @@ const LoginPage = () => {
 
             <div className="form-actions">
               <div className="remember-forgot">
-                <span />
+                <Form.Item name="remember" valuePropName="checked" noStyle>
+                  <Checkbox>Remember me</Checkbox>
+                </Form.Item>
                 <a href="#" className="forgot-link">
                   Forgot password
                 </a>

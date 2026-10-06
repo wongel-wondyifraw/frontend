@@ -60,6 +60,8 @@ const Settings = () => {
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploadPercent, setAvatarUploadPercent] = useState(0);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -117,9 +119,11 @@ const Settings = () => {
       setProfileLoading(true);
 
       if (avatarFile && profile?.id) {
-        await uploadAvatar(profile.id, avatarFile);
+        setAvatarUploading(true);
+        await uploadAvatar(profile.id, avatarFile, setAvatarUploadPercent);
         setAvatarFile(null);
         bumpAvatarVersion();
+        setAvatarUploading(false);
       }
 
       await updateProfile({
@@ -135,6 +139,7 @@ const Settings = () => {
       message.error(getApiErrorMessage(error, 'Failed to update profile'));
     } finally {
       setProfileLoading(false);
+      setAvatarUploading(false);
     }
   };
 
@@ -148,13 +153,17 @@ const Settings = () => {
     }
 
     try {
-      await uploadAvatar(userId, file);
+      setAvatarUploading(true);
+      setAvatarUploadPercent(0);
+      await uploadAvatar(userId, file, setAvatarUploadPercent);
       message.success('Avatar updated successfully');
       loadUsers();
       return false;
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Avatar upload failed'));
       return false;
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -187,6 +196,11 @@ const Settings = () => {
           middle_name: values.middle_name,
           title: values.title,
         });
+        if (wizardAvatar) {
+          setAvatarUploading(true);
+          setAvatarUploadPercent(0);
+          await uploadAvatar(editingUser.id, wizardAvatar, setAvatarUploadPercent);
+        }
         message.success('User updated successfully');
       } else {
         const formData = new FormData();
@@ -200,7 +214,9 @@ const Settings = () => {
         if (values.title) formData.append('title', values.title);
         if (wizardAvatar) formData.append('avatar', wizardAvatar);
 
-        await createUser(formData);
+        setAvatarUploading(Boolean(wizardAvatar));
+        setAvatarUploadPercent(0);
+        await createUser(formData, setAvatarUploadPercent);
         message.success('User registered successfully');
       }
 
@@ -216,6 +232,7 @@ const Settings = () => {
       message.error(getApiErrorMessage(error, 'Operation failed'));
     } finally {
       setUserSubmitting(false);
+      setAvatarUploading(false);
     }
   };
 
@@ -340,6 +357,8 @@ const Settings = () => {
           avatarPreview={avatarPreview}
           onProfileUpdate={handleProfileUpdate}
           onAvatarUpload={handleAvatarUpload}
+          avatarUploading={avatarUploading}
+          avatarUploadPercent={avatarUploadPercent}
         />
       ),
     },
@@ -404,6 +423,8 @@ const Settings = () => {
           onDeleteUser={handleDeleteUser}
           onToggleStatus={handleToggleStatus}
           onAvatarUpload={handleAvatarUpload}
+          avatarUploading={avatarUploading}
+          avatarUploadPercent={avatarUploadPercent}
           canManage={canManageUsers}
         />
       ),
@@ -435,6 +456,8 @@ const Settings = () => {
           onSubmit={handleUserSubmit}
           onWizardAvatarChange={handleWizardAvatarChange}
           onAfterOpenChange={handleWizardAfterOpenChange}
+          uploadingAvatar={avatarUploading}
+          uploadPercent={avatarUploadPercent}
         />
       </div>
     </PermissionGate>

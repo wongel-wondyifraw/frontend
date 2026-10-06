@@ -2745,23 +2745,33 @@ html {
 /* ══════════════════════════════════════════
    VISION MODAL
    ══════════════════════════════════════════ */
-.lp-vision-modal-overlay {
+.lp-vision-modal-root {
   position: fixed;
   inset: 0;
+  z-index: 4000;
+}
+
+.lp-vision-modal-overlay {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
   background: rgba(10, 18, 45, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 1000;
 }
 
 .lp-vision-modal-container {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--lp-pad);
-  z-index: 1001;
   pointer-events: none;
 }
 
@@ -2796,6 +2806,10 @@ html {
   padding-top: 0;
   cursor: pointer;
   color: var(--lp-primary);
+  background: none;
+  border: 0;
+  width: 100%;
+  font: inherit;
 }
 
 .lp-vision-card--expanded .lp-vision-card-footer span {

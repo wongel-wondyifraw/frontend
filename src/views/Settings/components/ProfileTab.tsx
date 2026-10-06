@@ -5,6 +5,7 @@ import type { FormInstance } from 'antd/es/form';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
 import { useUser } from '@/context/UserContext';
 import { getAvatarUrl } from '@/lib/media-url';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { User } from '@/types';
 
 interface ProfileTabProps {
@@ -14,6 +15,8 @@ interface ProfileTabProps {
   avatarPreview: string | null;
   onProfileUpdate: (values: Record<string, string>) => void;
   onAvatarUpload: (file: File, userId: string) => boolean | Promise<boolean>;
+  avatarUploading?: boolean;
+  avatarUploadPercent?: number;
 }
 
 const ProfileTab = ({
@@ -23,6 +26,8 @@ const ProfileTab = ({
   avatarPreview,
   onProfileUpdate,
   onAvatarUpload,
+  avatarUploading,
+  avatarUploadPercent = 0,
 }: ProfileTabProps) => {
   const { avatarVersion } = useUser();
 
@@ -53,8 +58,9 @@ const ProfileTab = ({
             accept="image/jpeg,image/png,image/webp"
             beforeUpload={(file) => onAvatarUpload(file, profile?.id ?? '')}
           >
-            <Button icon={<UploadOutlined />}>Change photo</Button>
+            <Button icon={<UploadOutlined />} loading={avatarUploading}>Change photo</Button>
           </Upload>
+          <UploadProgressBar active={Boolean(avatarUploading)} percent={avatarUploadPercent} />
           <p className="settings-avatar-hint">JPG, PNG, or WebP. Max 800KB.</p>
         </div>
 

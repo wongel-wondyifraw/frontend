@@ -108,6 +108,11 @@ export interface LandingPageContent {
     verse_ref?: string;
     verse_text?: string;
   };
+  /** Stat ribbon under the hero */
+  stats?: {
+    enabled?: boolean;
+    items?: LandingMediaItem[];
+  };
   /** Mission section (#about) */
   about?: {
     enabled?: boolean;

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Input, Upload } from 'antd';
 import { message } from '@/lib/app-message';
 import {
@@ -15,6 +15,7 @@ import { uploadDocument, uploadMemberImage } from '@/services/api';
 import { getImageUrl } from '@/lib/media-url';
 import { getApiErrorMessage } from '@/lib/errors';
 import { confirmDelete } from '@/lib/confirm-delete';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 
 type MediaFieldsProps = {
   imageUrl?: string | null;
@@ -33,6 +34,8 @@ type MediaFieldsProps = {
   imageOnly?: boolean;
 };
 
+type Slot = 'image' | 'file' | 'video' | null;
+
 export default function LandingMediaFields({
   imageUrl,
   fileUrl,
@@ -42,38 +45,57 @@ export default function LandingMediaFields({
   onChange,
   imageOnly,
 }: MediaFieldsProps) {
-  const uploadImage = async (file: File) => {
+  const [busy, setBusy] = useState<Slot>(null);
+  const [percent, setPercent] = useState(0);
+
+  const runUpload = async (
+    slot: Exclude<Slot, null>,
+    file: File,
+    work: (file: File, onProgress: (n: number) => void) => Promise<void>,
+  ) => {
+    setBusy(slot);
+    setPercent(0);
     try {
-      const url = await uploadMemberImage(file);
-      onChange({ image_url: url });
-      message.success('Image uploaded');
-    } catch (error) {
-      message.error(getApiErrorMessage(error, 'Image upload failed'));
+      await work(file, setPercent);
+    } finally {
+      setBusy(null);
+      setPercent(0);
     }
     return false;
   };
 
-  const uploadFile = async (file: File) => {
-    try {
-      const url = await uploadDocument(file);
-      onChange({ file_url: url, file_name: file.name });
-      message.success('File uploaded');
-    } catch (error) {
-      message.error(getApiErrorMessage(error, 'File upload failed'));
-    }
-    return false;
-  };
+  const uploadImage = (file: File) =>
+    runUpload('image', file, async (f, onProgress) => {
+      try {
+        const url = await uploadMemberImage(f, onProgress);
+        onChange({ image_url: url });
+        message.success('Image uploaded');
+      } catch (error) {
+        message.error(getApiErrorMessage(error, 'Image upload failed'));
+      }
+    });
 
-  const uploadVideoFile = async (file: File) => {
-    try {
-      const url = await uploadDocument(file);
-      onChange({ video_file_url: url });
-      message.success('Video file uploaded');
-    } catch (error) {
-      message.error(getApiErrorMessage(error, 'Video upload failed'));
-    }
-    return false;
-  };
+  const uploadFile = (file: File) =>
+    runUpload('file', file, async (f, onProgress) => {
+      try {
+        const url = await uploadDocument(f, onProgress);
+        onChange({ file_url: url, file_name: file.name });
+        message.success('File uploaded');
+      } catch (error) {
+        message.error(getApiErrorMessage(error, 'File upload failed'));
+      }
+    });
+
+  const uploadVideoFile = (file: File) =>
+    runUpload('video', file, async (f, onProgress) => {
+      try {
+        const url = await uploadDocument(f, onProgress);
+        onChange({ video_file_url: url });
+        message.success('Video file uploaded');
+      } catch (error) {
+        message.error(getApiErrorMessage(error, 'Video upload failed'));
+      }
+    });
 
   const preview = getImageUrl(imageUrl);
 
@@ -96,8 +118,10 @@ export default function LandingMediaFields({
           )}
         </div>
         <div className="la-media-toolbar">
-          <Upload accept="image/*" showUploadList={false} beforeUpload={uploadImage}>
-            <Button icon={<UploadOutlined />}>Upload image</Button>
+          <Upload accept="image/*" showUploadList={false} beforeUpload={uploadImage} disabled={busy !== null}>
+            <Button icon={<UploadOutlined />} loading={busy === 'image'}>
+              Upload image
+            </Button>
           </Upload>
           {imageUrl && (
             <Button
@@ -115,6 +139,7 @@ export default function LandingMediaFields({
             </Button>
           )}
         </div>
+        <UploadProgressBar active={busy === 'image'} percent={percent} />
         <Input
           prefix={<LinkOutlined style={{ color: '#94a3b8' }} />}
           placeholder="https://… or uploaded path"
@@ -149,8 +174,10 @@ export default function LandingMediaFields({
             </div>
           </div>
           <div className="la-media-toolbar">
-            <Upload accept="video/*" showUploadList={false} beforeUpload={uploadVideoFile}>
-              <Button icon={<UploadOutlined />}>Upload video</Button>
+            <Upload accept="video/*" showUploadList={false} beforeUpload={uploadVideoFile} disabled={busy !== null}>
+              <Button icon={<UploadOutlined />} loading={busy === 'video'}>
+                Upload video
+              </Button>
             </Upload>
             {videoFileUrl && (
               <Button
@@ -167,6 +194,7 @@ export default function LandingMediaFields({
               </Button>
             )}
           </div>
+          <UploadProgressBar active={busy === 'video'} percent={percent} />
           {videoFileUrl && <div className="la-media-file-name">{videoFileUrl}</div>}
         </div>
 
@@ -179,8 +207,10 @@ export default function LandingMediaFields({
             </div>
           </div>
           <div className="la-media-toolbar">
-            <Upload showUploadList={false} beforeUpload={uploadFile}>
-              <Button icon={<FileOutlined />}>Upload file</Button>
+            <Upload showUploadList={false} beforeUpload={uploadFile} disabled={busy !== null}>
+              <Button icon={<FileOutlined />} loading={busy === 'file'}>
+                Upload file
+              </Button>
             </Upload>
             {fileUrl && (
               <Button
@@ -197,6 +227,7 @@ export default function LandingMediaFields({
               </Button>
             )}
           </div>
+          <UploadProgressBar active={busy === 'file'} percent={percent} />
           {fileUrl && (
             <a
               className="la-media-file-link"

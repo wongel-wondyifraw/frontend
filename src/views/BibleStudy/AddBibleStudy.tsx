@@ -21,6 +21,7 @@ import {
   createBibleStudy, addBibleStudyMember, uploadDocument,
 } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
 import './AddBibleStudy.css';
@@ -47,6 +48,7 @@ const AddBibleStudy = () => {
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
   const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const contentType = Form.useWatch('content_type', form);
 
   const next = async () => {
@@ -72,7 +74,7 @@ const AddBibleStudy = () => {
 
       let materialUrl: string | undefined;
       if (values.content_type === 'study_material' && materialFile) {
-        materialUrl = await uploadDocument(materialFile);
+        materialUrl = await uploadDocument(materialFile, setUploadPercent);
       }
 
       const leader = decodeLeaderValue(values.leader_key);
@@ -217,6 +219,7 @@ const AddBibleStudy = () => {
                   >
                     <Button icon={<UploadOutlined />}>Choose File</Button>
                   </Upload>
+                  <UploadProgressBar active={loading && Boolean(materialFile)} percent={uploadPercent} />
                   <div style={{ marginTop: 8 }}>
                     <Text type="secondary">You can create the study without attaching a file and add it later.</Text>
                   </div>

@@ -54,6 +54,7 @@ const { RangePicker } = DatePicker;
 
 type SectionKey =
   | 'hero'
+  | 'stats'
   | 'vision'
   | 'programs'
   | 'ministries'
@@ -64,6 +65,7 @@ type SectionKey =
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'hero', label: 'Hero' },
+  { key: 'stats', label: 'Stats ribbon' },
   { key: 'vision', label: 'Vision' },
   { key: 'programs', label: 'Programs' },
   { key: 'ministries', label: 'Ministries' },
@@ -163,7 +165,7 @@ function ItemBlock({
   const [mediaMode, setMediaMode] = useState<'icon' | 'image'>(
     item.icon || !item.image_url ? 'icon' : 'image',
   );
-  const [open, setOpen] = useState(index === 0);
+  const [open, setOpen] = useState(true);
 
   return (
     <div className={`la-item${open ? ' is-open' : ''}`}>
@@ -358,8 +360,12 @@ function ItemBlock({
             {allowIconChoice && mediaMode === 'icon' && (
               <Field label="Select Icon">
                 <Select
-                  value={item.icon || ''}
-                  onChange={(v) => onChange({ ...item, icon: v })}
+                  value={item.icon || undefined}
+                  allowClear
+                  placeholder="Default icon"
+                  onChange={(v) =>
+                    onChange({ ...item, icon: v || undefined, image_url: null })
+                  }
                   style={{ width: '100%' }}
                   virtual={false}
                   options={[
@@ -435,6 +441,8 @@ function sectionEnabled(content: LandingPageContent, key: SectionKey): boolean |
   switch (key) {
     case 'hero':
       return content.hero?.enabled;
+    case 'stats':
+      return content.stats?.enabled;
     case 'vision':
       return content.vision?.enabled;
     case 'programs':
@@ -526,6 +534,7 @@ const LandingPageManagerContent = () => {
       key === 'about'
         ? 'mission'
         : key === 'hero' ||
+            key === 'stats' ||
             key === 'vision' ||
             key === 'programs' ||
             key === 'ministries' ||
@@ -613,6 +622,69 @@ const LandingPageManagerContent = () => {
                 onChange={(media) => patch('hero', { ...content.hero, ...media })}
               />
             </div>
+          </SectionPanel>
+        );
+
+      case 'stats':
+        return (
+          <SectionPanel
+            title="Stats ribbon"
+            subtitle="Numbers shown in the bar directly under the hero"
+            enabled={content.stats?.enabled}
+            onEnabledChange={(enabled) => patch('stats', { ...content.stats, enabled })}
+          >
+            {(content.stats?.items || []).map((item, index) => (
+              <div key={index} className="la-field-grid la-field-grid--2" style={{ alignItems: 'end', marginBottom: 12 }}>
+                <Field label={index === 0 ? 'Value' : undefined}>
+                  <Input
+                    placeholder="e.g. 4,500+"
+                    value={item.title}
+                    onChange={(e) => {
+                      const items = [...(content.stats?.items || [])];
+                      items[index] = { ...items[index], title: e.target.value };
+                      patch('stats', { ...content.stats, items });
+                    }}
+                  />
+                </Field>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'end' }}>
+                  <div style={{ flex: 1 }}>
+                    <Field label={index === 0 ? 'Label' : undefined}>
+                      <Input
+                        placeholder="e.g. Active Church Members"
+                        value={item.text || ''}
+                        onChange={(e) => {
+                          const items = [...(content.stats?.items || [])];
+                          items[index] = { ...items[index], text: e.target.value };
+                          patch('stats', { ...content.stats, items });
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      const items = (content.stats?.items || []).filter((_, i) => i !== index);
+                      patch('stats', { ...content.stats, items });
+                    }}
+                    aria-label="Remove stat"
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={() =>
+                patch('stats', {
+                  ...content.stats,
+                  items: [...(content.stats?.items || []), { title: '', text: '' }],
+                })
+              }
+            >
+              Add stat
+            </Button>
           </SectionPanel>
         );
 

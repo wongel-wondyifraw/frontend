@@ -4,6 +4,7 @@ import { Form, Input, Button, Switch, Avatar, Upload, Modal, Select } from 'antd
 import type { FormInstance } from 'antd/es/form';
 import type { UploadChangeParam } from 'antd/es/upload';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import StepperWizard from '@/Components/common/StepperWizard';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getRoles } from '@/services/api';
@@ -30,6 +31,8 @@ interface UserWizardModalProps {
   onSubmit: () => void;
   onWizardAvatarChange: (info: UploadChangeParam) => void;
   onAfterOpenChange?: (open: boolean) => void;
+  uploadPercent?: number;
+  uploadingAvatar?: boolean;
 }
 
 const UserWizardModal = ({
@@ -45,6 +48,8 @@ const UserWizardModal = ({
   onSubmit,
   onWizardAvatarChange,
   onAfterOpenChange,
+  uploadPercent = 0,
+  uploadingAvatar,
 }: UserWizardModalProps) => {
   const [roles, setRoles] = useState<Role[]>([]);
 
@@ -119,6 +124,10 @@ const UserWizardModal = ({
                         Upload
                       </Button>
                     </Upload>
+                    <UploadProgressBar
+                      active={Boolean(uploadingAvatar)}
+                      percent={uploadPercent}
+                    />
                   </div>
                 </div>
                 <div className="settings-wizard-fields">

@@ -1,4 +1,4 @@
-import axios, { type AxiosError } from "axios";
+import axios, { type AxiosError, type AxiosProgressEvent } from "axios";
 import { ApiRequestError } from "@/lib/errors";
 import type {
   ApiSearchResult,
@@ -106,14 +106,31 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+export type UploadProgressHandler = (percent: number) => void;
+
+function withUploadProgress(onProgress?: UploadProgressHandler) {
+  return {
+    headers: { "Content-Type": "multipart/form-data" as const },
+    onUploadProgress: (evt: AxiosProgressEvent) => {
+      if (!onProgress) return;
+      const total = evt.total ?? 0;
+      onProgress(
+        total > 0 ? Math.min(100, Math.round((evt.loaded / total) * 100)) : 0,
+      );
+    },
+  };
+}
+
 export const loginUser = async (
   email: string,
   password: string,
+  rememberMe = false,
 ): Promise<LoginResponse> => {
   try {
     const response = await api.post<LoginResponse>("/auth/login", {
       email: email.trim(),
       password,
+      remember_me: rememberMe,
     });
     return response.data;
   } catch (error) {
@@ -164,11 +181,16 @@ export const getUsers = async (): Promise<User[]> => {
   }
 };
 
-export const createUser = async (userData: FormData): Promise<User> => {
+export const createUser = async (
+  userData: FormData,
+  onProgress?: UploadProgressHandler,
+): Promise<User> => {
   try {
-    const response = await api.post<User>("/users", userData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post<User>(
+      "/users",
+      userData,
+      withUploadProgress(onProgress),
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -187,16 +209,18 @@ export const updateUser = async (
   }
 };
 
-export const uploadAvatar = async (id: string, file: File): Promise<User> => {
+export const uploadAvatar = async (
+  id: string,
+  file: File,
+  onProgress?: UploadProgressHandler,
+): Promise<User> => {
   try {
     const formData = new FormData();
     formData.append("file", file);
     const response = await api.post<User>(
       `/users/${id}/upload-avatar`,
       formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
+      withUploadProgress(onProgress),
     );
     return response.data;
   } catch (error) {
@@ -281,16 +305,17 @@ export const updateMember = async (
   }
 };
 
-export const uploadMemberImage = async (file: File): Promise<string> => {
+export const uploadMemberImage = async (
+  file: File,
+  onProgress?: UploadProgressHandler,
+): Promise<string> => {
   try {
     const formData = new FormData();
     formData.append("file", file);
     const response = await api.post<{ url: string }>(
       "/uploads/image",
       formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
+      withUploadProgress(onProgress),
     );
     return response.data.url;
   } catch (error) {
@@ -587,16 +612,17 @@ export const removeHomeGroupMember = async (
   }
 };
 
-export const uploadDocument = async (file: File): Promise<string> => {
+export const uploadDocument = async (
+  file: File,
+  onProgress?: UploadProgressHandler,
+): Promise<string> => {
   try {
     const formData = new FormData();
     formData.append("file", file);
     const response = await api.post<{ url: string }>(
       "/uploads/document",
       formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
+      withUploadProgress(onProgress),
     );
     return response.data.url;
   } catch (error) {

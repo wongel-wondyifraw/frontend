@@ -15,6 +15,7 @@ import {
   addBibleStudyMember, removeBibleStudyMember, uploadDocument,
 } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
 import './AddBibleStudy.css';
@@ -45,6 +46,7 @@ const EditBibleStudy = () => {
   const initialMemberKeysRef = useRef<string[]>([]);
   const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [existingMaterialUrl, setExistingMaterialUrl] = useState<string | null>(null);
   const contentType = Form.useWatch('content_type', form);
 
@@ -105,7 +107,7 @@ const EditBibleStudy = () => {
 
       let materialUrl = existingMaterialUrl;
       if (values.content_type === 'study_material' && materialFile) {
-        materialUrl = await uploadDocument(materialFile);
+        materialUrl = await uploadDocument(materialFile, setUploadPercent);
       }
 
       const leader = decodeLeaderValue(values.leader_key);
@@ -230,6 +232,7 @@ const EditBibleStudy = () => {
                   >
                     <Button icon={<UploadOutlined />}>Choose File</Button>
                   </Upload>
+                  <UploadProgressBar active={loading && Boolean(materialFile)} percent={uploadPercent} />
                   {!materialFile && existingMaterialUrl && (
                     <div style={{ marginTop: 8 }}><Text type="secondary">Current file kept unless you upload a new one.</Text></div>
                   )}

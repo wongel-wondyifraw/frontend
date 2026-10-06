@@ -3,7 +3,7 @@ import { TENANT } from "@/lib/tenant";
 
 /**
  * Canonical landing CMS keys (persisted in page_contents JSONB):
- * hero | vision | programs | ministries | projects | contact | about | footer
+ * hero | stats | vision | programs | ministries | projects | contact | about | footer
  *
  * Legacy migrations on load:
  * - stored.projects (old ministries) → ministries when ministries missing
@@ -25,6 +25,15 @@ export const DEFAULT_LANDING_CONTENT: LandingPageContent = {
     image_url: null,
     cta_label: "Staff login",
     secondary_cta_label: "Explore the page",
+  },
+  stats: {
+    enabled: true,
+    items: [
+      { title: "4,500+", text: "Active Church Members" },
+      { title: "32", text: "Community Cell Groups" },
+      { title: "18", text: "Ongoing Ministry Programs" },
+      { title: "99.8%", text: "ChMS System Reliability" },
+    ],
   },
   about: {
     enabled: true,
@@ -166,6 +175,7 @@ export function mergeLandingContent(
 
   return {
     hero: pickHero(base.hero, stored.hero),
+    stats: mergeSectionItems(base.stats, stored.stats),
     about: mergeSectionItems(base.about, stored.about),
     vision: mergeSectionItems(base.vision, stored.vision),
     ministries: mergeSectionItems(base.ministries, ministriesSrc),
@@ -355,6 +365,7 @@ export function formatLandingLead(item: {
 
 export type LandingSectionErrorKey =
   | "hero"
+  | "stats"
   | "vision"
   | "programs"
   | "ministries"
@@ -396,6 +407,13 @@ export function validateLandingContent(
     });
   }
 
+  issues.push(
+    ...itemTitleIssues(
+      "stats",
+      "Stats",
+      content.stats?.items?.filter((item) => item.title?.trim() || item.text?.trim()),
+    ),
+  );
   issues.push(...itemTitleIssues("vision", "Vision", content.vision?.items));
   issues.push(
     ...itemTitleIssues("programs", "Program", content.programs?.items),

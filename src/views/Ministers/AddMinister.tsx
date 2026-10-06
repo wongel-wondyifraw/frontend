@@ -24,6 +24,7 @@ import StepperWizard from '../../Components/common/StepperWizard';
 import { createMinister, uploadMemberImage } from '../../services/api';
 import { buildMinisterPayload } from '@/lib/minister-payload';
 import { getApiErrorMessage } from '@/lib/errors';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { UploadChangeParam } from 'antd/es/upload';
 import './AddMinister.css';
 
@@ -48,6 +49,7 @@ const AddMinister = () => {
   const router = useRouter();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -85,7 +87,7 @@ const AddMinister = () => {
 
       let imageUrl: string | undefined;
       if (avatarFile) {
-        imageUrl = await uploadMemberImage(avatarFile);
+        imageUrl = await uploadMemberImage(avatarFile, setUploadPercent);
       }
 
       const payload = buildMinisterPayload(values, imageUrl ? { image_url: imageUrl } : {});
@@ -148,6 +150,7 @@ const AddMinister = () => {
                     <Upload showUploadList={false} beforeUpload={() => false} onChange={handleAvatarChange}>
                       <Button size="small" icon={<UploadOutlined />}>Photo</Button>
                     </Upload>
+                    <UploadProgressBar active={loading && Boolean(avatarFile)} percent={uploadPercent} />
                   </div>
                 </div>
                 <div className="member-name-fields">

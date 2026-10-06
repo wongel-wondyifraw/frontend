@@ -42,6 +42,7 @@ import { buildMemberPayload, validateImageFile, validateDocumentFile, fileDispla
 import { upsertMemberFamily } from '@/lib/member-family';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useToast } from '@/context/ToastContext';
+import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { UploadChangeParam } from 'antd/es/upload';
 import type { Location, Ministry } from '@/types';
 import './AddMember.css';
@@ -84,6 +85,7 @@ const AddMember = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
@@ -175,12 +177,12 @@ const AddMember = () => {
 
       let imageUrl: string | undefined;
       if (avatarFile) {
-        imageUrl = await uploadMemberImage(avatarFile);
+        imageUrl = await uploadMemberImage(avatarFile, setUploadPercent);
       }
 
       let recommendationLetterUrl = letterUrl;
       if (churchLetterFile) {
-        recommendationLetterUrl = await uploadDocument(churchLetterFile);
+        recommendationLetterUrl = await uploadDocument(churchLetterFile, setUploadPercent);
       }
       setUploading(false);
 
@@ -281,6 +283,7 @@ const AddMember = () => {
                       <Button size="small" danger icon={<DeleteOutlined />} onClick={clearAvatar} />
                     )}
                   </div>
+                  <UploadProgressBar active={uploading} percent={uploadPercent} />
                 </div>
                 <div className="member-name-fields">
                   <div className="member-name-grid">
@@ -480,6 +483,7 @@ const AddMember = () => {
                             >
                               <Button icon={<UploadOutlined />}>Upload Letter</Button>
                             </Upload>
+                            <UploadProgressBar active={uploading && Boolean(churchLetterFile)} percent={uploadPercent} />
                             {(churchLetterFile || letterUrl) && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <span style={{ color: '#16a34a' }}>
