@@ -1,9 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Tabs, Form, Modal } from 'antd';
+import { Tabs, Form, App } from 'antd';
 import { message } from '@/lib/app-message';
-import type { UploadChangeParam } from 'antd/es/upload';
 import {
   UserOutlined,
   LockOutlined,
@@ -19,16 +18,18 @@ import {
   getUsers,
   createUser,
   updateUser,
-  changePassword,
   deleteUser,
   uploadAvatar,
+  forceLogoutUser,
+  adminResetUserPassword,
 } from '../../services/api';
 import { useUser } from '../../context/UserContext';
-import type { User } from '@/types';
+import type { User, PaginatedResponse } from '@/types';
 import { hasPermission } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import ProfileTab from './components/ProfileTab';
 import SecurityTab from './components/SecurityTab';
+import type { UserWizardValues } from './components/UserWizardModal';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './Settings.css';
 
@@ -48,15 +49,15 @@ const UserWizardModal = dynamic(() => import('./components/UserWizardModal'), { 
 const Settings = () => {
   const { refreshUser, bumpAvatarVersion, user } = useUser();
   const [form] = Form.useForm();
-  const [passwordForm] = Form.useForm();
-  const [userForm] = Form.useForm();
+  const { modal } = App.useApp();
 
   const [profile, setProfile] = useState<User | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [usersPage, setUsersPage] = useState<PaginatedResponse<User> | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSubmitting, setUserSubmitting] = useState(false);
+
+  const [usersPagination, setUsersPagination] = useState({ page: 1, limit: 10 });
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -66,14 +67,10 @@ const Settings = () => {
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [originFilter, setOriginFilter] = useState('all');
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [userFormSeed, setUserFormSeed] = useState<Record<string, unknown> | null>(null);
-
-  const [currentStep, setCurrentStep] = useState(0);
-  const [wizardAvatar, setWizardAvatar] = useState<File | null>(null);
-  const [wizardAvatarPreview, setWizardAvatarPreview] = useState<string | null>(null);
 
   const canManageUsers =
     hasPermission(user, 'users.manage') || hasPermission(profile, 'users.manage');
@@ -95,14 +92,21 @@ const Settings = () => {
   const loadUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
-      const data = await getUsers();
-      setUsers(data);
+      const data = await getUsers({
+        page: usersPagination.page,
+        limit: usersPagination.limit,
+        search: searchText,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        origin: originFilter !== 'all' ? originFilter : undefined,
+      });
+      setUsersPage(data);
     } catch {
       message.error('Failed to load users list');
     } finally {
       setUsersLoading(false);
     }
-  }, []);
+  }, [usersPagination.page, usersPagination.limit, searchText, roleFilter, statusFilter, originFilter]);
 
   useEffect(() => {
     loadProfile();
@@ -167,25 +171,9 @@ const Settings = () => {
     }
   };
 
-  const handlePasswordChange = async (values: Record<string, string>) => {
-    try {
-      setPasswordLoading(true);
-      await changePassword({
-        currentPassword: values.currentPassword,
-        newPassword: values.newPassword,
-      });
-      message.success('Password changed successfully');
-      passwordForm.resetFields();
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Failed to change password'));
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
 
-  const handleUserSubmit = async () => {
+  const handleUserSubmit = async (values: UserWizardValues, avatarFile: File | null) => {
     try {
-      const values = await userForm.validateFields();
       setUserSubmitting(true);
 
       if (editingUser) {
@@ -196,10 +184,10 @@ const Settings = () => {
           middle_name: values.middle_name,
           title: values.title,
         });
-        if (wizardAvatar) {
+        if (avatarFile) {
           setAvatarUploading(true);
           setAvatarUploadPercent(0);
-          await uploadAvatar(editingUser.id, wizardAvatar, setAvatarUploadPercent);
+          await uploadAvatar(editingUser.id, avatarFile, setAvatarUploadPercent);
         }
         message.success('User updated successfully');
       } else {
@@ -208,13 +196,13 @@ const Settings = () => {
         formData.append('last_name', values.last_name);
         formData.append('middle_name', values.middle_name || '');
         formData.append('email', values.email);
-        formData.append('password_hash', values.password);
+        formData.append('password_hash', values.password ?? '');
         formData.append('role', values.role);
         formData.append('is_active', String(values.is_active ?? true));
         if (values.title) formData.append('title', values.title);
-        if (wizardAvatar) formData.append('avatar', wizardAvatar);
+        if (avatarFile) formData.append('avatar', avatarFile);
 
-        setAvatarUploading(Boolean(wizardAvatar));
+        setAvatarUploading(Boolean(avatarFile));
         setAvatarUploadPercent(0);
         await createUser(formData, setAvatarUploadPercent);
         message.success('User registered successfully');
@@ -222,10 +210,6 @@ const Settings = () => {
 
       setIsModalVisible(false);
       setEditingUser(null);
-      setCurrentStep(0);
-      setWizardAvatar(null);
-      setWizardAvatarPreview(null);
-      setUserFormSeed(null);
       loadUsers();
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
@@ -236,31 +220,8 @@ const Settings = () => {
     }
   };
 
-  const next = async () => {
-    try {
-      if (currentStep === 0) {
-        await userForm.validateFields(['first_name', 'last_name']);
-      } else if (currentStep === 1) {
-        await userForm.validateFields(editingUser ? ['email'] : ['email', 'password']);
-      } else if (currentStep === 2) {
-        await userForm.validateFields(['role']);
-        const role = userForm.getFieldValue('role');
-        if (role === 'minister' || role === 'staff') {
-          await userForm.validateFields(['title']);
-        }
-      }
-      setCurrentStep((step) => step + 1);
-    } catch {
-      message.error('Please correct the errors before continuing.');
-    }
-  };
-
-  const prev = () => {
-    setCurrentStep((step) => Math.max(0, step - 1));
-  };
-
   const handleDeleteUser = (target: User) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete user?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Are you sure you want to delete ${target.first_name} ${target.last_name}? This action cannot be undone.`,
@@ -291,47 +252,7 @@ const Settings = () => {
 
   const openUserModal = (target: User | null = null) => {
     setEditingUser(target);
-    setCurrentStep(0);
-    setWizardAvatar(null);
-    setWizardAvatarPreview(null);
-    setUserFormSeed(
-      target
-        ? {
-            first_name: target.first_name,
-            middle_name: target.middle_name,
-            last_name: target.last_name,
-            email: target.email,
-            role: target.role,
-            title: target.title,
-            is_active: target.is_active !== undefined ? target.is_active : true,
-          }
-        : { is_active: true },
-    );
     setIsModalVisible(true);
-  };
-
-  const handleWizardAfterOpenChange = (open: boolean) => {
-    if (open && userFormSeed) {
-      userForm.setFieldsValue(userFormSeed);
-    }
-    if (!open) {
-      userForm.resetFields();
-      setUserFormSeed(null);
-      setEditingUser(null);
-      setCurrentStep(0);
-      setWizardAvatar(null);
-      setWizardAvatarPreview(null);
-    }
-  };
-
-  const handleWizardAvatarChange = (info: UploadChangeParam) => {
-    const file = info.file.originFileObj || info.file;
-    if (file) {
-      setWizardAvatar(file as File);
-      const reader = new FileReader();
-      reader.onload = (e) => setWizardAvatarPreview(e.target?.result as string);
-      reader.readAsDataURL(file as File);
-    }
   };
 
   const handleModalCancel = () => {
@@ -366,14 +287,92 @@ const Settings = () => {
       key: 'security',
       label: tabLabel(<LockOutlined />, 'Security'),
       children: (
-        <SecurityTab
-          passwordForm={passwordForm}
-          loading={passwordLoading}
-          onPasswordChange={handlePasswordChange}
-        />
+        <SecurityTab />
       ),
     },
   ];
+
+  if (hasPermission(user, 'roles.read') || hasPermission(profile, 'roles.read')) {
+    items.push({
+      key: 'roles',
+      label: tabLabel(<SafetyCertificateOutlined />, 'Roles'),
+      children: <RoleManagementPanel />,
+    });
+  }
+
+  if (canManageUsers || canReadUsers) {
+    items.push({
+      key: 'users',
+      label: tabLabel(<TeamOutlined />, 'Users'),
+      children: (
+        <ManageUsersTab
+          usersPage={usersPage}
+          loading={usersLoading}
+          searchText={searchText}
+          onSearchChange={(v) => { setSearchText(v); setUsersPagination(p => ({ ...p, page: 1 })); }}
+          roleFilter={roleFilter}
+          onRoleFilterChange={(v) => { setRoleFilter(v); setUsersPagination(p => ({ ...p, page: 1 })); }}
+          statusFilter={statusFilter}
+          onStatusFilterChange={(v) => { setStatusFilter(v); setUsersPagination(p => ({ ...p, page: 1 })); }}
+          originFilter={originFilter}
+          onOriginFilterChange={(v) => { setOriginFilter(v); setUsersPagination(p => ({ ...p, page: 1 })); }}
+          onPageChange={(page, limit) => setUsersPagination({ page, limit })}
+          onAddUser={() => openUserModal()}
+          onEditUser={openUserModal}
+          onDeleteUser={handleDeleteUser}
+          onToggleStatus={handleToggleStatus}
+          onAvatarUpload={handleAvatarUpload}
+          onAdminResetPassword={async (u) => {
+            try {
+              const res = await adminResetUserPassword(u.id);
+              modal.success({ title: 'Password Reset', content: `New temporary password: ${res.temporary_password}` });
+              loadUsers();
+            } catch (err) {
+              message.error(getApiErrorMessage(err, 'Failed to reset password'));
+            }
+          }}
+          onForceLogout={async (u) => {
+            try {
+              await forceLogoutUser(u.id);
+              message.success('User sessions revoked');
+            } catch (err) {
+              message.error(getApiErrorMessage(err, 'Failed to revoke sessions'));
+            }
+          }}
+          onUnlock={async (u) => {
+            try {
+              await updateUser(u.id, { locked_until: null, failed_login_attempts: 0 });
+              message.success('User unlocked successfully');
+              loadUsers();
+            } catch (err) {
+              message.error(getApiErrorMessage(err, 'Failed to unlock user'));
+            }
+          }}
+          onAnonymizeUser={async (u) => {
+            modal.confirm({
+              title: 'Anonymize User?',
+              content: `Are you sure you want to anonymize and erase data for ${u.first_name}? This action cannot be undone.`,
+              okText: 'Anonymize',
+              okType: 'danger',
+              onOk: async () => {
+                try {
+                  const { anonymizeUser } = await import('@/services/api');
+                  await anonymizeUser(u.id);
+                  message.success('User anonymized successfully');
+                  loadUsers();
+                } catch (err) {
+                  message.error(getApiErrorMessage(err, 'Failed to anonymize user'));
+                }
+              }
+            });
+          }}
+          avatarUploading={avatarUploading}
+          avatarUploadPercent={avatarUploadPercent}
+          canManage={canManageUsers}
+        />
+      ),
+    });
+  }
 
   if (hasPermission(user, 'notifications.update') || hasPermission(profile, 'notifications.update')) {
     items.push({
@@ -396,41 +395,6 @@ const Settings = () => {
     });
   }
 
-  if (hasPermission(user, 'roles.read') || hasPermission(profile, 'roles.read')) {
-    items.push({
-      key: 'roles',
-      label: tabLabel(<SafetyCertificateOutlined />, 'Roles'),
-      children: <RoleManagementPanel />,
-    });
-  }
-
-  if (canManageUsers || canReadUsers) {
-    items.push({
-      key: 'users',
-      label: tabLabel(<TeamOutlined />, 'Users'),
-      children: (
-        <ManageUsersTab
-          users={users}
-          loading={usersLoading}
-          searchText={searchText}
-          onSearchChange={setSearchText}
-          roleFilter={roleFilter}
-          onRoleFilterChange={setRoleFilter}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          onAddUser={() => openUserModal()}
-          onEditUser={openUserModal}
-          onDeleteUser={handleDeleteUser}
-          onToggleStatus={handleToggleStatus}
-          onAvatarUpload={handleAvatarUpload}
-          avatarUploading={avatarUploading}
-          avatarUploadPercent={avatarUploadPercent}
-          canManage={canManageUsers}
-        />
-      ),
-    });
-  }
-
   return (
     <PermissionGate permission="settings.read" pageLabel="Settings">
       <div className="settings-page">
@@ -446,16 +410,9 @@ const Settings = () => {
         <UserWizardModal
           open={isModalVisible}
           editingUser={editingUser}
-          userForm={userForm}
-          currentStep={currentStep}
-          wizardAvatarPreview={wizardAvatarPreview}
           submitting={userSubmitting}
           onCancel={handleModalCancel}
-          onNext={next}
-          onPrev={prev}
           onSubmit={handleUserSubmit}
-          onWizardAvatarChange={handleWizardAvatarChange}
-          onAfterOpenChange={handleWizardAfterOpenChange}
           uploadingAvatar={avatarUploading}
           uploadPercent={avatarUploadPercent}
         />

@@ -45,6 +45,7 @@ interface DataTableProps<T extends object> {
   subtitle?: string;
   /** Avoid Ant Design treating a data field named `children` as tree rows */
   childrenColumnName?: string;
+  onRow?: (record: T, index?: number) => React.HTMLAttributes<HTMLElement>;
 }
 
 const DataTable = <T extends object>({
@@ -67,6 +68,7 @@ const DataTable = <T extends object>({
   title,
   subtitle,
   childrenColumnName,
+  onRow,
 }: DataTableProps<T>) => {
   const pagination: TablePaginationConfig | false = serverPagination
     ? {
@@ -152,6 +154,7 @@ const DataTable = <T extends object>({
             loading={loading}
             pagination={pagination}
             childrenColumnName={childrenColumnName}
+            onRow={onRow}
           />
         )}
       </div>

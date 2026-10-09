@@ -195,8 +195,10 @@ function pickHero(
     kicker: stored?.kicker ?? base?.kicker,
     title: stored?.title ?? base?.title,
     lede: stored?.lede ?? base?.lede,
-    image_url: stored?.image_url !== undefined ? stored.image_url : base?.image_url,
-    video_url: stored?.video_url !== undefined ? stored.video_url : base?.video_url,
+    image_url:
+      stored?.image_url !== undefined ? stored.image_url : base?.image_url,
+    video_url:
+      stored?.video_url !== undefined ? stored.video_url : base?.video_url,
     video_file_url:
       stored?.video_file_url !== undefined
         ? stored.video_file_url
@@ -411,7 +413,9 @@ export function validateLandingContent(
     ...itemTitleIssues(
       "stats",
       "Stats",
-      content.stats?.items?.filter((item) => item.title?.trim() || item.text?.trim()),
+      content.stats?.items?.filter(
+        (item) => item.title?.trim() || item.text?.trim(),
+      ),
     ),
   );
   issues.push(...itemTitleIssues("vision", "Vision", content.vision?.items));

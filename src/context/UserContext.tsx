@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { getProfile } from '../services/api';
+import { getProfile, logoutUser } from '../services/api';
 import { clearAuthCookie, setAuthCookie } from '../lib/auth-cookies';
 import type { ApiError, User, UserContextValue } from '@/types';
 
@@ -26,11 +26,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const logout = () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem('token');
-    clearAuthCookie();
-    sessionStorage.removeItem('welcomeToastShown');
-    setUser(null);
-    window.location.href = '/login';
+    logoutUser().finally(() => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      clearAuthCookie();
+      sessionStorage.removeItem('welcomeToastShown');
+      setUser(null);
+      window.location.href = '/login';
+    });
   };
 
   const fetchUser = async (silent = false) => {
@@ -66,6 +69,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setAuthCookie(token);
     }
     fetchUser();
+    const handleAuthLogout = () => logout();
+    window.addEventListener('auth:logout', handleAuthLogout);
+    
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

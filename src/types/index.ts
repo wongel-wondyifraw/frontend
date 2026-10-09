@@ -29,9 +29,15 @@ export interface User {
   avatar_url?: string | null;
   title?: string | null;
   is_active?: boolean;
+  failed_login_attempts?: number;
+  locked_until?: string | null;
+  last_login_at?: string | null;
+  created_via?: "admin" | "minister_module" | "self_registration" | "invite";
   created_at?: string;
   updated_at?: string;
   permissions?: Permission[];
+  email_verified_at?: string | null;
+  mfa_enabled?: boolean;
 }
 
 export interface Location {
@@ -444,6 +450,7 @@ export interface FamilyStats {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token: string;
   user: User;
 }
 
