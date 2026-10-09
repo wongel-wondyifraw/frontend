@@ -82,33 +82,7 @@ const ManageUsersTab = ({
               <Avatar src={getAvatarUrl(record.avatar_url)} size={40}>
                 {getInitials(record.first_name, record.last_name) || <UserOutlined />}
               </Avatar>
-              {canManage && (
-                <Upload
-                  showUploadList={false}
-                  accept="image/jpeg,image/png,image/webp"
-                  beforeUpload={(file) => onAvatarUpload(file, record.id)}
-                >
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    icon={<PlusOutlined style={{ fontSize: 10 }} />}
-                    size="small"
-                    aria-label="Upload avatar"
-                    style={{
-                      position: 'absolute',
-                      bottom: -4,
-                      right: -4,
-                      width: 18,
-                      height: 18,
-                      minWidth: 18,
-                      padding: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  />
-                </Upload>
-              )}
+
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600 }}>

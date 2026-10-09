@@ -252,6 +252,15 @@ export const logoutUser = async (): Promise<void> => {
   }
 };
 
+export const resendVerification = async (email: string): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>("/auth/resend-verification", { email });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const logoutAllSessions = async (): Promise<void> => {
   try {
     await api.post("/auth/logout-all");

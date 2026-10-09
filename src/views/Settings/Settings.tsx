@@ -292,27 +292,6 @@ const Settings = () => {
     },
   ];
 
-  if (hasPermission(user, 'notifications.update') || hasPermission(profile, 'notifications.update')) {
-    items.push({
-      key: 'notifications',
-      label: tabLabel(<BellOutlined />, 'Notifications'),
-      children: <NotificationPreferencesTab />,
-    });
-  }
-
-  if (
-    hasPermission(user, 'locations.read') ||
-    hasPermission(user, 'locations.manage') ||
-    hasPermission(profile, 'locations.read') ||
-    hasPermission(profile, 'locations.manage')
-  ) {
-    items.push({
-      key: 'locations',
-      label: tabLabel(<EnvironmentOutlined />, 'Locations'),
-      children: <LocationManagementTab />,
-    });
-  }
-
   if (hasPermission(user, 'roles.read') || hasPermission(profile, 'roles.read')) {
     items.push({
       key: 'roles',
@@ -392,6 +371,27 @@ const Settings = () => {
           canManage={canManageUsers}
         />
       ),
+    });
+  }
+
+  if (hasPermission(user, 'notifications.update') || hasPermission(profile, 'notifications.update')) {
+    items.push({
+      key: 'notifications',
+      label: tabLabel(<BellOutlined />, 'Notifications'),
+      children: <NotificationPreferencesTab />,
+    });
+  }
+
+  if (
+    hasPermission(user, 'locations.read') ||
+    hasPermission(user, 'locations.manage') ||
+    hasPermission(profile, 'locations.read') ||
+    hasPermission(profile, 'locations.manage')
+  ) {
+    items.push({
+      key: 'locations',
+      label: tabLabel(<EnvironmentOutlined />, 'Locations'),
+      children: <LocationManagementTab />,
     });
   }
 

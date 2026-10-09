@@ -172,9 +172,28 @@ const ProfileTab = ({
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
-                  <Form.Item label="Email" name="email">
+                  <Form.Item label="Email" name="email" style={{ marginBottom: profile?.email_verified_at ? undefined : 4 }}>
                     <Input disabled />
                   </Form.Item>
+                  {!profile?.email_verified_at && (
+                    <Button 
+                      type="link" 
+                      size="small"
+                      style={{ padding: 0, marginBottom: 16 }}
+                      onClick={async () => {
+                        if (!profile?.email) return;
+                        try {
+                          const { resendVerification } = await import('@/services/api');
+                          await resendVerification(profile.email);
+                          message.success("Verification email sent! Check your inbox.");
+                        } catch {
+                          message.error("Failed to resend verification email.");
+                        }
+                      }}
+                    >
+                      Resend verification email
+                    </Button>
+                  )}
                 </Col>
               </Row>
               <Form.Item label="Role" name="role">
