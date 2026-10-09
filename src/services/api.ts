@@ -47,8 +47,8 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
     "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
+    Pragma: "no-cache",
+    Expires: "0",
   },
 });
 
@@ -252,9 +252,14 @@ export const logoutUser = async (): Promise<void> => {
   }
 };
 
-export const resendVerification = async (email: string): Promise<{ message: string }> => {
+export const resendVerification = async (
+  email: string,
+): Promise<{ message: string }> => {
   try {
-    const response = await api.post<{ message: string }>("/auth/resend-verification", { email });
+    const response = await api.post<{ message: string }>(
+      "/auth/resend-verification",
+      { email },
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);

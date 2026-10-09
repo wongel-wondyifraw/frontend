@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Form, Input, Button, Row, Col, Card, Divider } from 'antd';
-import { SafetyCertificateOutlined, KeyOutlined } from '@ant-design/icons';
+import { SafetyCertificateOutlined, KeyOutlined, SaveOutlined } from '@ant-design/icons';
 import PasswordStrengthMeter from '@/Components/common/PasswordStrengthMeter';
 import ActiveSessionsList from './ActiveSessionsList';
 import { MfaSetup } from './MfaSetup';
@@ -109,7 +109,7 @@ const SecurityTab = () => {
               <Input.Password placeholder="Confirm new password" autoComplete="new-password" />
             </Form.Item>
             <div className="settings-form-actions">
-              <Button type="primary" htmlType="submit" loading={loading}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
                 Update password
               </Button>
             </div>

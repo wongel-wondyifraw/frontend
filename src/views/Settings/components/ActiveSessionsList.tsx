@@ -63,15 +63,20 @@ const ActiveSessionsList = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><DesktopOutlined style={{ fontSize: 20, color: "var(--text-secondary)" }} /><span style={{ fontSize: 18, fontWeight: 600 }}>Active Sessions</span></div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <DesktopOutlined style={{ fontSize: 20, color: "var(--text-secondary)" }} />
+          <span style={{ fontSize: 18, fontWeight: 600 }}>Active Sessions</span>
+        </div>
+      </div>
+      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        These are the devices that have logged into your account.
+      </Text>
+      <div style={{ marginBottom: 24 }}>
         <Button danger onClick={handleRevokeAll} loading={revoking} disabled={sessions.length <= 1}>
           Revoke All Other Sessions
         </Button>
       </div>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
-        These are the devices that have logged into your account.
-      </Text>
 
       <div className="sessions-list" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {loading ? (
