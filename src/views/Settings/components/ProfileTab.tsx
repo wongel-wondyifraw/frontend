@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Form, Input, Button, Avatar, Upload, Row, Col, App, Card, Tag, Divider } from 'antd';
 import type { FormInstance } from 'antd/es/form';
-import { UserOutlined, UploadOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { UserOutlined, UploadOutlined, AppstoreOutlined, DownloadOutlined, DeleteOutlined, MailOutlined, SaveOutlined } from '@ant-design/icons';
 import { useUser } from '@/context/UserContext';
 import { getAvatarUrl } from '@/lib/media-url';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
@@ -93,6 +93,7 @@ const ProfileTab = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Button 
                   block
+                  icon={<DownloadOutlined />}
                   onClick={async () => {
                     try {
                       const { exportMyData } = await import('@/services/api');
@@ -114,6 +115,7 @@ const ProfileTab = ({
                 <Button 
                   danger 
                   block
+                  icon={<DeleteOutlined />}
                   onClick={async () => {
                     modal.confirm({
                       title: 'Request Account Deletion',
@@ -179,6 +181,7 @@ const ProfileTab = ({
                     <Button 
                       type="link" 
                       size="small"
+                      icon={<MailOutlined />}
                       style={{ padding: 0, marginBottom: 16 }}
                       onClick={async () => {
                         if (!profile?.email) return;
@@ -200,7 +203,7 @@ const ProfileTab = ({
                 <Input disabled />
               </Form.Item>
               <div className="settings-form-actions">
-                <Button type="primary" htmlType="submit" loading={loading}>
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
                   Save changes
                 </Button>
               </div>

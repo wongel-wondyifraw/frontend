@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { Avatar, Upload, Button, Tag, Select } from 'antd';
+import { Avatar, Tag, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   UserOutlined,
@@ -85,15 +85,17 @@ const ManageUsersTab = ({
 
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600 }}>
+              <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {[record.first_name, record.last_name].filter(Boolean).join(' ') || '—'}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {record.email}
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0 }}>
+                  {record.email}
+                </span>
                 {record.email_verified_at ? (
-                  <Tag color="success" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Verified</Tag>
+                  <Tag className="hide-on-mobile" color="success" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Verified</Tag>
                 ) : (
-                  <Tag color="warning" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Unverified</Tag>
+                  <Tag className="hide-on-mobile" color="warning" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Unverified</Tag>
                 )}
               </div>
             </div>
@@ -143,6 +145,7 @@ const ManageUsersTab = ({
         title: 'Status',
         dataIndex: 'is_active',
         key: 'is_active',
+        responsive: ['sm'],
         render: (isActive: boolean | undefined, record: User) => {
           if (record.locked_until && new Date(record.locked_until) > new Date()) {
             return <Tag color="error">Locked</Tag>;
@@ -202,7 +205,7 @@ const ManageUsersTab = ({
           ) : null,
       },
     ],
-    [canManage, onAvatarUpload, onEditUser, onToggleStatus, onDeleteUser, onAnonymizeUser, router],
+    [canManage, onEditUser, onToggleStatus, onDeleteUser, onAnonymizeUser, router],
   );
 
   const activeFilterCount =

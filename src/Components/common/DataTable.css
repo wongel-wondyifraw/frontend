@@ -262,7 +262,7 @@
 
   .data-table-controls {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 10px;
     width: 100%;
@@ -272,16 +272,16 @@
     width: auto;
     margin-left: auto;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 10px;
     flex: 0 0 auto;
   }
 
   .data-table-search {
-    width: 100% !important;
+    width: auto !important;
     max-width: none;
-    flex: 1 1 100%;
+    flex: 1 1 auto;
   }
 
   .data-table-filters > * {

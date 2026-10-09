@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Breadcrumb, Row, Col, Divider, App } from 'antd';
+import { Form, Input, Button, Card, Breadcrumb, Row, Col, Divider, App, Spin } from 'antd';
 import { SafetyCertificateOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import PermissionPicker from './components/PermissionPicker';
@@ -109,73 +109,76 @@ export default function RoleDetailPage({ id, isNew }: RoleDetailPageProps) {
         ]}
       />
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => router.push('/settings')} />
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SafetyCertificateOutlined />
-              {isNew ? 'Create New Role' : `Edit Role: ${role?.name || ''}`}
-            </h1>
-            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-              Configure permission sets that control what this role can do.
-            </p>
-          </div>
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => router.push('/settings')}>
+          Back to Settings
+        </Button>
         <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving}>
           {isNew ? 'Create Role' : 'Save Changes'}
         </Button>
       </div>
 
-      <Card loading={loading}>
-        <Form form={form} layout="vertical">
-          <Row gutter={24}>
-            {isNew && (
-              <Col span={24} lg={8}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SafetyCertificateOutlined />
+          {isNew ? 'Create New Role' : `Edit Role: ${role?.name || ''}`}
+        </h1>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', marginTop: 8 }}>
+          Configure permission sets that control what this role can do.
+        </p>
+      </div>
+
+      <Card>
+        <Spin spinning={loading}>
+          <Form form={form} layout="vertical">
+            <Row gutter={24}>
+              {isNew && (
+                <Col span={24} lg={8}>
+                  <Form.Item
+                    name="key"
+                    label="Key"
+                    rules={[
+                      { required: true, message: 'Key is required' },
+                      {
+                        pattern: /^[a-z][a-z0-9_]*$/,
+                        message: 'Use lowercase letters, digits, and underscores',
+                      },
+                    ]}
+                    extra="Stable identifier, e.g. volunteer_coordinator"
+                  >
+                    <Input placeholder="volunteer_coordinator" />
+                  </Form.Item>
+                </Col>
+              )}
+              <Col span={24} lg={isNew ? 8 : 12}>
                 <Form.Item
-                  name="key"
-                  label="Key"
-                  rules={[
-                    { required: true, message: 'Key is required' },
-                    {
-                      pattern: /^[a-z][a-z0-9_]*$/,
-                      message: 'Use lowercase letters, digits, and underscores',
-                    },
-                  ]}
-                  extra="Stable identifier, e.g. volunteer_coordinator"
+                  name="name"
+                  label="Display name"
+                  rules={[{ required: true, message: 'Name is required' }]}
                 >
-                  <Input placeholder="volunteer_coordinator" />
+                  <Input placeholder="Volunteer Coordinator" />
                 </Form.Item>
               </Col>
-            )}
-            <Col span={24} lg={isNew ? 8 : 12}>
-              <Form.Item
-                name="name"
-                label="Display name"
-                rules={[{ required: true, message: 'Name is required' }]}
-              >
-                <Input placeholder="Volunteer Coordinator" />
-              </Form.Item>
-            </Col>
-            <Col span={24} lg={isNew ? 8 : 12}>
-              <Form.Item name="description" label="Description">
-                <Input.TextArea rows={1} placeholder="Optional description" />
-              </Form.Item>
-            </Col>
-          </Row>
+              <Col span={24} lg={isNew ? 8 : 12}>
+                <Form.Item name="description" label="Description">
+                  <Input.TextArea rows={1} placeholder="Optional description" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Divider style={{ margin: '16px 0 24px 0' }} />
+            <Divider style={{ margin: '16px 0 24px 0' }} />
 
-          <h3 style={{ fontSize: 16, marginBottom: 16 }}>Role Permissions</h3>
-          
-          <Form.Item
-            name="permissionSlugs"
-            rules={[{ required: !isAdminRole, message: 'Select at least one permission' }]}
-            extra={isAdminRole ? 'The admin role always has every permission.' : undefined}
-          >
-            <PermissionPicker grouped={grouped} disabled={isAdminRole} />
-          </Form.Item>
-        </Form>
+            <h3 style={{ fontSize: 16, marginBottom: 16 }}>Role Permissions</h3>
+            
+            <Form.Item
+              name="permissionSlugs"
+              rules={[{ required: !isAdminRole, message: 'Select at least one permission' }]}
+              extra={isAdminRole ? 'The admin role always has every permission.' : undefined}
+            >
+              <PermissionPicker grouped={grouped} disabled={isAdminRole} />
+            </Form.Item>
+          </Form>
+        </Spin>
       </Card>
     </div>
   );

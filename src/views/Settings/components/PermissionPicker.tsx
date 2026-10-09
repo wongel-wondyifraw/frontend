@@ -35,7 +35,7 @@ const PermissionPicker = ({ grouped, value = [], onChange, disabled }: Permissio
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
       {Object.entries(grouped).map(([category, perms]) => {
         const catSlugs = perms.map((p) => p.slug);
         const allChecked = catSlugs.length > 0 && catSlugs.every((s) => selected.has(s));
