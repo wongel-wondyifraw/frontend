@@ -268,7 +268,8 @@ export const resendVerification = async (
 
 export const logoutAllSessions = async (): Promise<void> => {
   try {
-    await api.post("/auth/logout-all");
+    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
+    await api.post("/auth/logout-all", { refresh_token: refreshToken });
   } catch (error) {
     throw toApiError(error);
   }
