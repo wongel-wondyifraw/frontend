@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import {
   Badge,
   Button,
@@ -698,7 +698,9 @@ const PlanningContent = () => {
 
 const Planning = () => (
   <PermissionGate permission="plans.read" pageLabel="Planning">
-    <PlanningContent />
+    <Suspense fallback={null}>
+      <PlanningContent />
+    </Suspense>
   </PermissionGate>
 );
 

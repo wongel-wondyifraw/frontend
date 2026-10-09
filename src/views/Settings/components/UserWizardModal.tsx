@@ -1,13 +1,13 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Switch, Avatar, Upload, Modal, Select } from 'antd';
-import type { FormInstance } from 'antd/es/form';
 import type { UploadChangeParam } from 'antd/es/upload';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import StepperWizard from '@/Components/common/StepperWizard';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getRoles } from '@/services/api';
+import PasswordStrengthMeter from '@/Components/common/PasswordStrengthMeter';
 import type { Role, User } from '@/types';
 
 const USER_WIZARD_STEPS = [{ title: 'Personal' }, { title: 'Account' }, { title: 'Role' }];
@@ -18,43 +18,53 @@ const USER_WIZARD_BACKGROUNDS = [
   { background: 'var(--bg-card)', border: 'none' },
 ];
 
+export type UserWizardValues = {
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+  password?: string;
+  role: string;
+  title?: string;
+  is_active?: boolean;
+};
+
 interface UserWizardModalProps {
   open: boolean;
   editingUser: User | null;
-  userForm: FormInstance;
-  currentStep: number;
-  wizardAvatarPreview: string | null;
   submitting?: boolean;
   onCancel: () => void;
-  onNext: () => void;
-  onPrev: () => void;
-  onSubmit: () => void;
-  onWizardAvatarChange: (info: UploadChangeParam) => void;
-  onAfterOpenChange?: (open: boolean) => void;
+  onSubmit: (values: UserWizardValues, avatarFile: File | null) => void;
   uploadPercent?: number;
   uploadingAvatar?: boolean;
 }
 
-const UserWizardModal = ({
-  open,
+const UserWizardForm = ({
   editingUser,
-  userForm,
-  currentStep,
-  wizardAvatarPreview,
   submitting = false,
-  onCancel,
-  onNext,
-  onPrev,
   onSubmit,
-  onWizardAvatarChange,
-  onAfterOpenChange,
   uploadPercent = 0,
   uploadingAvatar,
-}: UserWizardModalProps) => {
+}: Omit<UserWizardModalProps, 'open' | 'onCancel'>) => {
+  const [userForm] = Form.useForm<UserWizardValues>();
   const [roles, setRoles] = useState<Role[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [wizardAvatar, setWizardAvatar] = useState<File | null>(null);
+  const [wizardAvatarPreview, setWizardAvatarPreview] = useState<string | null>(null);
+
+  const initialValues: Partial<UserWizardValues> = editingUser
+    ? {
+        first_name: editingUser.first_name,
+        middle_name: editingUser.middle_name,
+        last_name: editingUser.last_name,
+        email: editingUser.email,
+        role: editingUser.role,
+        title: editingUser.title ?? undefined,
+        is_active: editingUser.is_active !== undefined ? editingUser.is_active : true,
+      }
+    : { is_active: true };
 
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     (async () => {
       try {
@@ -73,31 +83,63 @@ const UserWizardModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, []);
+
+  const handleNext = async () => {
+    try {
+      if (currentStep === 0) {
+        await userForm.validateFields(['first_name', 'last_name']);
+      } else if (currentStep === 1) {
+        await userForm.validateFields(editingUser ? ['email'] : ['email', 'password']);
+      } else if (currentStep === 2) {
+        await userForm.validateFields(['role']);
+        const role = userForm.getFieldValue('role');
+        if (role === 'minister' || role === 'staff') {
+          await userForm.validateFields(['title']);
+        }
+      }
+      setCurrentStep((step) => step + 1);
+    } catch {
+      // message.error('Please correct the errors before continuing.');
+    }
+  };
+
+  const handlePrev = () => {
+    setCurrentStep((step) => Math.max(0, step - 1));
+  };
+
+  const handleWizardAvatarChange = (info: UploadChangeParam) => {
+    const file = info.file.originFileObj || info.file;
+    if (file) {
+      setWizardAvatar(file as File);
+      const reader = new FileReader();
+      reader.onload = (e) => setWizardAvatarPreview(e.target?.result as string);
+      reader.readAsDataURL(file as File);
+    }
+  };
+
+  const handleSubmit = (values: UserWizardValues) => {
+    onSubmit(values, wizardAvatar);
+  };
 
   const roleOptions = roles
     .filter((r) => r.key !== 'member')
     .map((r) => ({ value: r.key, label: r.name }));
 
   return (
-    <Modal
-      title={editingUser ? 'Edit user' : 'New user'}
-      open={open}
-      onCancel={onCancel}
-      footer={null}
-      width={700}
-      centered
-      destroyOnHidden
-      afterOpenChange={onAfterOpenChange}
-      mask={{ closable: false }}
-    >
       <div style={{ padding: '8px 0 0' }}>
-        <Form form={userForm} layout="vertical" onFinish={onSubmit} preserve={false}>
+        <Form
+          form={userForm}
+          layout="vertical"
+          onFinish={handleSubmit}
+          preserve={false}
+          initialValues={initialValues}
+        >
           <StepperWizard
             steps={USER_WIZARD_STEPS}
             currentStep={currentStep}
-            onNext={onNext}
-            onPrev={onPrev}
+            onNext={handleNext}
+            onPrev={handlePrev}
             submitText={editingUser ? 'Save changes' : 'Create user'}
             submitLoading={submitting}
             stepBackgrounds={USER_WIZARD_BACKGROUNDS}
@@ -118,7 +160,7 @@ const UserWizardModal = ({
                       showUploadList={false}
                       accept="image/jpeg,image/png,image/webp"
                       beforeUpload={() => false}
-                      onChange={onWizardAvatarChange}
+                      onChange={handleWizardAvatarChange}
                     >
                       <Button size="small" icon={<UploadOutlined />}>
                         Upload
@@ -178,10 +220,21 @@ const UserWizardModal = ({
                   name="password"
                   rules={[
                     { required: true, message: 'Password is required' },
-                    { min: 6, message: 'At least 6 characters' },
+                    { min: 8, message: 'At least 8 characters' },
+                    { pattern: /[A-Z]/, message: 'Needs at least 1 uppercase letter' },
+                    { pattern: /[a-z]/, message: 'Needs at least 1 lowercase letter' },
+                    { pattern: /[0-9]/, message: 'Needs at least 1 number' },
                   ]}
                 >
                   <Input.Password placeholder="Set initial password" autoComplete="new-password" />
+                </Form.Item>
+              )}
+              
+              {!editingUser && (
+                <Form.Item noStyle shouldUpdate={(prev, curr) => prev.password !== curr.password}>
+                  {({ getFieldValue }) => (
+                    <PasswordStrengthMeter password={getFieldValue("password")} />
+                  )}
                 </Form.Item>
               )}
             </div>
@@ -232,6 +285,40 @@ const UserWizardModal = ({
           </StepperWizard>
         </Form>
       </div>
+  );
+};
+
+const UserWizardModal = ({
+  open,
+  editingUser,
+  submitting = false,
+  onCancel,
+  onSubmit,
+  uploadPercent = 0,
+  uploadingAvatar,
+}: UserWizardModalProps) => {
+  return (
+    <Modal
+      title={editingUser ? 'Edit user' : 'New user'}
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      width={700}
+      centered
+      destroyOnHidden
+      forceRender
+      mask={{ closable: false }}
+    >
+      {open ? (
+        <UserWizardForm
+          key={editingUser?.id ?? 'new'}
+          editingUser={editingUser}
+          submitting={submitting}
+          onSubmit={onSubmit}
+          uploadPercent={uploadPercent}
+          uploadingAvatar={uploadingAvatar}
+        />
+      ) : null}
     </Modal>
   );
 };

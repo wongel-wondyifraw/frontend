@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export class ApiRequestError extends Error {
   statusCode?: number;
   status?: number;
@@ -24,4 +26,18 @@ export function getApiErrorMessage(
       return message[0];
   }
   return fallback;
+}
+
+export function getAxiosErrorMessage(
+  error: unknown,
+  fallback = "Request failed",
+): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as
+      { message?: string | string[] } | undefined;
+    const raw = Array.isArray(data?.message) ? data.message[0] : data?.message;
+    if (typeof raw === "string" && raw.trim()) return raw;
+    if (error.message) return error.message;
+  }
+  return getApiErrorMessage(error, fallback);
 }

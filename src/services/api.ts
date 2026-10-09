@@ -1,4 +1,8 @@
-import axios, { type AxiosError, type AxiosProgressEvent } from "axios";
+import axios, {
+  type AxiosError,
+  type AxiosProgressEvent,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { ApiRequestError } from "@/lib/errors";
 import type {
   ApiSearchResult,
@@ -80,9 +84,102 @@ function toApiError(error: unknown): ApiRequestError {
   return new ApiRequestError("Request failed");
 }
 
+type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
+export type AuthSession = {
+  id: string;
+  device_info?: string;
+  ip_address?: string;
+  created_at: string;
+  expires_at: string;
+  is_expired: boolean;
+};
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableRequest | undefined;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/auth/refresh" &&
+      originalRequest.url !== "/auth/login"
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("refresh_token")
+          : null;
+      if (!refreshToken) {
+        isRefreshing = false;
+        return Promise.reject(error);
+      }
+
+      try {
+        const { data } = await axios.post(
+          `${API_BASE_URL}/api/v1/auth/refresh`,
+          { refresh_token: refreshToken },
+        );
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", data.access_token);
+          if (data.refresh_token) {
+            localStorage.setItem("refresh_token", data.refresh_token);
+          }
+        }
+
+        api.defaults.headers.common["Authorization"] =
+          `Bearer ${data.access_token}`;
+        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+
+        processQueue(null, data.access_token);
+        return api(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("refresh_token");
+          window.dispatchEvent(new Event("auth:logout")); // Optional custom event
+        }
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     if (!error.response) {
       console.error(
         "NETWORK ERROR: Possible causes include CORS failure, backend down, or incorrect NEXT_PUBLIC_API_URL.",
@@ -138,6 +235,37 @@ export const loginUser = async (
   }
 };
 
+export const logoutUser = async (): Promise<void> => {
+  try {
+    const refreshToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("refresh_token")
+        : null;
+    if (refreshToken) {
+      await api.post("/auth/logout", { refresh_token: refreshToken });
+    }
+  } catch (error) {
+    console.error("Logout API failed:", error);
+  }
+};
+
+export const logoutAllSessions = async (): Promise<void> => {
+  try {
+    await api.post("/auth/logout-all");
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getSessions = async (): Promise<AuthSession[]> => {
+  try {
+    const response = await api.get<AuthSession[]>("/auth/sessions");
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const getProfile = async (): Promise<User> => {
   try {
     const response = await api.get<User>("/users/profile");
@@ -158,6 +286,43 @@ export const updateProfile = async (
   }
 };
 
+export const exportMyData = async (): Promise<Blob> => {
+  try {
+    const response = await api.get("/users/profile/export", {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const requestAccountDeletion = async (): Promise<{
+  message: string;
+}> => {
+  try {
+    const response = await api.post<{ message: string }>(
+      "/users/profile/request-deletion",
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const anonymizeUser = async (
+  id: string,
+): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>(
+      `/users/${id}/anonymize`,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const changePassword = async (
   passwordData: Record<string, string>,
 ): Promise<{ message: string }> => {
@@ -172,9 +337,84 @@ export const changePassword = async (
   }
 };
 
-export const getUsers = async (): Promise<User[]> => {
+export const setupMfa = async (): Promise<{
+  secret: string;
+  otpauthUrl: string;
+}> => {
   try {
-    const response = await api.get<User[]>("/users");
+    const response = await api.post<{ secret: string; otpauthUrl: string }>(
+      "/auth/mfa/setup",
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const verifyMfaSetup = async (
+  token: string,
+): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>("/auth/mfa/verify", {
+      token,
+    });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const disableMfa = async (): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>("/auth/mfa/disable");
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getUsers = async (
+  params: PaginationParams & { origin?: string; role?: string } = {},
+): Promise<PaginatedResponse<User>> => {
+  try {
+    const response = await api.get<PaginatedResponse<User>>("/users", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getUserById = async (id: string): Promise<User> => {
+  try {
+    const response = await api.get<User>(`/users/${id}`);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const forceLogoutUser = async (
+  id: string,
+): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>(
+      `/users/${id}/force-logout`,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const adminResetUserPassword = async (
+  id: string,
+): Promise<{ temporary_password: string }> => {
+  try {
+    const response = await api.post<{ temporary_password: string }>(
+      `/users/${id}/admin-reset-password`,
+    );
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -222,6 +462,15 @@ export const uploadAvatar = async (
       formData,
       withUploadProgress(onProgress),
     );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const inviteUser = async (id: string): Promise<{ message: string }> => {
+  try {
+    const response = await api.post<{ message: string }>(`/users/${id}/invite`);
     return response.data;
   } catch (error) {
     throw toApiError(error);

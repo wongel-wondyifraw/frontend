@@ -15,11 +15,15 @@ import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
-import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
-import type { User } from '@/types';
+import { useRouter } from 'next/navigation';
+import type { User, PaginatedResponse } from '@/types';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 interface ManageUsersTabProps {
-  users: User[];
+  usersPage: PaginatedResponse<User> | null;
   loading: boolean;
   searchText: string;
   onSearchChange: (value: string) => void;
@@ -27,18 +31,25 @@ interface ManageUsersTabProps {
   onRoleFilterChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  originFilter?: string;
+  onOriginFilterChange?: (value: string) => void;
+  onPageChange: (page: number, limit: number) => void;
   onAddUser: () => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
   onToggleStatus: (user: User) => void;
   onAvatarUpload: (file: File, userId: string) => boolean | Promise<boolean>;
+  onAdminResetPassword?: (user: User) => void;
+  onForceLogout?: (user: User) => void;
+  onUnlock?: (user: User) => void;
+  onAnonymizeUser?: (user: User) => void;
   canManage?: boolean;
   avatarUploading?: boolean;
   avatarUploadPercent?: number;
 }
 
 const ManageUsersTab = ({
-  users,
+  usersPage,
   loading,
   searchText,
   onSearchChange,
@@ -46,33 +57,19 @@ const ManageUsersTab = ({
   onRoleFilterChange,
   statusFilter,
   onStatusFilterChange,
+  originFilter,
+  onOriginFilterChange,
+  onPageChange,
   onAddUser,
   onEditUser,
   onDeleteUser,
   onToggleStatus,
   onAvatarUpload,
+  onAnonymizeUser,
   canManage = true,
-  avatarUploading,
-  avatarUploadPercent = 0,
 }: ManageUsersTabProps) => {
-  const filteredUsers = useMemo(() => {
-    const q = searchText.trim().toLowerCase();
-    return users.filter((user) => {
-      const matchesSearch =
-        !q ||
-        user.first_name?.toLowerCase().includes(q) ||
-        user.last_name?.toLowerCase().includes(q) ||
-        user.email?.toLowerCase().includes(q) ||
-        user.title?.toLowerCase().includes(q);
-
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' ? user.is_active : !user.is_active);
-
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [users, searchText, roleFilter, statusFilter]);
+  const router = useRouter();
+  const users = usersPage?.data || [];
 
   const userColumns: ColumnsType<User> = useMemo(
     () => [
@@ -117,7 +114,14 @@ const ManageUsersTab = ({
               <div style={{ fontWeight: 600 }}>
                 {[record.first_name, record.last_name].filter(Boolean).join(' ') || '—'}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.email}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {record.email}
+                {record.email_verified_at ? (
+                  <Tag color="success" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Verified</Tag>
+                ) : (
+                  <Tag color="warning" style={{ margin: 0, padding: '0 4px', fontSize: 10, lineHeight: '14px', border: 0 }}>Unverified</Tag>
+                )}
+              </div>
             </div>
           </div>
         ),
@@ -139,19 +143,38 @@ const ManageUsersTab = ({
         render: (title: string | null) => title || '—',
       },
       {
-        title: 'Registered',
-        dataIndex: 'created_at',
-        key: 'created_at',
+        title: 'Origin',
+        dataIndex: 'created_via',
+        key: 'created_via',
         responsive: ['lg'],
-        render: (date: string | undefined) => (date ? new Date(date).toLocaleDateString() : '—'),
+        render: (origin: string | undefined) => {
+          if (!origin) return '—';
+          const labels: Record<string, string> = {
+            admin: 'Admin',
+            minister_module: 'Minister Module',
+            self_registration: 'Self Reg',
+            invite: 'Invite',
+          };
+          return labels[origin] || origin;
+        },
+      },
+      {
+        title: 'Last Login',
+        dataIndex: 'last_login_at',
+        key: 'last_login_at',
+        responsive: ['xl'],
+        render: (date: string | undefined) => (date ? dayjs(date).fromNow() : 'Never'),
       },
       {
         title: 'Status',
         dataIndex: 'is_active',
         key: 'is_active',
-        render: (isActive: boolean | undefined) => (
-          <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Active' : 'Inactive'}</Tag>
-        ),
+        render: (isActive: boolean | undefined, record: User) => {
+          if (record.locked_until && new Date(record.locked_until) > new Date()) {
+            return <Tag color="error">Locked</Tag>;
+          }
+          return <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Active' : 'Inactive'}</Tag>;
+        },
       },
       {
         title: 'Actions',
@@ -162,6 +185,14 @@ const ManageUsersTab = ({
             <TableRowActions
               ariaLabel={`Actions for ${record.first_name || 'user'}`}
               items={[
+                {
+                  key: 'view',
+                  label: 'View Details',
+                  icon: <UserOutlined />,
+                  onClick: () => {
+                    router.push(`/settings/users/${record.id}`);
+                  },
+                },
                 {
                   key: 'edit',
                   label: 'Edit',
@@ -185,31 +216,42 @@ const ManageUsersTab = ({
                   danger: true,
                   onClick: () => onDeleteUser(record),
                 },
+                {
+                  key: 'anonymize',
+                  label: 'Anonymize & Erase (GDPR)',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => onAnonymizeUser?.(record),
+                },
               ]}
             />
           ) : null,
       },
     ],
-    [canManage, onAvatarUpload, onEditUser, onToggleStatus, onDeleteUser],
+    [canManage, onAvatarUpload, onEditUser, onToggleStatus, onDeleteUser, onAnonymizeUser, router],
   );
 
   const activeFilterCount =
-    (roleFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0);
+    (roleFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0) + (originFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="manage-page settings-section--wide">
-      <UploadProgressBar active={Boolean(avatarUploading)} percent={avatarUploadPercent} />
       <DataTable
         title="Users"
         subtitle="Create accounts and control who can access the system."
         columns={userColumns}
-        dataSource={filteredUsers}
+        dataSource={users}
         loading={loading}
         rowKey="id"
         searchPlaceholder="Search users..."
         searchValue={searchText}
         onSearchChange={onSearchChange}
-        pageSize={10}
+        serverPagination={{
+          current: usersPage?.page || 1,
+          pageSize: usersPage?.limit || 10,
+          total: usersPage?.total || 0,
+          onChange: onPageChange,
+        }}
         actionButton={
           canManage
             ? {
@@ -225,6 +267,7 @@ const ManageUsersTab = ({
             onClear={() => {
               onRoleFilterChange('all');
               onStatusFilterChange('all');
+              onOriginFilterChange?.('all');
             }}
           >
             <div className="dt-filter-field">
@@ -253,9 +296,28 @@ const ManageUsersTab = ({
                 ]}
               />
             </div>
+            <div className="dt-filter-field">
+              <span className="dt-filter-label">Origin</span>
+              <Select
+                value={originFilter}
+                onChange={onOriginFilterChange}
+                options={[
+                  { value: 'all', label: 'All origins' },
+                  { value: 'admin', label: 'Admin Created' },
+                  { value: 'minister_module', label: 'Minister Module' },
+                  { value: 'self_registration', label: 'Self Registration' },
+                ]}
+              />
+            </div>
           </DataTableFilterPopup>
         }
         tableCardClassName="data-table-card"
+        onRow={(record: User) => ({
+          onClick: () => {
+            router.push(`/settings/users/${record.id}`);
+          },
+          style: { cursor: 'pointer' },
+        })}
       />
     </div>
   );

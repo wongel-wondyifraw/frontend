@@ -1,57 +1,37 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Form, Input, Modal, Tag } from 'antd';
+import { Tag, Modal } from 'antd';
 import { message } from '@/lib/app-message';
 import type { ColumnsType } from 'antd/es/table';
 import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import DataTable from '@/Components/common/DataTable';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
-import PermissionPicker from './PermissionPicker';
 import { useCan } from '@/Components/auth/Can';
+import { useRouter } from 'next/navigation';
 import {
-  createRole,
   deleteRole,
-  getPermissionsGrouped,
   getRoles,
-  updateRole,
 } from '@/services/api';
-import type { Permission, Role } from '@/types';
+import type { Role } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
-
-interface RoleFormValues {
-  key?: string;
-  name: string;
-  description?: string;
-  permissionSlugs: string[];
-}
 
 const RoleManagementPanel = () => {
   const canManageRoles = useCan('roles.manage');
   const [roles, setRoles] = useState<Role[]>([]);
-  const [grouped, setGrouped] = useState<Record<string, Permission[]>>({});
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [formSeed, setFormSeed] = useState<Partial<RoleFormValues> | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form] = Form.useForm<RoleFormValues>();
+  const router = useRouter();
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const [rolesData, groupedData] = await Promise.all([
-        getRoles(),
-        getPermissionsGrouped(),
-      ]);
+      const rolesData = await getRoles();
       setRoles(rolesData);
-      setGrouped(groupedData);
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Failed to load roles'));
     } finally {
@@ -75,61 +55,11 @@ const RoleManagementPanel = () => {
   }, [roles, searchText]);
 
   const openCreate = () => {
-    setEditingRole(null);
-    setFormSeed({ permissionSlugs: [], name: undefined, key: undefined, description: undefined });
-    setModalOpen(true);
+    router.push('/settings/roles/create');
   };
 
   const openEdit = (role: Role) => {
-    setEditingRole(role);
-    setFormSeed({
-      key: role.key,
-      name: role.name,
-      description: role.description ?? '',
-      permissionSlugs: role.permissions.map((p) => p.slug),
-    });
-    setModalOpen(true);
-  };
-
-  const handleModalOpenChange = (open: boolean) => {
-    if (open && formSeed) {
-      form.setFieldsValue(formSeed);
-    }
-    if (!open) {
-      form.resetFields();
-      setFormSeed(null);
-      setEditingRole(null);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
-      setSaving(true);
-      if (editingRole) {
-        await updateRole(editingRole.id, {
-          name: values.name,
-          description: values.description,
-          permissionSlugs: values.permissionSlugs,
-        });
-        message.success('Role updated');
-      } else {
-        await createRole({
-          key: values.key!,
-          name: values.name,
-          description: values.description,
-          permissionSlugs: values.permissionSlugs,
-        });
-        message.success('Role created');
-      }
-      setModalOpen(false);
-      await load();
-    } catch (error) {
-      if (error && typeof error === 'object' && 'errorFields' in error) return;
-      message.error(getApiErrorMessage(error, 'Failed to save role'));
-    } finally {
-      setSaving(false);
-    }
+    router.push(`/settings/roles/${role.id}`);
   };
 
   const handleDelete = (role: Role) => {
@@ -218,8 +148,6 @@ const RoleManagementPanel = () => {
     },
   ];
 
-  const isAdminRole = editingRole?.key === 'admin';
-
   return (
     <div className="manage-page settings-section--wide">
       <DataTable
@@ -239,60 +167,6 @@ const RoleManagementPanel = () => {
         }
         tableCardClassName="data-table-card"
       />
-
-      <Modal
-        title={
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <SafetyCertificateOutlined />
-            {editingRole ? `Edit ${editingRole.name}` : 'Create role'}
-          </span>
-        }
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
-        confirmLoading={saving}
-        okText={editingRole ? 'Save changes' : 'Create role'}
-        width={720}
-        destroyOnHidden
-        afterOpenChange={handleModalOpenChange}
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false}>
-          {!editingRole && (
-            <Form.Item
-              name="key"
-              label="Key"
-              rules={[
-                { required: true, message: 'Key is required' },
-                {
-                  pattern: /^[a-z][a-z0-9_]*$/,
-                  message: 'Use lowercase letters, digits, and underscores',
-                },
-              ]}
-              extra="Stable identifier, e.g. volunteer_coordinator"
-            >
-              <Input placeholder="volunteer_coordinator" />
-            </Form.Item>
-          )}
-          <Form.Item
-            name="name"
-            label="Display name"
-            rules={[{ required: true, message: 'Name is required' }]}
-          >
-            <Input placeholder="Volunteer Coordinator" />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={2} placeholder="Optional description" />
-          </Form.Item>
-          <Form.Item
-            name="permissionSlugs"
-            label="Permissions"
-            rules={[{ required: !isAdminRole, message: 'Select at least one permission' }]}
-            extra={isAdminRole ? 'The admin role always has every permission.' : undefined}
-          >
-            <PermissionPicker grouped={grouped} disabled={isAdminRole} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 };
