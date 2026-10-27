@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
+import { App, Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
     TeamOutlined,
@@ -25,6 +25,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
     const params = useParams();
     const id = (ministryIdProp || params?.id) as string;
     const router = useRouter();
+    const { modal } = App.useApp();
     const [ministry, setMinistry] = useState<Ministry | null>(initialMinistry);
     const [loading, setLoading] = useState(initialMinistry === null);
     const [ministryMembers, setMinistryMembers] = useState<MinistryMember[]>([]);
@@ -74,7 +75,7 @@ const MinistryDetail = ({ ministryId: ministryIdProp, initialMinistry = null }: 
     };
 
     const handleDelete = () => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Delete Ministry?',
             icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
             content: `Are you sure you want to delete "${ministry?.name}"? This action cannot be undone.`,

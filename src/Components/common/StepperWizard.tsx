@@ -149,43 +149,43 @@ const StepperWizard = ({
             </div>
           ))}
         </div>
-      </Card>
 
-      <div className="wizard-actions">
-        {showCancel && onCancel && (
-          <Button className="wizard-action-cancel" size="large" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <div className="wizard-actions-nav">
-          {safeStep > 0 && (
-            <Button className="wizard-action-prev" onClick={onPrev} size="large">
-              Previous
-            </Button>
-          )}
-          {safeStep < lastStepIndex && (
-            <Button
-              className="wizard-action-next"
-              type="primary"
-              onClick={onNext}
-              size="large"
-            >
-              {getNextLabel()}
-            </Button>
-          )}
-          {safeStep === lastStepIndex && (
-            <Button
-              className="wizard-action-next"
-              type="primary"
-              htmlType="submit"
-              size="large"
-              loading={submitLoading}
-            >
-              {submitText}
-            </Button>
-          )}
+        <div className="wizard-actions">
+          <div className="wizard-actions-group">
+            {safeStep > 0 && (
+              <Button className="wizard-action-prev" onClick={onPrev} size="large">
+                Previous
+              </Button>
+            )}
+            {showCancel && onCancel && (
+              <Button className="wizard-action-cancel" size="large" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            {safeStep < lastStepIndex && (
+              <Button
+                className="wizard-action-next"
+                type="primary"
+                onClick={onNext}
+                size="large"
+              >
+                {getNextLabel()}
+              </Button>
+            )}
+            {safeStep === lastStepIndex && (
+              <Button
+                className="wizard-action-next"
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={submitLoading}
+              >
+                {submitText}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
     </>
   );
 };

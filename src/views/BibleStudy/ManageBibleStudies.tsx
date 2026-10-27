@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal, Tag } from 'antd';
+import { App, Tag } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined,
@@ -25,6 +25,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
   const canCreate = useCan('bible_studies.create');
   const canUpdate = useCan('bible_studies.update');
   const canDelete = useCan('bible_studies.delete');
+  const { modal } = App.useApp();
   const [studies, setStudies] = useState<BibleStudy[]>(initialPage?.data ?? []);
   const [loading, setLoading] = useState(initialPage === null);
   const [searchText, setSearchText] = useState('');
@@ -57,7 +58,7 @@ const ManageBibleStudiesContent = ({ initialPage = null }: ManageBibleStudiesPro
   }, [initialPage, loadStudies]);
 
   const handleDelete = (study: BibleStudy) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Bible Study?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Are you sure you want to delete "${study.name}"? This action cannot be undone.`,

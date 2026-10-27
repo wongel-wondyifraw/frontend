@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal } from 'antd';
+import { App } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
     const canCreate = useCan('ministries.create');
     const canUpdate = useCan('ministries.update');
     const canDelete = useCan('ministries.delete');
+    const { modal } = App.useApp();
     const [ministries, setMinistries] = useState<Ministry[]>(initialPage?.data ?? []);
     const [loading, setLoading] = useState(initialPage === null);
     const [searchText, setSearchText] = useState('');
@@ -59,7 +60,7 @@ const ManageMinistriesContent = ({ initialPage = null }: ManageMinistriesProps) 
     };
 
     const handleDelete = (ministry: Ministry) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Delete Ministry?',
             icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
             content: `Are you sure you want to delete "${ministry.name}"? This action cannot be undone.`,

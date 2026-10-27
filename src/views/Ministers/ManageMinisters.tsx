@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Modal } from 'antd';
+import { Tag, App } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
   const canCreate = useCan('ministers.create');
   const canUpdate = useCan('ministers.update');
   const canDelete = useCan('ministers.delete');
+  const { modal } = App.useApp();
   const [ministers, setMinisters] = useState<Minister[]>(initialPage?.data ?? []);
   const [loading, setLoading] = useState(initialPage === null);
   const [searchText, setSearchText] = useState('');
@@ -60,7 +61,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
   };
 
   const handleDelete = (minister: Minister) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Minister?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Delete ${minister.first_name} ${minister.last_name}? Their login account will also be removed.`,

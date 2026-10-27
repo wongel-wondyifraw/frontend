@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
+import { App, Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   TeamOutlined,
@@ -32,6 +32,7 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
   const params = useParams();
   const id = (homeGroupIdProp || params?.id) as string;
   const router = useRouter();
+  const { modal } = App.useApp();
   const [homeGroup, setHomeGroup] = useState<HomeGroup | null>(initialHomeGroup);
   const [loading, setLoading] = useState(initialHomeGroup === null);
   const [groupMembers, setGroupMembers] = useState<HomeGroupMember[]>([]);
@@ -77,7 +78,7 @@ const HomeGroupDetail = ({ homeGroupId: homeGroupIdProp, initialHomeGroup = null
   };
 
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Home Group?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Are you sure you want to delete "${homeGroup?.name}"? This action cannot be undone.`,

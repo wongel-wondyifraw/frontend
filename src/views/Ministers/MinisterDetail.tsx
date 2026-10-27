@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  App,
   Tag,
   Button,
   Timeline,
@@ -36,6 +37,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
   const router = useRouter();
   const canUpdate = useCan('ministers.update');
   const canDelete = useCan('ministers.delete');
+  const { modal } = App.useApp();
   const [minister, setMinister] = useState<Minister | null>(initialMinister);
   const [loading, setLoading] = useState(initialMinister === null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -69,7 +71,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
   };
 
   const handleResetPassword = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Reset login password?',
       icon: <LockOutlined style={{ color: '#1565c0' }} />,
       content: 'A new temporary password will be generated. Share it with the minister — it is shown only once.',
@@ -162,7 +164,7 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
         label: 'Delete minister',
         danger: true,
         onClick: () => {
-          Modal.confirm({
+          modal.confirm({
             title: 'Delete Minister',
             content: 'This also deletes their login account. Continue?',
             okText: 'Delete',

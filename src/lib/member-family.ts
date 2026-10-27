@@ -24,6 +24,7 @@ type FamilyFormValues = {
   external_spouse_name?: string;
   external_spouse_phone?: string;
   external_spouse_church?: string;
+  skip_spouse_info?: boolean;
 };
 
 function childPayload(child: ChildForm) {
@@ -77,11 +78,13 @@ function buildFamilyPayload(
         payload.husband_type = spouseType;
       }
       payload.spouse_status = "registered";
-    } else if (values.spouse_from_church === "no") {
+    } else if (values.spouse_from_church === "no" && values.external_spouse_name) {
       payload.spouse_status = "external";
       payload.external_spouse_name = values.external_spouse_name?.trim();
       payload.external_spouse_phone = values.external_spouse_phone?.trim();
       payload.external_spouse_church = values.external_spouse_church?.trim();
+    } else if (values.skip_spouse_info || !values.spouse_from_church) {
+      payload.spouse_status = "pending";
     } else {
       return null;
     }
@@ -157,6 +160,8 @@ export function familyToFormValues(
     base.external_spouse_name = family.external_spouse_name || undefined;
     base.external_spouse_phone = family.external_spouse_phone || undefined;
     base.external_spouse_church = family.external_spouse_church || undefined;
+  } else if (status === "pending") {
+    base.skip_spouse_info = true;
   }
 
   return base;
@@ -181,11 +186,15 @@ export async function upsertMemberFamily(
     await updateFamily(existing.id, built);
     if (
       values.has_children ||
-      (values.marital_status === "married" && children.length >= 0)
+      (!values.skip_spouse_info && values.marital_status === "married" && children.length >= 0)
     ) {
       await syncChildren(existing.id, children, existing);
     }
   } else {
+    // If skipping spouse and no children recorded, do not create an empty placeholder row in the DB
+    if (values.skip_spouse_info && children.length === 0) {
+      return;
+    }
     const created = await createFamily(built);
     for (const child of children) {
       await addFamilyChild(created.id, child);
