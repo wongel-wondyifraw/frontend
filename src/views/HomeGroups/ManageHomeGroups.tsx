@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal } from 'antd';
+import { App } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
   const canCreate = useCan('home_groups.create');
   const canUpdate = useCan('home_groups.update');
   const canDelete = useCan('home_groups.delete');
+  const { modal } = App.useApp();
   const [homeGroups, setHomeGroups] = useState<HomeGroup[]>(initialPage?.data ?? []);
   const [loading, setLoading] = useState(initialPage === null);
   const [searchText, setSearchText] = useState('');
@@ -59,7 +60,7 @@ const ManageHomeGroupsContent = ({ initialPage = null }: ManageHomeGroupsProps) 
   };
 
   const handleDelete = (group: HomeGroup) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Home Group?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Are you sure you want to delete "${group.name}"? This action cannot be undone.`,

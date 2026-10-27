@@ -154,25 +154,30 @@
 
 .wizard-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  align-items: center;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
+.wizard-actions-group,
 .wizard-actions-nav {
   display: flex;
-  flex: 1 1 auto;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  min-width: 0;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .wizard-action-cancel,
 .wizard-action-prev,
 .wizard-action-next {
   min-height: 42px;
+}
+
+.wizard-action-cancel {
+  margin-right: 12px;
 }
 
 .wizard-action-next.ant-btn-primary {
@@ -199,26 +204,33 @@
   }
 
   .wizard-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
+    margin-top: 24px;
+    padding-top: 16px;
+    width: 100%;
   }
 
+  .wizard-actions-group,
   .wizard-actions-nav {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     width: 100%;
     gap: 10px;
   }
 
-  .wizard-action-cancel,
-  .wizard-action-prev,
   .wizard-action-next {
+    order: 1;
     width: 100%;
   }
 
-  .wizard-action-prev,
-  .wizard-action-next {
+  .wizard-action-prev {
+    order: 2;
     flex: 1 1 0;
+  }
+
+  .wizard-action-cancel {
+    order: 3;
+    flex: 1 1 0;
+    margin-right: 0;
   }
 
   /* Avoid double titles: wizard header already names the step */

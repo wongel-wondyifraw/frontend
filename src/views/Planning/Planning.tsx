@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import {
+  App,
   Badge,
   Button,
   Calendar,
@@ -104,6 +105,7 @@ const PlanningContent = () => {
   const canCreate = useCan('plans.create');
   const canUpdate = useCan('plans.update');
   const canDelete = useCan('plans.delete');
+  const { modal } = App.useApp();
   const canReadTasks = useCan('tasks.read');
 
   const [activeTab, setActiveTab] = useState('calendar');
@@ -351,7 +353,7 @@ const PlanningContent = () => {
   };
 
   const confirmCancelPlan = (plan: Plan) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Cancel this plan?',
       content: 'It will be marked as cancelled and can be activated again later.',
       okText: 'Cancel plan',
@@ -361,7 +363,7 @@ const PlanningContent = () => {
   };
 
   const confirmDeletePlan = (plan: Plan) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete this plan?',
       okType: 'danger',
       onOk: () => handleDelete(plan),

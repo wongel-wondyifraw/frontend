@@ -3,9 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  App,
   Card,
   Col,
-  Modal,
   Row,
   Statistic,
   Tag,
@@ -50,6 +50,7 @@ const ManageFamiliesContent = () => {
   const canUpdate = useCan('families.update');
   const canDelete = useCan('families.delete');
 
+  const { modal } = App.useApp();
   const [families, setFamilies] = useState<Family[]>([]);
   const [stats, setStats] = useState<FamilyStats>(emptyStats);
   const [loading, setLoading] = useState(true);
@@ -102,7 +103,7 @@ const ManageFamiliesContent = () => {
   }, 300);
 
   const handleDeleteFamily = (family: Family) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete family?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Delete "${family.name || 'this family'}" and all children records?`,
@@ -127,23 +128,30 @@ const ManageFamiliesContent = () => {
       render: (_: unknown, record: Family) => {
         const hasHusband = Boolean(record.husband_id);
         const hasWife = Boolean(record.wife_id);
+        const isPendingSpouse = record.spouse_status === 'pending';
+        const isExternalSpouse = record.spouse_status === 'external';
         const isSingleParent =
-          hasHusband !== hasWife && record.spouse_status !== 'external';
-        const singleParentTag =
-          isSingleParent && hasWife && !hasHusband
-            ? 'Single mom'
-            : isSingleParent && hasHusband && !hasWife
-              ? 'Single dad'
-              : null;
+          hasHusband !== hasWife && record.spouse_status === 'none';
+
+        let familyTypeTag: { label: string; color: string } | null = null;
+        if (isPendingSpouse) {
+          familyTypeTag = { label: 'Pending Spouse', color: 'orange' };
+        } else if (isSingleParent && hasWife && !hasHusband) {
+          familyTypeTag = { label: 'Single mom', color: 'magenta' };
+        } else if (isSingleParent && hasHusband && !hasWife) {
+          familyTypeTag = { label: 'Single dad', color: 'blue' };
+        } else if (isExternalSpouse) {
+          familyTypeTag = { label: 'External Spouse', color: 'cyan' };
+        }
 
         return (
           <EntityNameCell
             title={record.name || 'Family'}
             initials={(record.name || 'F').charAt(0).toUpperCase()}
             meta={
-              singleParentTag ? (
-                <Tag color={singleParentTag === 'Single mom' ? 'magenta' : 'blue'} style={{ marginInlineEnd: 0 }}>
-                  {singleParentTag}
+              familyTypeTag ? (
+                <Tag color={familyTypeTag.color} style={{ marginInlineEnd: 0 }}>
+                  {familyTypeTag.label}
                 </Tag>
               ) : undefined
             }
@@ -155,13 +163,45 @@ const ManageFamiliesContent = () => {
       title: 'Husband',
       key: 'husband',
       responsive: ['md'],
-      render: (_: unknown, record: Family) => <LeaderNameWithTag leader={record.husband} />,
+      render: (_: unknown, record: Family) => {
+        if (record.husband) {
+          return <LeaderNameWithTag leader={record.husband} />;
+        }
+        if (record.spouse_status === 'pending' && !record.husband_id) {
+          return <Tag color="orange">Pending</Tag>;
+        }
+        if (record.spouse_status === 'external' && !record.husband_id && record.external_spouse_name) {
+          return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span>{record.external_spouse_name}</span>
+              <Tag color="cyan">External</Tag>
+            </span>
+          );
+        }
+        return <span style={{ color: '#94a3b8' }}>—</span>;
+      },
     },
     {
       title: 'Wife',
       key: 'wife',
       responsive: ['md'],
-      render: (_: unknown, record: Family) => <LeaderNameWithTag leader={record.wife} />,
+      render: (_: unknown, record: Family) => {
+        if (record.wife) {
+          return <LeaderNameWithTag leader={record.wife} />;
+        }
+        if (record.spouse_status === 'pending' && !record.wife_id) {
+          return <Tag color="orange">Pending</Tag>;
+        }
+        if (record.spouse_status === 'external' && !record.wife_id && record.external_spouse_name) {
+          return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span>{record.external_spouse_name}</span>
+              <Tag color="cyan">External</Tag>
+            </span>
+          );
+        }
+        return <span style={{ color: '#94a3b8' }}>—</span>;
+      },
     },
     {
       title: 'Children',

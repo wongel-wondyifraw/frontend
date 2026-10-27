@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
+import { App, Button, Modal, Spin, Breadcrumb, Tag, Avatar, Form, Card, Tooltip, Empty } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   TeamOutlined, CalendarOutlined, EditOutlined, DeleteOutlined, UserOutlined,
@@ -22,6 +22,7 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
   const params = useParams();
   const id = (bibleStudyIdProp || params?.id) as string;
   const router = useRouter();
+  const { modal } = App.useApp();
   const [study, setStudy] = useState<BibleStudy | null>(initialBibleStudy);
   const [loading, setLoading] = useState(initialBibleStudy === null);
   const [groupMembers, setGroupMembers] = useState<BibleStudyMember[]>([]);
@@ -67,7 +68,7 @@ const BibleStudyDetail = ({ bibleStudyId: bibleStudyIdProp, initialBibleStudy = 
   };
 
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Bible Study?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Are you sure you want to delete "${study?.name}"?`,

@@ -44,22 +44,46 @@
     font-size: 16px;
 }
 
-.content-card-unified {
-    background: var(--bg-card, white);
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: none;
-    border: 1px solid var(--border-color);
+/* Remove outer white card background, borders, and padding */
+.add-member-container .content-card-unified,
+.add-member-form-wrapper {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100%;
 }
 
-.wizard-card {
-    border-radius: 12px !important;
+/* Enlarge inner stepper wizard card to full size as the primary card */
+.add-member-container .wizard-card {
+    border-radius: 16px !important;
+    border: 1px solid var(--border-color, #e2e8f0) !important;
+    background: var(--bg-card, #ffffff) !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
+    width: 100%;
+}
+
+.add-member-container .wizard-card .ant-card-body {
+    padding: 36px 40px !important;
 }
 
 @media (max-width: 768px) {
-    .content-card-unified {
-        padding: 16px;
-        border-radius: 12px;
+    .add-member-container {
+        padding: 0;
+    }
+
+    .add-member-container .content-card-unified,
+    .add-member-form-wrapper {
+        padding: 0 !important;
+    }
+
+    .add-member-container .wizard-card {
+        border-radius: 12px !important;
+    }
+
+    .add-member-container .wizard-card .ant-card-body {
+        padding: 20px 16px !important;
     }
 
     .add-member-header h1 {

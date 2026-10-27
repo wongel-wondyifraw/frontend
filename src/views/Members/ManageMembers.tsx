@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Modal, Select, DatePicker } from 'antd';
+import { Tag, App, Select, DatePicker } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -49,6 +49,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const canUpdate = useCan('members.update');
     const canDelete = useCan('members.delete');
     const canApprove = useCan('members.approve');
+    const { modal } = App.useApp();
     const [members, setMembers] = useState<Member[]>(initialPage?.data ?? []);
     const [loading, setLoading] = useState(initialPage === null);
     const [searchText, setSearchText] = useState('');
@@ -120,7 +121,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     };
 
     const handleDelete = (member: Member) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Delete Member?',
             icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
             content: `Are you sure you want to delete ${member.first_name} ${member.last_name}? This action cannot be undone.`,

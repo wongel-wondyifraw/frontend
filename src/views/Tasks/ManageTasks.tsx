@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  App,
   Avatar,
   Button,
   DatePicker,
@@ -69,6 +70,7 @@ const ManageTasksContent = () => {
   const canCreate = useCan('tasks.create');
   const canUpdate = useCan('tasks.update');
   const canDelete = useCan('tasks.delete');
+  const { modal } = App.useApp();
 
   const [tasks, setTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -264,7 +266,7 @@ const ManageTasksContent = () => {
   };
 
   const handleComplete = (task: TaskAssignment) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Mark task completed?',
       content: `${task.definition?.name || 'Task'} will be marked as completed.`,
       okText: 'Complete',
@@ -281,7 +283,7 @@ const ManageTasksContent = () => {
   };
 
   const handleDeleteTask = (task: TaskAssignment) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete task?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: 'This removes the assignment permanently.',
@@ -372,7 +374,7 @@ const ManageTasksContent = () => {
       message.warning('System definitions cannot be deleted');
       return;
     }
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete definition?',
       content: `Delete "${def.name}"? Only possible if no tasks use it.`,
       okText: 'Delete',

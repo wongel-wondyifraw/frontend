@@ -105,7 +105,8 @@ const AddMember = () => {
       if (currentStep === 0) {
         await form.validateFields(['first_name', 'last_name', 'gender']);
         const status = form.getFieldValue('marital_status');
-        if (status === 'married') {
+        const skipSpouse = form.getFieldValue('skip_spouse_info');
+        if (status === 'married' && !skipSpouse) {
           await form.validateFields(['spouse_from_church']);
           if (form.getFieldValue('spouse_from_church') === 'yes') {
             await form.validateFields(['internal_spouse_id']);
@@ -236,7 +237,7 @@ const AddMember = () => {
         <p>Complete all steps to register a new church member.</p>
       </div>
 
-      <div className="content-card-unified">
+      <div className="add-member-form-wrapper">
         <Form
           form={form}
           layout="vertical"
@@ -247,6 +248,7 @@ const AddMember = () => {
             baptized: 'no',
             holy_spirit_baptized: 'no',
             member_type: 'existing',
+            skip_spouse_info: false,
           }}
         >
           <StepperWizard
@@ -550,8 +552,8 @@ const AddMember = () => {
                         <div><strong>Phone:</strong> {values.phone || '—'}</div>
                         <div><strong>Member Type:</strong> {MEMBER_TYPE_OPTIONS.find((o) => o.value === values.member_type)?.label || values.member_type || '—'}</div>
                         <div><strong>Marital Status:</strong> {values.marital_status || '—'}</div>
-                        <div><strong>Spouse:</strong> {values.marital_status === 'married' ? (values.spouse_from_church === 'yes' ? 'In church' : values.external_spouse_name || 'External') : '—'}</div>
-                        <div><strong>Children:</strong> {values.has_children && values.children?.length ? `${values.children.length} added` : 'None'}</div>
+                        <div><strong>Spouse:</strong> {values.marital_status === 'married' ? (values.skip_spouse_info ? 'Pending (Skipped)' : values.spouse_from_church === 'yes' ? 'In church' : values.external_spouse_name || 'External') : '—'}</div>
+                        <div><strong>Children:</strong> {values.marital_status === 'married' && values.skip_spouse_info ? 'Pending (Skipped)' : values.has_children && values.children?.length ? `${values.children.length} added` : 'None'}</div>
                         <div><strong>Employment:</strong> {values.employment_status || '—'}</div>
                         <div><strong>Profession:</strong> {values.profession || '—'}</div>
                         <div><strong>Education:</strong> {values.education_level || '—'}</div>

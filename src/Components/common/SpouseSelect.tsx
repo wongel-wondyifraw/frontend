@@ -31,6 +31,7 @@ function displayName(c: Pick<Candidate, 'first_name' | 'middle_name' | 'last_nam
 
 interface SpouseSelectProps {
   gender: 'male' | 'female';
+  excludeId?: string;
   value?: string;
   onChange?: (value: string | undefined) => void;
   placeholder?: string;
@@ -40,6 +41,7 @@ interface SpouseSelectProps {
 
 const SpouseSelect = ({
   gender,
+  excludeId,
   value,
   onChange,
   placeholder,
@@ -60,7 +62,7 @@ const SpouseSelect = ({
           getMinisters({ page: 1, limit: 40, search: term || undefined }),
         ]);
         const memberCandidates: Candidate[] = membersPage.data
-          .filter((m: Member) => (m.gender || '').toLowerCase() === wanted)
+          .filter((m: Member) => (m.gender || '').toLowerCase() === wanted && (!excludeId || m.id !== excludeId))
           .map((m: Member) => ({
             key: `member:${m.id}`,
             id: m.id,
@@ -72,7 +74,7 @@ const SpouseSelect = ({
             type: 'member',
           }));
         const ministerCandidates: Candidate[] = ministersPage.data
-          .filter((m: Minister) => (m.gender || '').toLowerCase() === wanted)
+          .filter((m: Minister) => (m.gender || '').toLowerCase() === wanted && (!excludeId || m.id !== excludeId))
           .map((m: Minister) => ({
             key: `minister:${m.id}`,
             id: m.id,
@@ -90,7 +92,7 @@ const SpouseSelect = ({
         setLoading(false);
       }
     },
-    [gender],
+    [gender, excludeId],
   );
 
   const debouncedSearch = useDebouncedCallback((q: string) => {

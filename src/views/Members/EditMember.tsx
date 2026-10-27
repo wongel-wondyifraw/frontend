@@ -268,7 +268,7 @@ const EditMember = () => {
         <p>Update personal information, family, and professional details.</p>
       </div>
 
-      <div className="content-card-unified">
+      <div className="add-member-form-wrapper">
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <StepperWizard
             steps={STEPS}

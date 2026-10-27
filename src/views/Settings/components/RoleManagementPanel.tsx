@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Tag, Modal } from 'antd';
+import { Tag, App } from 'antd';
 import { message } from '@/lib/app-message';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -22,6 +22,7 @@ import { getApiErrorMessage } from '@/lib/errors';
 
 const RoleManagementPanel = () => {
   const canManageRoles = useCan('roles.manage');
+  const { modal } = App.useApp();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
@@ -63,7 +64,7 @@ const RoleManagementPanel = () => {
   };
 
   const handleDelete = (role: Role) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete role?',
       content: `Remove "${role.name}" (${role.key})? This cannot be undone.`,
       okText: 'Delete',

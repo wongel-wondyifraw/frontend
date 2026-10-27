@@ -3,10 +3,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  App,
   Avatar,
   Breadcrumb,
   Button,
-  Card,
   Empty,
   Form,
   Input,
@@ -27,6 +27,8 @@ import {
   UserOutlined,
   ManOutlined,
   WomanOutlined,
+  HeartOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -38,7 +40,7 @@ import {
 } from '../../services/api';
 import type { Family, FamilyChild, FamilyDetailProps } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
-import { LeaderNameWithTag, leaderDisplayName } from '../../Components/common/LeaderLabel';
+import { leaderDisplayName } from '../../Components/common/LeaderLabel';
 import { useCan } from '@/Components/auth/Can';
 import './FamilyDetail.css';
 
@@ -60,6 +62,7 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   const canUpdate = useCan('families.update');
   const canDelete = useCan('families.delete');
 
+  const { modal } = App.useApp();
   const [family, setFamily] = useState<Family | null>(initialFamily);
   const [loading, setLoading] = useState(initialFamily === null);
   const [childModalOpen, setChildModalOpen] = useState(false);
@@ -85,7 +88,7 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   }, [initialFamily, loadFamily]);
 
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Family?',
       icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
       content: `Delete "${family?.name || 'this family'}" and all children records?`,
@@ -148,7 +151,7 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   };
 
   const handleDeleteChild = (child: FamilyChild) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Remove child?',
       content: `Remove ${child.name} from this family?`,
       okText: 'Remove',
@@ -258,19 +261,14 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
             </div>
             <div className="ministry-info-simple">
               <h1>{family.name || 'Family'}</h1>
-              <div className="ministry-meta-simple">
-                <span>
-                  <ManOutlined /> Husband: <LeaderNameWithTag leader={family.husband} />
-                </span>
-                <span>
-                  <WomanOutlined /> Wife: <LeaderNameWithTag leader={family.wife} />
-                </span>
-                <span>
-                  <UserOutlined /> {children.length} child{children.length === 1 ? '' : 'ren'}
-                </span>
+              <div className="family-header-meta">
+                <div className="family-meta-item">
+                  <TeamOutlined style={{ color: '#64748b' }} />
+                  <span>{children.length} {children.length === 1 ? 'child' : 'children'}</span>
+                </div>
               </div>
             </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="family-header-actions">
               {canUpdate && (
                 <Button
                   type="primary"
@@ -293,48 +291,130 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
             <div className="left-column">
               <div className="detail-section">
                 <h3>Spouses</h3>
-                <div className="ministry-members-grid">
+                <div className="spouses-stack">
                   {family.husband && (
-                    <Card
-                      hoverable
-                      className="member-card-elegant"
+                    <div
+                      key="husband"
+                      className="spouse-item clickable"
                       onClick={() => router.push(spousePath(family.husband_id, family.husband_type))}
-                      styles={{ body: { padding: 20 } }}
                     >
-                      <Card.Meta
-                        avatar={<Avatar size={56} icon={<ManOutlined />} style={{ background: '#e3f2fd', color: '#1565c0' }} />}
-                        title={leaderDisplayName(family.husband)}
-                        description={
-                          <Space wrap>
-                            <Tag>Husband</Tag>
-                            <Tag color={family.husband.type === 'minister' ? 'purple' : 'blue'}>
-                              {family.husband.type === 'minister' ? 'Minister' : 'Member'}
-                            </Tag>
-                          </Space>
-                        }
-                      />
-                    </Card>
+                      <div className="spouse-info">
+                        <Avatar
+                          size={36}
+                          icon={<ManOutlined />}
+                          style={{ background: '#e3f2fd', color: '#1565c0' }}
+                        />
+                        <div>
+                          <div className="spouse-name">
+                            {leaderDisplayName(family.husband)}
+                          </div>
+                          <div className="spouse-meta">
+                            Husband
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1565c0', fontSize: 13, fontWeight: 500 }}>
+                        <span>View Profile</span>
+                        <RightOutlined style={{ fontSize: 11 }} />
+                      </div>
+                    </div>
                   )}
                   {family.wife && (
-                    <Card
-                      hoverable
-                      className="member-card-elegant"
+                    <div
+                      key="wife"
+                      className="spouse-item clickable"
                       onClick={() => router.push(spousePath(family.wife_id, family.wife_type))}
-                      styles={{ body: { padding: 20 } }}
                     >
-                      <Card.Meta
-                        avatar={<Avatar size={56} icon={<WomanOutlined />} style={{ background: '#fce7f3', color: '#be185d' }} />}
-                        title={leaderDisplayName(family.wife)}
-                        description={
-                          <Space wrap>
-                            <Tag>Wife</Tag>
-                            <Tag color={family.wife.type === 'minister' ? 'purple' : 'blue'}>
-                              {family.wife.type === 'minister' ? 'Minister' : 'Member'}
-                            </Tag>
-                          </Space>
-                        }
-                      />
-                    </Card>
+                      <div className="spouse-info">
+                        <Avatar
+                          size={36}
+                          icon={<WomanOutlined />}
+                          style={{ background: '#fce7f3', color: '#be185d' }}
+                        />
+                        <div>
+                          <div className="spouse-name">
+                            {leaderDisplayName(family.wife)}
+                          </div>
+                          <div className="spouse-meta">
+                            Wife
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1565c0', fontSize: 13, fontWeight: 500 }}>
+                        <span>View Profile</span>
+                        <RightOutlined style={{ fontSize: 11 }} />
+                      </div>
+                    </div>
+                  )}
+                  {family.spouse_status === 'external' && family.external_spouse_name && (
+                    <div key="external" className="spouse-item">
+                      <div className="spouse-info">
+                        <Avatar
+                          size={36}
+                          icon={<UserOutlined />}
+                          style={{ background: '#ecfeff', color: '#0891b2' }}
+                        />
+                        <div>
+                          <div className="spouse-name">
+                            {family.external_spouse_name}
+                          </div>
+                          <div className="spouse-meta">
+                            External Spouse{family.external_spouse_phone ? ` · ${family.external_spouse_phone}` : ''}{family.external_spouse_church ? ` · ${family.external_spouse_church}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <Tag color="cyan">External</Tag>
+                    </div>
+                  )}
+                  {family.spouse_status === 'pending' && (!family.husband || !family.wife) && (
+                    <div
+                      key="pending"
+                      className="spouse-item"
+                      style={{ border: '1px dashed #f59e0b', background: '#fffdfa' }}
+                    >
+                      <div className="spouse-info">
+                        <Avatar
+                          size={36}
+                          icon={<HeartOutlined />}
+                          style={{ background: '#fffbeb', color: '#d97706' }}
+                        />
+                        <div>
+                          <div className="spouse-name" style={{ color: '#92400e' }}>
+                            {!family.husband ? 'Husband (Pending)' : 'Wife (Pending)'}
+                          </div>
+                          <div className="spouse-meta" style={{ color: '#b45309' }}>
+                            Spouse information was skipped
+                          </div>
+                        </div>
+                      </div>
+                      <Tag color="orange">Pending</Tag>
+                    </div>
+                  )}
+                  {family.spouse_status === 'none' && (!family.husband || !family.wife) && (
+                    <div
+                      key="single-parent"
+                      className="spouse-item"
+                      style={{ border: '1px dashed #cbd5e1', background: '#f8fafc' }}
+                    >
+                      <div className="spouse-info">
+                        <Avatar
+                          size={36}
+                          icon={<UserOutlined />}
+                          style={{ background: '#f1f5f9', color: '#64748b' }}
+                        />
+                        <div>
+                          <div className="spouse-name">
+                            Single Parent
+                          </div>
+                          <div className="spouse-meta">
+                            {family.wife ? 'Single mother household' : 'Single father household'}
+                          </div>
+                        </div>
+                      </div>
+                      <Tag color={family.wife ? 'magenta' : 'blue'}>
+                        {family.wife ? 'Single mom' : 'Single dad'}
+                      </Tag>
+                    </div>
                   )}
                 </div>
               </div>
@@ -388,6 +468,7 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
                 dataSource={children}
                 pagination={false}
                 size="middle"
+                scroll={{ x: true }}
               />
             )}
           </div>
