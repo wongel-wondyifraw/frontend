@@ -46,6 +46,7 @@ import { useDebouncedCallback } from '@/lib/debounce';
 import DataTable from '@/Components/common/DataTable';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import DataImportExport from '@/Components/common/DataImportExport';
+import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
 import {
   downloadPlanTemplate,
   exportPlansExcel,
@@ -119,6 +120,7 @@ const PlanningContent = () => {
   const [calendarMonth, setCalendarMonth] = useState<Dayjs>(dayjs());
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const activeFilterCount = (typeFilter ? 1 : 0) + (statusFilter ? 1 : 0);
   const [searchText, setSearchText] = useState('');
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
@@ -572,22 +574,6 @@ const PlanningContent = () => {
           allowClear
         />
         <div className="planning-controls-end">
-          <Select
-            allowClear
-            placeholder="Type"
-            className="planning-toolbar-filter"
-            value={typeFilter}
-            onChange={(v) => setTypeFilter(v)}
-            options={PLAN_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-          />
-          <Select
-            allowClear
-            placeholder="Status"
-            className="planning-toolbar-filter"
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v)}
-            options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-          />
           <DataImportExport
             entityLabel="Plans"
             canImport={canCreate}
@@ -601,6 +587,34 @@ const PlanningContent = () => {
               else void loadAllPlans(1, tablePageSize, searchText);
             }}
           />
+          <DataTableFilterPopup
+            activeCount={activeFilterCount}
+            onClear={() => {
+              setTypeFilter(undefined);
+              setStatusFilter(undefined);
+            }}
+          >
+            <div className="dt-filter-field">
+              <span className="dt-filter-label">Type</span>
+              <Select
+                allowClear
+                placeholder="Any type"
+                value={typeFilter}
+                onChange={(v) => setTypeFilter(v)}
+                options={PLAN_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
+            </div>
+            <div className="dt-filter-field">
+              <span className="dt-filter-label">Status</span>
+              <Select
+                allowClear
+                placeholder="Any status"
+                value={statusFilter}
+                onChange={(v) => setStatusFilter(v)}
+                options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
+            </div>
+          </DataTableFilterPopup>
         </div>
       </div>
 

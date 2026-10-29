@@ -1,6 +1,7 @@
 'use client';
 
-import { Bell, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, CheckCircle, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { Button, Popover, Badge, Empty, Spin } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationsContext';
@@ -39,6 +40,7 @@ export default function TopbarActions() {
   const router = useRouter();
   const canReadNotifications = hasPermission(user, 'notifications.read');
   const { items, unreadCount, loading, markRead, markAllRead } = useNotifications();
+  const [open, setOpen] = useState(false);
 
   const notificationContent = (
     <div className="notif-panel">
@@ -51,11 +53,21 @@ export default function TopbarActions() {
               : 'Recent activity across your church'}
           </p>
         </div>
-        {unreadCount > 0 ? (
-          <Button type="link" size="small" className="notif-panel-mark-all" onClick={() => markAllRead()}>
-            Mark all read
-          </Button>
-        ) : null}
+        <div className="notif-panel-actions">
+          {unreadCount > 0 ? (
+            <Button type="link" size="small" className="notif-panel-mark-all" onClick={() => markAllRead()}>
+              Mark all read
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            className="notif-panel-close"
+            onClick={() => setOpen(false)}
+            aria-label="Close notifications"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="notif-panel-body">
@@ -81,6 +93,7 @@ export default function TopbarActions() {
                     }`}
                     onClick={() => {
                       if (unread) void markRead(item.id);
+                      setOpen(false);
                       if (item.href) router.push(item.href);
                     }}
                   >
@@ -119,6 +132,8 @@ export default function TopbarActions() {
         <Popover
           content={notificationContent}
           trigger="click"
+          open={open}
+          onOpenChange={setOpen}
           placement="bottomRight"
           arrow={false}
           overlayClassName="notif-popover"

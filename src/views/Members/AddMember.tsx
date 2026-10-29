@@ -257,6 +257,7 @@ const AddMember = () => {
             onNext={next}
             onPrev={prev}
             onCancel={() => router.back()}
+            onStepClick={(step) => setCurrentStep(step)}
             submitText="Confirm Registration"
             submitLoading={loading || uploading}
             stepBackgrounds={STEP_BACKGROUNDS}

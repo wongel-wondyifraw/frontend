@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Input, Button, Row, Col } from 'antd';
-import { message } from '@/lib/app-message';
 import {
     ArrowLeftOutlined,
     TeamOutlined,
@@ -15,6 +14,7 @@ import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
 import { createMinistry, addMinistryMember } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
+import { useToast } from '@/context/ToastContext';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
 import './AddMinistry.css';
 
@@ -31,6 +31,7 @@ const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border
 
 const AddMinistry = () => {
     const router = useRouter();
+    const { showToast } = useToast();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
@@ -43,7 +44,7 @@ const AddMinistry = () => {
             }
             setCurrentStep(currentStep + 1);
         } catch (_error) {
-            message.error('Please correct the errors before proceeding.');
+            showToast('error', 'Please correct the errors before proceeding.');
         }
     };
 
@@ -77,11 +78,11 @@ const AddMinistry = () => {
                 await Promise.all(addPromises);
             }
 
-            message.success('Ministry created successfully!');
+            showToast('success', 'Ministry created successfully!');
             router.push('/ministries/manage');
         } catch (error: unknown) {
             console.error('Create Ministry Error:', error);
-            message.error(getApiErrorMessage(error, 'Failed to create ministry'));
+            showToast('error', getApiErrorMessage(error, 'Failed to create ministry'));
         } finally {
             setLoading(false);
         }
@@ -89,122 +90,138 @@ const AddMinistry = () => {
 
     return (
         <div className="add-ministry-container">
-                <Button
-                    type="text"
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => router.back()}
-                    style={{ marginBottom: '16px', paddingLeft: 0, color: '#64748b' }}
-                >
-                    Back to Ministries
-                </Button>
+            <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => router.back()}
+                style={{ marginBottom: '16px', paddingLeft: 0, color: '#64748b' }}
+            >
+                Back to Ministries
+            </Button>
 
-                <div className="add-ministry-header">
-                    <h1>Create New Ministry</h1>
-                    <p>Complete all steps to set up a new ministry group.</p>
-                </div>
+            <div className="add-ministry-header">
+                <h1>Create New Ministry</h1>
+                <p>Complete all steps to set up a new ministry group.</p>
+            </div>
 
-                <div className="content-card-unified">
-                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                        <StepperWizard
-                            steps={STEPS}
-                            currentStep={currentStep}
-                            onNext={next}
-                            onPrev={prev}
-                            onCancel={() => router.back()}
-                            submitText="Create Ministry"
-                            submitLoading={loading}
-                            stepBackgrounds={STEP_BACKGROUNDS}
-                            lastStepLabel="Skip / Next"
-                        >
-                            {/* STEP 1: Ministry Information */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <TeamOutlined style={{ color: '#1565c0' }} /> Ministry Information
-                                </h3>
-                                <Row gutter={24}>
-                                    <Col span={24}>
-                                        <Form.Item
-                                            name="name"
-                                            label="Ministry Name"
-                                            rules={[{ required: true, message: 'Ministry name is required' }]}
-                                        >
-                                            <Input size="large" placeholder="e.g. Worship Team" />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                                <Form.Item name="about" label="About this Ministry">
-                                    <TextArea rows={4} placeholder="Describe the purpose and activities..." />
+            <div className="add-ministry-form-wrapper">
+                <Form form={form} layout="vertical" onFinish={handleSubmit}>
+                    <StepperWizard
+                        steps={STEPS}
+                        currentStep={currentStep}
+                        onNext={next}
+                        onPrev={prev}
+                        onCancel={() => router.back()}
+                        onStepClick={(step) => setCurrentStep(step)}
+                        submitText="Create Ministry"
+                        submitLoading={loading}
+                        stepBackgrounds={STEP_BACKGROUNDS}
+                        lastStepLabel="Skip / Next"
+                    >
+                        {/* STEP 1: Ministry Information */}
+                        <div>
+                            <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <TeamOutlined style={{ color: '#1E40AF' }} /> Ministry Information
+                            </h3>
+                            <Row gutter={24}>
+                                <Col span={24}>
+                                    <Form.Item
+                                        name="name"
+                                        label="Ministry Name"
+                                        rules={[{ required: true, message: 'Ministry name is required' }]}
+                                    >
+                                        <Input size="large" placeholder="e.g. Worship Team" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            <Form.Item name="about" label="About this Ministry">
+                                <TextArea rows={4} placeholder="Describe the purpose and activities..." />
+                            </Form.Item>
+                        </div>
+
+                        {/* STEP 2: Leadership & Schedule */}
+                        <div>
+                            <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <UserOutlined style={{ color: '#1E40AF' }} /> Leadership & Schedule
+                            </h3>
+                            <Row gutter={24}>
+                                <Col xs={24} md={12}>
+                                    <Form.Item name="leader_key" label="Assign Leader">
+                                        <LeaderSelect />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={12}>
+                                    <Form.Item name="schedule" label="Schedule Details">
+                                        <Input
+                                            size="large"
+                                            placeholder="e.g. Every Thursday 7:00 PM"
+                                            prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        {/* STEP 3: Add Members (Optional) */}
+                        <div>
+                            <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <UsergroupAddOutlined style={{ color: '#1E40AF' }} /> Add Members to Ministry
+                                <span style={{ fontWeight: 400, fontSize: 13, color: '#94a3b8' }}>(Optional)</span>
+                            </h3>
+                            <MemberTransferList
+                                remoteSearch
+                                selectedKeys={selectedMemberKeys}
+                                onChange={setSelectedMemberKeys}
+                                description="Search and check members to add them to this ministry."
+                            />
+                        </div>
+
+                        {/* STEP 4: Review & Create */}
+                        <div>
+                            <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <CheckCircleOutlined style={{ color: '#1E40AF' }} /> Review Ministry
+                            </h3>
+                            <div
+                                style={{
+                                    background: 'var(--bg-card, #fff)',
+                                    borderRadius: 12,
+                                    padding: 20,
+                                    border: '1px solid var(--border-color)',
+                                }}
+                            >
+                                <h4 style={{ marginBottom: 16, color: 'var(--text-main, #0f172a)' }}>Ministry Summary</h4>
+                                <Form.Item noStyle shouldUpdate>
+                                    {() => {
+                                        const values = form.getFieldsValue();
+                                        const leader = decodeLeaderValue(values.leader_key);
+                                        const leaderLabel = leader.leader_id
+                                            ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
+                                            : 'Not assigned';
+                                        const selectedCount = selectedMemberKeys.length;
+                                        return (
+                                            <div
+                                                style={{
+                                                    display: 'grid',
+                                                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                                                    gap: '8px 24px',
+                                                    fontSize: 13,
+                                                }}
+                                            >
+                                                <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
+                                                <div><strong>Leader:</strong> {leaderLabel}</div>
+                                                <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
+                                                <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
+                                                <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
+                                            </div>
+                                        );
+                                    }}
                                 </Form.Item>
                             </div>
-
-                            {/* STEP 2: Leadership & Schedule */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Schedule
-                                </h3>
-                                <Row gutter={24}>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item name="leader_key" label="Assign Leader">
-                                            <LeaderSelect />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item name="schedule" label="Schedule Details">
-                                            <Input size="large" placeholder="e.g. Every Thursday 7:00 PM" prefix={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />} />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </div>
-
-                            {/* STEP 3: Add Members (Optional) */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Add Members to Ministry
-                                    <span style={{ fontWeight: 400, fontSize: '13px', color: '#94a3b8' }}>(Optional)</span>
-                                </h3>
-                                <MemberTransferList
-                                    remoteSearch
-                                    selectedKeys={selectedMemberKeys}
-                                    onChange={setSelectedMemberKeys}
-                                    description="Search and check members to add them to this ministry."
-                                />
-                            </div>
-
-                            {/* STEP 4: Review & Create */}
-                            <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Ministry
-                                </h3>
-                                <div style={{
-                                    background: '#fff', borderRadius: '8px', padding: '20px',
-                                    border: '1px solid var(--border-color)', marginTop: '16px'
-                                }}>
-                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Ministry Summary</h4>
-                                    <Form.Item noStyle shouldUpdate>
-                                        {() => {
-                                            const values = form.getFieldsValue();
-                                            const leader = decodeLeaderValue(values.leader_key);
-                                            const leaderLabel = leader.leader_id
-                                                ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
-                                                : 'Not assigned';
-                                            const selectedCount = selectedMemberKeys.length;
-                                            return (
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: '13px' }}>
-                                                    <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
-                                                    <div><strong>Leader:</strong> {leaderLabel}</div>
-                                                    <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
-                                                    <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
-                                                    <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
-                                                </div>
-                                            );
-                                        }}
-                                    </Form.Item>
-                                </div>
-                            </div>
-                        </StepperWizard>
-                    </Form>
-                </div>
+                        </div>
+                    </StepperWizard>
+                </Form>
             </div>
+        </div>
     );
 };
 

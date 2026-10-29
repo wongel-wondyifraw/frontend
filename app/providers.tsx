@@ -22,6 +22,7 @@ export default function Providers({ children }: { children: ReactNode }) {
               fontSize: 14,
               borderRadius: 8,
               fontFamily: "'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif",
+              zIndexPopupBase: 2000,
             },
           }}
         >

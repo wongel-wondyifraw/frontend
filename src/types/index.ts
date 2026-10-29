@@ -617,3 +617,35 @@ export interface SearchResult {
   icon: ReactNode;
   action: () => void;
 }
+
+export type ContactRequestStatus =
+  | 'new'
+  | 'read'
+  | 'in_progress'
+  | 'responded'
+  | 'archived';
+
+export type ContactRequestCategory =
+  | 'prayer'
+  | 'cell'
+  | 'baptism'
+  | 'counseling'
+  | 'chms'
+  | 'general';
+
+export interface ContactRequestItem {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  category: ContactRequestCategory;
+  message: string;
+  is_confidential: boolean;
+  status: ContactRequestStatus;
+  assigned_to: string | null;
+  notes: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+

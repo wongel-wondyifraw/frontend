@@ -21,7 +21,9 @@ type Candidate = {
   type: LeaderType;
 };
 
-function displayName(c: Pick<Candidate, 'first_name' | 'middle_name' | 'last_name'>) {
+export type LeaderCandidate = Candidate;
+
+export function displayName(c: Pick<Candidate, 'first_name' | 'middle_name' | 'last_name'>) {
   return `${c.first_name} ${c.middle_name ? `${c.middle_name} ` : ''}${c.last_name}`.trim();
 }
 
@@ -42,7 +44,7 @@ export function decodeLeaderValue(value?: string | null): LeaderSelectValue {
 
 interface LeaderSelectProps {
   value?: string;
-  onChange?: (value: string | undefined) => void;
+  onChange?: (value: string | undefined, candidate?: LeaderCandidate) => void;
   placeholder?: string;
   size?: 'large' | 'middle' | 'small';
   allowClear?: boolean;
@@ -128,7 +130,10 @@ const LeaderSelect = ({
       options={options}
       loading={loading}
       onSearch={(q) => debouncedSearch(q)}
-      onChange={(next) => onChange?.(next)}
+      onChange={(next) => {
+        const chosen = candidates.find((c) => c.key === next);
+        onChange?.(next, chosen);
+      }}
       optionLabelProp="label"
       notFoundContent={loading ? 'Searching…' : 'Type to search members or ministers'}
       style={{ width: '100%' }}

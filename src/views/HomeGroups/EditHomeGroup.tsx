@@ -11,6 +11,7 @@ import {
   CheckCircleOutlined,
   UsergroupAddOutlined,
   EnvironmentOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberTransferList from '../../Components/common/MemberTransferList';
@@ -25,7 +26,7 @@ import {
 } from '../../services/api';
 import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
-import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
+import LeaderSelect, { decodeLeaderValue, encodeLeaderValue, displayName, type LeaderCandidate } from '../../Components/common/LeaderSelect';
 import dayjs, { type Dayjs } from 'dayjs';
 import './AddHomeGroup.css';
 
@@ -64,7 +65,7 @@ const STEPS = [
   { title: 'Group Info' },
   { title: 'Leadership & Location' },
   { title: 'Manage Members' },
-  { title: 'Review & Update' },
+  { title: 'Review' },
 ];
 
 const STEP_BACKGROUNDS = STEPS.map(() => ({ background: 'var(--bg-card)', border: 'none' }));
@@ -80,6 +81,7 @@ const EditHomeGroup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<string[]>([]);
   const initialMemberKeysRef = useRef<string[]>([]);
+  const [leaderCandidate, setLeaderCandidate] = useState<LeaderCandidate | null>(null);
   const [groupData, setGroupData] = useState<{
     name: string;
     about?: string;
@@ -232,17 +234,22 @@ const EditHomeGroup = () => {
   }
 
   return (
-    <div className="add-ministry-container">
-      <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16, paddingLeft: 0, color: '#64748b' }}>
+    <div className="add-homegroup-container">
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => router.back()}
+        style={{ marginBottom: 16, paddingLeft: 0, color: '#64748b' }}
+      >
         Back to Home Groups
       </Button>
 
-      <div className="add-ministry-header">
+      <div className="add-homegroup-header">
         <h1>Edit Home Group</h1>
         <p>Update location, leadership, and members.</p>
       </div>
 
-      <div className="content-card-unified">
+      <div className="add-homegroup-form-wrapper">
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <StepperWizard
             steps={STEPS}
@@ -256,9 +263,10 @@ const EditHomeGroup = () => {
             onStepClick={handleStepClick}
             lastStepLabel="Skip / Next"
           >
+            {/* STEP 1: Home Group Information */}
             <div>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <HomeOutlined style={{ color: '#1565c0' }} /> Home Group Information
+                <HomeOutlined style={{ color: '#1E40AF' }} /> Home Group Information
               </h3>
               <Form.Item name="name" label="Home Group Name" rules={[{ required: true, message: 'Home group name is required' }]}>
                 <Input size="large" />
@@ -268,65 +276,74 @@ const EditHomeGroup = () => {
               </Form.Item>
             </div>
 
+            {/* STEP 2: Leadership & Location */}
             <div>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Location
+                <UserOutlined style={{ color: '#1E40AF' }} /> Leadership & Location
               </h3>
-              <Row gutter={24}>
+              <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item name="leader_key" label="Assign Leader">
-                    <LeaderSelect />
+                    <LeaderSelect
+                      onChange={(_val, candidate) => {
+                        setLeaderCandidate(candidate || null);
+                      }}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item label="Meeting Schedule">
-                    <Space.Compact style={{ width: '100%' }}>
-                      <Form.Item name="schedule_day" noStyle>
-                        <Select
-                          size="large"
-                          placeholder="Day"
-                          allowClear
-                          style={{ width: '45%' }}
-                          options={WEEKDAYS.map((d) => ({ value: d, label: d }))}
-                        />
-                      </Form.Item>
-                      <Form.Item name="schedule_time" noStyle>
-                        <TimePicker
-                          size="large"
-                          use12Hours
-                          format="h:mm A"
-                          placeholder="Time"
-                          style={{ width: '55%' }}
-                          suffixIcon={<ClockCircleOutlined style={{ color: '#bfbfbf' }} />}
-                        />
-                      </Form.Item>
-                    </Space.Compact>
+                  <Form.Item
+                    name="location"
+                    label="Meeting Location"
+                    rules={[{ required: true, message: 'Location is required' }]}
+                    extra="Search an existing location or type a new one to add it."
+                  >
+                    <AutoComplete
+                      options={locations.map((loc) => ({ value: loc.name }))}
+                      placeholder="Search or enter location"
+                      style={{ width: '100%' }}
+                      filterOption={(inputValue, option) =>
+                        String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
+                      }
+                      allowClear
+                    >
+                      <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#94a3b8' }} />} />
+                    </AutoComplete>
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item
-                name="location"
-                label="Meeting Location"
-                rules={[{ required: true, message: 'Location is required' }]}
-                extra="Search an existing location or type a new one to add it."
-              >
-                <AutoComplete
-                  options={locations.map((loc) => ({ value: loc.name }))}
-                  placeholder="Search or enter location"
-                  style={{ width: '100%' }}
-                  filterOption={(inputValue, option) =>
-                    String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
-                  }
-                  allowClear
-                >
-                  <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
-                </AutoComplete>
-              </Form.Item>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="schedule_day" label="Meeting Day">
+                    <Select
+                      size="large"
+                      placeholder="Select weekday"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={WEEKDAYS.map((d) => ({ value: d, label: d }))}
+                      suffixIcon={<CalendarOutlined style={{ color: '#94a3b8' }} />}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="schedule_time" label="Meeting Time">
+                    <TimePicker
+                      size="large"
+                      use12Hours
+                      format="h:mm A"
+                      placeholder="Select time"
+                      style={{ width: '100%' }}
+                      suffixIcon={<ClockCircleOutlined style={{ color: '#94a3b8' }} />}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
             </div>
 
+            {/* STEP 3: Manage Members */}
             <div>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members
+                <UsergroupAddOutlined style={{ color: '#1E40AF' }} /> Manage Members
               </h3>
               <MemberTransferList
                 remoteSearch
@@ -336,28 +353,45 @@ const EditHomeGroup = () => {
               />
             </div>
 
+            {/* STEP 4: Review Changes */}
             <div>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
+                <CheckCircleOutlined style={{ color: '#1E40AF' }} /> Review
               </h3>
-              <div style={{ background: '#fff', borderRadius: 8, padding: 20, border: '1px solid var(--border-color)', marginTop: 16 }}>
+              <div
+                style={{
+                  background: 'var(--bg-card, #fff)',
+                  borderRadius: 12,
+                  padding: 24,
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <h4 style={{ marginBottom: 16, color: 'var(--text-main, #0f172a)' }}>Home Group Summary</h4>
                 <Form.Item noStyle shouldUpdate>
                   {() => {
                     const values = form.getFieldsValue();
                     const leader = decodeLeaderValue(values.leader_key);
-                    const leaderName = leader.leader_id
+                    const leaderDisplayName = leaderCandidate
+                      ? `${displayName(leaderCandidate)} (${leaderCandidate.type === 'minister' ? 'Minister' : 'Member'})`
+                      : leader.leader_id
                       ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected`
                       : 'Not assigned';
                     const selectedCount = selectedMemberKeys.length;
+                    const scheduleStr = formatSchedule(values.schedule_day, values.schedule_time);
+
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: '12px 24px',
+                          fontSize: 13,
+                        }}
+                      >
                         <div><strong>Name:</strong> {values.name || '—'}</div>
-                        <div><strong>Leader:</strong> {leaderName}</div>
+                        <div><strong>Leader:</strong> {leaderDisplayName}</div>
                         <div><strong>Location:</strong> {values.location || '—'}</div>
-                        <div>
-                          <strong>Schedule:</strong>{' '}
-                          {formatSchedule(values.schedule_day, values.schedule_time) || '—'}
-                        </div>
+                        <div><strong>Schedule:</strong> {scheduleStr || '—'}</div>
                         <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>
                       </div>

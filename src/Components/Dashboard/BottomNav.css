@@ -17,6 +17,10 @@
     border-top: 1px solid var(--border-color, #e2e8f0);
     align-items: stretch;
     justify-content: space-around;
+    pointer-events: auto;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .bottom-nav-item {
@@ -35,6 +39,8 @@
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    touch-action: manipulation;
   }
 
   .bottom-nav-item.is-active {
@@ -47,6 +53,19 @@
     justify-content: center;
     height: 24px;
     position: relative;
+    pointer-events: none;
+  }
+
+  .bottom-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    pointer-events: none;
   }
 
   .bottom-nav-proxy-icon {
@@ -102,21 +121,13 @@
     }
   }
 
-  .bottom-nav-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
   .bottom-nav-sheet-backdrop {
     position: fixed;
-    inset: 0;
-    z-index: 1200;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 1050;
     background: rgba(15, 23, 42, 0.4);
   }
 
@@ -206,5 +217,13 @@
     display: flex;
     color: inherit;
     opacity: 0.85;
+  }
+
+  /* Disable interaction when an Ant Design modal or drawer is active */
+  body:has(.ant-modal-open) .bottom-nav,
+  body.ant-scrolling-effect .bottom-nav,
+  body:has(.ant-modal-wrap:not([style*="display: none"])) .bottom-nav,
+  body:has(.ant-drawer-open) .bottom-nav {
+    pointer-events: none !important;
   }
 }

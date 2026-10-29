@@ -135,18 +135,38 @@
   .planning-controls-end {
     width: 100%;
     margin-left: 0;
-    justify-content: flex-start;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
   }
 
-  .planning-search {
-    width: 100%;
-    max-width: none;
-    flex: 1 1 100%;
+  .planning-controls-end .data-io-actions {
+    display: contents !important;
   }
 
-  .planning-toolbar-filter {
-    width: calc(50% - 5px);
-    flex: 1 1 calc(50% - 5px);
+  .planning-controls-end .dt-filter-badge {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .planning-controls-end .dt-filter-trigger {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+  }
+
+  .planning-controls-end .ant-btn {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
   }
 
   .planning-toolbar-spacer {

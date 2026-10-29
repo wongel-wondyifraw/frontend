@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { Button, Typography, ConfigProvider, theme, Spin, Drawer, message } from 'antd';
+import { Button, Typography, ConfigProvider, theme, Spin, Drawer } from 'antd';
+import { message } from '@/lib/app-message';
 import {
   EnvironmentOutlined,
   GlobalOutlined,

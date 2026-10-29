@@ -29,6 +29,7 @@ import type {
   User,
   Location,
   PageContent,
+  ContactRequestItem,
 } from "@/types";
 
 const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -1219,6 +1220,21 @@ export const getFamilyByMember = async (
   }
 };
 
+export const getFamilyByPerson = async (
+  personId: string,
+  type: 'member' | 'minister' = 'minister',
+): Promise<Family | null> => {
+  try {
+    const response = await api.get<{ family: Family | null }>(
+      `/families/by-person/${personId}`,
+      { params: { type } },
+    );
+    return response.data?.family ?? null;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const createFamily = async (
   data: Record<string, unknown>,
 ): Promise<Family> => {
@@ -1455,6 +1471,62 @@ export const submitContactRequest = async (
     const response = await api.post<ContactRequestResponse>(
       "/website/contact-requests",
       data,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getContactRequests = async (
+  status?: string,
+): Promise<ContactRequestItem[]> => {
+  try {
+    const params = status && status !== "all" ? { status } : {};
+    const response = await api.get<ContactRequestItem[]>(
+      "/website/contact-requests",
+      { params },
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getContactRequest = async (
+  id: string,
+): Promise<ContactRequestItem> => {
+  try {
+    const response = await api.get<ContactRequestItem>(
+      `/website/contact-requests/${id}`,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateContactRequest = async (
+  id: string,
+  data: Partial<Pick<ContactRequestItem, "status" | "notes" | "assigned_to" | "responded_at">>,
+): Promise<ContactRequestItem> => {
+  try {
+    const response = await api.patch<ContactRequestItem>(
+      `/website/contact-requests/${id}`,
+      data,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deleteContactRequest = async (
+  id: string,
+): Promise<{ success: boolean }> => {
+  try {
+    const response = await api.delete<{ success: boolean }>(
+      `/website/contact-requests/${id}`,
     );
     return response.data;
   } catch (error) {

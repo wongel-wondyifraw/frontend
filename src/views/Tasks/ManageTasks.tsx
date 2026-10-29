@@ -6,7 +6,6 @@ import {
   Avatar,
   Button,
   DatePicker,
-  Drawer,
   Form,
   Input,
   Modal,
@@ -57,6 +56,12 @@ function personName(p?: { first_name?: string; middle_name?: string; last_name?:
   if (!p) return '-';
   return `${p.first_name || ''} ${p.middle_name ? `${p.middle_name} ` : ''}${p.last_name || ''}`.trim() || '-';
 }
+
+const sortByVisitCountDesc = (a: { visit_count?: number }, b: { visit_count?: number }) =>
+  (b.visit_count || 0) - (a.visit_count || 0);
+
+const visitCountExtra = (m: { visit_count?: number }) =>
+  ` — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`;
 
 function statusTag(task: TaskAssignment) {
   const today = dayjs().format('YYYY-MM-DD');
@@ -494,25 +499,25 @@ const ManageTasksContent = () => {
         searchValue={searchText}
         onSearchChange={handleSearchChange}
         filterPanel={filterPanel}
-        controlsEnd={
-          <>
-            {canCreate ? (
-              <Button
-                icon={<SettingOutlined />}
-                onClick={() => {
-                  setEditingDef(null);
-                  setDefsOpen(true);
-                }}
-              >
-                Definitions
-              </Button>
-            ) : null}
-            {canCreate ? (
-              <Button type="primary" className="data-table-action" icon={<PlusOutlined />} onClick={openAssign}>
-                Assign Task
-              </Button>
-            ) : null}
-          </>
+        actionAdjacent={
+          canCreate ? (
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => {
+                setEditingDef(null);
+                setDefsOpen(true);
+              }}
+            >
+              Definitions
+            </Button>
+          ) : null
+        }
+        actionButton={
+          canCreate ? {
+            label: 'Assign Task',
+            icon: <PlusOutlined />,
+            onClick: openAssign,
+          } : undefined
         }
         serverPagination={{
           current: page,
@@ -561,10 +566,8 @@ const ManageTasksContent = () => {
               >
                 <MemberSearchSelect
                   placeholder="Type to search member to visit"
-                  optionExtra={(m) =>
-                    ` — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`
-                  }
-                  sortBy={(a, b) => (b.visit_count || 0) - (a.visit_count || 0)}
+                  optionExtra={visitCountExtra}
+                  sortBy={sortByVisitCountDesc}
                 />
               </Form.Item>
               <Form.Item name="visitation_methods" label="Visitation method(s)">
@@ -603,15 +606,29 @@ const ManageTasksContent = () => {
         </Form>
       </Modal>
 
-      <Drawer
-        title="Task Definitions"
+      <Modal
+        title={editingDef ? 'Edit Task Definition' : 'Task Definitions'}
         open={defsOpen}
-        onClose={() => setDefsOpen(false)}
-        size={440}
+        onCancel={() => {
+          setDefsOpen(false);
+          setEditingDef(null);
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setDefsOpen(false);
+              setEditingDef(null);
+            }}
+          >
+            Close
+          </Button>,
+        ]}
+        width={560}
         destroyOnHidden
         afterOpenChange={syncDefinitionForm}
       >
-        <Form form={defForm} layout="vertical" onFinish={submitDefinition}>
+        <Form form={defForm} layout="vertical" onFinish={submitDefinition} style={{ marginTop: 8 }}>
           <Form.Item
             name="name"
             label="Name"
@@ -633,43 +650,46 @@ const ManageTasksContent = () => {
           <Form.Item name="is_active" label="Active" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Space style={{ marginBottom: 24 }}>
+          <Space style={{ marginBottom: 20 }}>
             <Button type="primary" htmlType="submit" loading={defSubmitting}>
               {editingDef ? 'Update' : 'Create'} definition
             </Button>
             {editingDef && (
-              <Button onClick={openCreateDefinition}>New</Button>
+              <Button onClick={openCreateDefinition}>Cancel Edit</Button>
             )}
           </Space>
         </Form>
 
         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
-          <h4 style={{ marginTop: 0 }}>Existing definitions</h4>
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+          <h4 style={{ marginTop: 0, marginBottom: 12 }}>Existing definitions</h4>
+          <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
             {definitions.map((def) => (
               <div
                 key={def.id}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
+                  alignItems: 'center',
                   gap: 12,
-                  padding: '10px 12px',
+                  padding: '10px 14px',
                   border: '1px solid var(--border-color)',
                   borderRadius: 8,
                   background: 'var(--bg-hover)',
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {def.name}{' '}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span>{def.name}</span>
                     {def.is_system && <Tag color="blue">System</Tag>}
                     {!def.is_active && <Tag>Inactive</Tag>}
                   </div>
                   {def.description && (
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{def.description}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary, #64748b)', marginTop: 2 }}>
+                      {def.description}
+                    </div>
                   )}
                 </div>
-                <Space>
+                <Space style={{ flexShrink: 0 }}>
                   <Button size="small" onClick={() => openEditDefinition(def)}>Edit</Button>
                   {!def.is_system && canDelete && (
                     <Button size="small" danger onClick={() => handleDeleteDefinition(def)}>
@@ -679,9 +699,9 @@ const ManageTasksContent = () => {
                 </Space>
               </div>
             ))}
-          </Space>
+          </div>
         </div>
-      </Drawer>
+      </Modal>
     </div>
   );
 };
