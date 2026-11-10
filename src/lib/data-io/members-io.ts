@@ -1,7 +1,16 @@
-import type { Member } from "@/types";
+import type { CalendarSystem, DatePrecision, Member } from "@/types";
 import { createMembersBulk, getMembers } from "@/services/api";
 import { getApiErrorMessage } from "@/lib/errors";
 import { parseBool, splitList } from "@/lib/csv";
+import {
+  formatByPrecision,
+  formatDateForCsv,
+  parseFlexibleCalendarDate,
+} from "@/lib/ethiopian-calendar";
+import {
+  normalizePersonName,
+  normalizeTitleInitials,
+} from "@/lib/name-normalizer";
 import {
   downloadExcelTemplate,
   downloadExcelData,
@@ -88,7 +97,11 @@ export function memberToCsvRow(m: Member): Record<string, string> {
     email: m.email ?? "",
     phone: m.phone ?? "",
     address: m.address ?? "",
-    date_of_birth: m.date_of_birth ? String(m.date_of_birth).slice(0, 10) : "",
+    date_of_birth: formatDateForCsv(
+      m.date_of_birth,
+      m.date_of_birth_precision ?? "day",
+      m.date_of_birth_calendar ?? "gc",
+    ),
     gender: m.gender ?? "",
     marital_status: m.marital_status ?? "",
     status: m.status ?? "",
@@ -96,10 +109,16 @@ export function memberToCsvRow(m: Member): Record<string, string> {
     holy_spirit_baptized: boolToCsv(m.holy_spirit_baptized),
     is_deacon: boolToCsv(m.is_deacon),
     requires_follow_up: boolToCsv(m.requires_follow_up),
-    joined_date: m.joined_date ? String(m.joined_date).slice(0, 10) : "",
-    salvation_date: m.salvation_date
-      ? String(m.salvation_date).slice(0, 10)
-      : "",
+    joined_date: formatDateForCsv(
+      m.joined_date,
+      m.joined_date_precision ?? "day",
+      m.joined_date_calendar ?? "gc",
+    ),
+    salvation_date: formatDateForCsv(
+      m.salvation_date,
+      m.salvation_date_precision ?? "day",
+      m.salvation_date_calendar ?? "gc",
+    ),
     member_type: m.member_type ?? "",
     telegram_username: m.telegram_username ?? "",
     facebook_username: m.facebook_username ?? "",
@@ -170,11 +189,54 @@ export async function exportMembersPdf(): Promise<void> {
   });
 }
 
-function rowToMemberPayload(
+function parseSpreadsheetDateField(
+  row: Record<string, string>,
+  fieldName: "date_of_birth" | "joined_date" | "salvation_date",
+): { value: string; calendar: CalendarSystem; precision: DatePrecision } | null {
+  const raw = row[fieldName]?.trim();
+  if (!raw) return null;
+
+  const rawCal = row[`${fieldName}_calendar`]?.trim().toLowerCase();
+  if (rawCal && rawCal !== "gc" && rawCal !== "ec") {
+    throw new Error(`${fieldName}_calendar must be "gc" or "ec"`);
+  }
+  const calendarOpt = (rawCal === "gc" || rawCal === "ec" ? rawCal : undefined) as
+    | CalendarSystem
+    | undefined;
+
+  const rawPrec = row[`${fieldName}_precision`]?.trim().toLowerCase();
+  if (rawPrec && rawPrec !== "day" && rawPrec !== "month" && rawPrec !== "year") {
+    throw new Error(`${fieldName}_precision must be "day", "month", or "year"`);
+  }
+  const precisionOpt = (
+    rawPrec === "day" || rawPrec === "month" || rawPrec === "year"
+      ? rawPrec
+      : undefined
+  ) as DatePrecision | undefined;
+
+  const parsed = parseFlexibleCalendarDate(raw, {
+    calendar: calendarOpt,
+    precision: precisionOpt,
+    allowPartial: true,
+  });
+  if (!parsed) {
+    throw new Error(
+      `${fieldName} ("${raw}") is invalid; use YYYY, YYYY-MM, or YYYY-MM-DD (optionally followed by EC or GC)`,
+    );
+  }
+
+  return {
+    value: formatByPrecision(parsed.year, parsed.month, parsed.day, parsed.precision),
+    calendar: parsed.calendar,
+    precision: parsed.precision,
+  };
+}
+
+export function rowToMemberPayload(
   row: Record<string, string>,
 ): Record<string, unknown> {
-  const first_name = row.first_name?.trim();
-  const last_name = row.last_name?.trim();
+  const first_name = normalizePersonName(row.first_name ?? "");
+  const last_name = normalizePersonName(row.last_name ?? "");
   if (!first_name || !last_name) {
     throw new Error("first_name and last_name are required");
   }
@@ -184,17 +246,28 @@ function rowToMemberPayload(
     last_name,
   };
 
+  const middleName = row.middle_name?.trim();
+  if (middleName) {
+    const normalizedMid = normalizePersonName(middleName);
+    if (normalizedMid) payload.middle_name = normalizedMid;
+  }
+
+  const titleFields = ["profession", "employer", "education_field"] as const;
+  for (const key of titleFields) {
+    const v = row[key]?.trim();
+    if (v) {
+      const normalized = normalizeTitleInitials(v);
+      if (normalized) payload[key] = normalized;
+    }
+  }
+
   const optionalStrings = [
-    "middle_name",
     "email",
     "phone",
     "address",
-    "date_of_birth",
     "gender",
     "marital_status",
     "status",
-    "joined_date",
-    "salvation_date",
     "member_type",
     "telegram_username",
     "facebook_username",
@@ -202,15 +275,22 @@ function rowToMemberPayload(
     "whatsapp_number",
     "location_id",
     "employment_status",
-    "profession",
-    "employer",
     "education_level",
-    "education_field",
   ] as const;
 
   for (const key of optionalStrings) {
     const v = row[key]?.trim();
     if (v) payload[key] = v;
+  }
+
+  const dateFields = ["date_of_birth", "joined_date", "salvation_date"] as const;
+  for (const field of dateFields) {
+    const parsedDate = parseSpreadsheetDateField(row, field);
+    if (parsedDate) {
+      payload[field] = parsedDate.value;
+      payload[`${field}_calendar`] = parsedDate.calendar;
+      payload[`${field}_precision`] = parsedDate.precision;
+    }
   }
 
   const baptized = parseBool(row.baptized);

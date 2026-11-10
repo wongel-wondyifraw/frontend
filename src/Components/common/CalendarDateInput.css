@@ -1,0 +1,89 @@
+.cal-date-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.cal-date-input__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cal-date-input__control {
+  width: 100%;
+}
+
+.cal-date-input__ec-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.cal-date-input__ec-year {
+  flex: 1 1 82px;
+  min-width: 76px;
+}
+
+.cal-date-input__ec-month {
+  flex: 1.4 1 116px;
+  min-width: 104px;
+}
+
+.cal-date-input__ec-day {
+  flex: 0.8 1 68px;
+  min-width: 62px;
+}
+
+.cal-date-input__clear-btn {
+  flex: 0 0 auto;
+  color: var(--text-secondary, #64748b);
+}
+
+.cal-date-input__hint {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-secondary, #64748b);
+}
+
+.cal-date-input__hint--warn {
+  color: var(--text-warning, #d97706);
+}
+
+.cal-date-range {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.cal-date-range__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.cal-date-range__ec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.cal-date-range__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cal-date-range__row-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+}

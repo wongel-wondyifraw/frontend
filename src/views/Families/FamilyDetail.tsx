@@ -9,7 +9,6 @@ import {
   Button,
   Empty,
   Form,
-  Input,
   InputNumber,
   Modal,
   Space,
@@ -42,6 +41,16 @@ import type { Family, FamilyChild, FamilyDetailProps } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { leaderDisplayName } from '../../Components/common/LeaderLabel';
 import { useCan } from '@/Components/auth/Can';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
+import { normalizePersonName } from '@/lib/name-normalizer';
+import {
+  computeAgeFromFieldValue,
+  computeCalendarAge,
+  formatCalendarDate,
+  fromEntityDate,
+  toApiDateFields,
+} from '@/lib/ethiopian-calendar';
 import './FamilyDetail.css';
 
 function ageGroupLabel(age: number) {
@@ -119,10 +128,14 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   const syncChildForm = (open: boolean) => {
     if (!open) return;
     if (editingChild) {
-      childForm.setFieldsValue({ 
-        name: editingChild.name, 
-        age: editingChild.age, 
-        date_of_birth: editingChild.date_of_birth ? editingChild.date_of_birth.substring(0, 10) : undefined 
+      childForm.setFieldsValue({
+        name: editingChild.name,
+        age: editingChild.age,
+        date_of_birth: fromEntityDate(
+          editingChild.date_of_birth,
+          editingChild.date_of_birth_precision,
+          editingChild.date_of_birth_calendar,
+        ),
       });
     } else {
       childForm.resetFields();
@@ -133,11 +146,39 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
     try {
       const values = await childForm.validateFields();
       setChildSubmitting(true);
+      const dobFields = toApiDateFields(values.date_of_birth, 'date_of_birth', {
+        clearAsNull: Boolean(editingChild),
+      });
+      const payload = {
+        name: normalizePersonName(values.name),
+        age:
+          values.age !== undefined && values.age !== null
+            ? Number(values.age)
+            : undefined,
+        ...(Object.prototype.hasOwnProperty.call(dobFields, 'date_of_birth')
+          ? {
+              date_of_birth: dobFields.date_of_birth,
+              ...(dobFields.date_of_birth_calendar
+                ? {
+                    date_of_birth_calendar: dobFields.date_of_birth_calendar as 'gc' | 'ec',
+                  }
+                : {}),
+              ...(dobFields.date_of_birth_precision
+                ? {
+                    date_of_birth_precision: dobFields.date_of_birth_precision as
+                      | 'day'
+                      | 'month'
+                      | 'year',
+                  }
+                : {}),
+            }
+          : {}),
+      };
       if (editingChild) {
-        await updateFamilyChild(id, editingChild.id, values);
+        await updateFamilyChild(id, editingChild.id, payload);
         message.success('Child updated');
       } else {
-        await addFamilyChild(id, values);
+        await addFamilyChild(id, payload);
         message.success('Child added');
       }
       setChildModalOpen(false);
@@ -191,22 +232,39 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
       title: 'Age',
       key: 'age',
       render: (record: FamilyChild) => {
-        let displayAge = record.age ?? 0;
-        if (record.date_of_birth) {
-            const birthDate = new Date(record.date_of_birth);
-            const today = new Date();
-            let ageNum = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                ageNum--;
-            }
-            displayAge = ageNum;
-        }
+        const ageRes = record.date_of_birth
+          ? computeCalendarAge(
+              record.date_of_birth,
+              record.date_of_birth_precision,
+              record.date_of_birth_calendar,
+            )
+          : null;
+        const hasStaticAge = record.age !== undefined && record.age !== null;
+        const displayAge = ageRes?.age ?? record.age ?? 0;
+        const hasKnownAge = Boolean(ageRes) || hasStaticAge;
         return (
-          <Space>
-            <span>{displayAge}</span>
-            <Tag>{ageGroupLabel(displayAge)}</Tag>
-          </Space>
+          <div className="family-child-age-cell">
+            <Space>
+              <span>
+                {hasKnownAge
+                  ? ageRes?.approximate
+                    ? `~${displayAge}`
+                    : displayAge
+                  : '—'}
+              </span>
+              {hasKnownAge && <Tag>{ageGroupLabel(displayAge)}</Tag>}
+            </Space>
+            {record.date_of_birth && (
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                {formatCalendarDate(
+                  record.date_of_birth,
+                  record.date_of_birth_precision,
+                  record.date_of_birth_calendar,
+                  { includeEquivalent: record.date_of_birth_calendar === 'ec' },
+                )}
+              </div>
+            )}
+          </div>
         );
       },
     },
@@ -238,7 +296,7 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
   ];
 
   return (
-    <>
+    <div className="family-detail-page">
       <div className="ministry-detail-container">
         <Breadcrumb
           style={{ marginBottom: 16, fontSize: 14 }}
@@ -485,19 +543,31 @@ const FamilyDetail = ({ familyId: familyIdProp, initialFamily = null }: FamilyDe
         destroyOnHidden
         afterOpenChange={syncChildForm}
       >
-        <Form form={childForm} layout="vertical" style={{ marginTop: 8 }}>
+        <Form
+          form={childForm}
+          layout="vertical"
+          style={{ marginTop: 8 }}
+          onValuesChange={(changedValues) => {
+            if ('date_of_birth' in changedValues) {
+              const computed = computeAgeFromFieldValue(changedValues.date_of_birth);
+              if (computed !== undefined) {
+                childForm.setFieldsValue({ age: computed });
+              }
+            }
+          }}
+        >
           <Form.Item name="name" label="Child name" rules={[{ required: true, message: 'Name is required' }]}>
-            <Input placeholder="Full name" />
+            <NameInput mode="person" placeholder="Full name" />
           </Form.Item>
           <Form.Item name="date_of_birth" label="Date of Birth (Dynamic Age)">
-            <Input type="date" style={{ width: '100%' }} />
+            <CalendarDateInput allowPartial disableFuture />
           </Form.Item>
           <Form.Item name="age" label="Age (Static fallback)">
             <InputNumber min={0} max={120} style={{ width: '100%' }} placeholder="Age in years" />
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 };
 

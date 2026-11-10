@@ -5,7 +5,6 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
   Button,
   Upload,
   Avatar,
@@ -30,6 +29,10 @@ import {
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberFamilySection from '@/Components/Members/MemberFamilySection';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
+import { formatCalendarDateField } from '@/lib/ethiopian-calendar';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import {
   createMember,
   uploadMemberImage,
@@ -166,7 +169,7 @@ const AddMember = () => {
       (l) => l.name.toLowerCase() === raw.toLowerCase() || l.id === raw,
     );
     if (existing) return existing.id;
-    const created = await createLocation({ name: raw.trim(), status: 'active' });
+    const created = await createLocation({ name: normalizeTitleInitials(raw.trim()), status: 'active' });
     return created.id;
   };
 
@@ -291,14 +294,14 @@ const AddMember = () => {
                 <div className="member-name-fields">
                   <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true, message: 'First name is required' }]}>
-                      <Input size="large" placeholder="John" />
+                      <NameInput mode="person" size="large" placeholder="John" />
                     </Form.Item>
                     <Form.Item label="Middle Name" name="middle_name">
-                      <Input size="large" placeholder="Optional" />
+                      <NameInput mode="person" size="large" placeholder="Optional" />
                     </Form.Item>
                   </div>
                   <Form.Item label="Last Name" name="last_name" rules={[{ required: true, message: 'Last name is required' }]}>
-                    <Input size="large" placeholder="Doe" />
+                    <NameInput mode="person" size="large" placeholder="Doe" />
                   </Form.Item>
                 </div>
               </div>
@@ -306,7 +309,7 @@ const AddMember = () => {
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -331,7 +334,7 @@ const AddMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label="When did you receive Jesus as a Saviour?" name="salvation_date">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -365,13 +368,13 @@ const AddMember = () => {
                   <Form.Item label="Location" name="location_id">
                     <AutoComplete
                       options={locations.map((loc) => ({ value: loc.name }))}
-                      placeholder="Search or enter location"
-                      size="large"
                       filterOption={(inputValue, option) =>
                         String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
                       }
                       allowClear
-                    />
+                    >
+                      <NameInput mode="title" size="large" placeholder="Search or enter location" />
+                    </AutoComplete>
                   </Form.Item>
                 </Col>
               </Row>
@@ -410,14 +413,14 @@ const AddMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label="Profession / Job title" name="profession">
-                    <Input size="large" placeholder="e.g. Teacher, Engineer" />
+                    <NameInput mode="title" size="large" placeholder="e.g. Teacher, Engineer" />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Employer / Organization" name="employer">
-                    <Input size="large" placeholder="Optional" />
+                    <NameInput mode="title" size="large" placeholder="Optional" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -427,7 +430,7 @@ const AddMember = () => {
                 </Col>
               </Row>
               <Form.Item label="Field of Study" name="education_field">
-                <Input size="large" placeholder="e.g. Business, Theology" />
+                <NameInput mode="title" size="large" placeholder="e.g. Business, Theology" />
               </Form.Item>
             </div>
 
@@ -510,7 +513,7 @@ const AddMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item name="joined_date" label="Joined Date">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -549,14 +552,17 @@ const AddMember = () => {
                     const values = form.getFieldsValue();
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                        <div><strong>Name:</strong> {values.first_name || '—'} {values.last_name || ''}</div>
+                        <div><strong>Name:</strong> {[normalizePersonName(values.first_name || ''), normalizePersonName(values.middle_name || ''), normalizePersonName(values.last_name || '')].filter(Boolean).join(' ') || '—'}</div>
+                        <div><strong>Birthdate:</strong> {formatCalendarDateField(values.date_of_birth, { includeEquivalent: true })}</div>
+                        <div><strong>Salvation Date:</strong> {formatCalendarDateField(values.salvation_date, { includeEquivalent: true })}</div>
+                        <div><strong>Joined Date:</strong> {formatCalendarDateField(values.joined_date, { includeEquivalent: true })}</div>
                         <div><strong>Phone:</strong> {values.phone || '—'}</div>
                         <div><strong>Member Type:</strong> {MEMBER_TYPE_OPTIONS.find((o) => o.value === values.member_type)?.label || values.member_type || '—'}</div>
                         <div><strong>Marital Status:</strong> {values.marital_status || '—'}</div>
-                        <div><strong>Spouse:</strong> {values.marital_status === 'married' ? (values.skip_spouse_info ? 'Pending (Skipped)' : values.spouse_from_church === 'yes' ? 'In church' : values.external_spouse_name || 'External') : '—'}</div>
+                        <div><strong>Spouse:</strong> {values.marital_status === 'married' ? (values.skip_spouse_info ? 'Pending (Skipped)' : values.spouse_from_church === 'yes' ? 'In church' : (values.external_spouse_name ? normalizePersonName(values.external_spouse_name) : '') || 'External') : '—'}</div>
                         <div><strong>Children:</strong> {values.marital_status === 'married' && values.skip_spouse_info ? 'Pending (Skipped)' : values.has_children && values.children?.length ? `${values.children.length} added` : 'None'}</div>
                         <div><strong>Employment:</strong> {values.employment_status || '—'}</div>
-                        <div><strong>Profession:</strong> {values.profession || '—'}</div>
+                        <div><strong>Profession:</strong> {(values.profession ? normalizeTitleInitials(values.profession) : '') || '—'}</div>
                         <div><strong>Education:</strong> {values.education_level || '—'}</div>
                         <div><strong>Telegram:</strong> {values.telegram_username || '—'}</div>
                         <div><strong>Water Baptized:</strong> {values.baptized || '—'}</div>

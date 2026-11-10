@@ -15,6 +15,7 @@ import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
+import { formatCalendarDate } from '@/lib/ethiopian-calendar';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMinisters.css';
@@ -117,13 +118,9 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       key: 'name',
       render: (_: unknown, record: Minister) => (
         <EntityNameCell
-          title={
-            <>
-              {record.first_name}{' '}
-              {record.middle_name ? `${record.middle_name} ` : ''}
-              {record.last_name}
-            </>
-          }
+          title={[record.first_name, record.middle_name, record.last_name]
+            .filter(Boolean)
+            .join(' ')}
           subtitle={record.email || undefined}
           avatarSrc={getImageUrl(record.image_url)}
           initials={getInitials(record.first_name, record.last_name, record.middle_name)}
@@ -169,10 +166,19 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
     },
     {
       title: 'Joined',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      key: 'joined',
       responsive: ['lg'],
-      render: (date: string | undefined) => (date ? new Date(date).toLocaleDateString() : '-'),
+      render: (_: unknown, record: Minister) => {
+        if (record.joined_date) {
+          return formatCalendarDate(
+            record.joined_date,
+            record.joined_date_precision ?? 'day',
+            record.joined_date_calendar ?? 'gc',
+            { includeEquivalent: record.joined_date_calendar === 'ec' },
+          );
+        }
+        return record.created_at ? new Date(record.created_at).toLocaleDateString() : '-';
+      },
     },
     {
       title: 'Action',

@@ -51,22 +51,15 @@ import { getImageUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
 import { useCan } from '@/Components/auth/Can';
 import { leaderDisplayName } from '../../Components/common/LeaderLabel';
+import {
+  computeCalendarAge,
+  extractIsoParts,
+  formatCalendarDate,
+  gcToEc,
+} from '@/lib/ethiopian-calendar';
 import './MinisterDetail.css';
 
 const { Paragraph, Text } = Typography;
-
-const calculateAge = (dobString?: string): number | undefined => {
-  if (!dobString) return undefined;
-  const dob = new Date(dobString);
-  if (isNaN(dob.getTime())) return undefined;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : 0;
-};
 
 const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: MinisterDetailProps) => {
   const params = useParams();
@@ -182,13 +175,27 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
   const isActive = (minister.status || 'active').toLowerCase() === 'active';
   const accountActive = minister.user?.is_active ?? isActive;
   const accountRole = minister.user?.role || 'minister';
-  const age = calculateAge(minister.date_of_birth);
+  const ageRes = computeCalendarAge(
+    minister.date_of_birth,
+    minister.date_of_birth_precision,
+    minister.date_of_birth_calendar,
+  );
 
-  const joinedYear = minister.joined_date
-    ? new Date(minister.joined_date).getFullYear()
-    : minister.created_at
-    ? new Date(minister.created_at).getFullYear()
-    : undefined;
+  const joinedYear = (() => {
+    if (minister.joined_date) {
+      const parts = extractIsoParts(minister.joined_date);
+      if (!parts) return undefined;
+      if (minister.joined_date_calendar === 'ec') {
+        const ec = gcToEc(parts.year, parts.month, parts.day);
+        return `${ec.year} E.C.`;
+      }
+      return String(parts.year);
+    }
+    if (minister.created_at) {
+      return String(new Date(minister.created_at).getFullYear());
+    }
+    return undefined;
+  })();
 
   const isFemale = (minister.gender || '').toLowerCase() === 'female';
   const spouse = isFemale ? family?.husband : family?.wife;
@@ -375,8 +382,15 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
             <div className="info-row">
               <span className="info-label"><CalendarOutlined /> Date of Birth</span>
               <span className="info-value">
-                {minister.date_of_birth ? new Date(minister.date_of_birth).toLocaleDateString() : '—'}
-                {age !== undefined ? ` (${age} yrs)` : ''}
+                {minister.date_of_birth
+                  ? formatCalendarDate(
+                      minister.date_of_birth,
+                      minister.date_of_birth_precision,
+                      minister.date_of_birth_calendar,
+                      { includeEquivalent: true },
+                    )
+                  : '—'}
+                {ageRes ? ` (${ageRes.label})` : ''}
               </span>
             </div>
             <div className="info-row">
@@ -405,7 +419,14 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
             <div className="info-row">
               <span className="info-label"><CalendarOutlined /> Joined Church</span>
               <span className="info-value">
-                {minister.joined_date ? new Date(minister.joined_date).toLocaleDateString() : '—'}
+                {minister.joined_date
+                  ? formatCalendarDate(
+                      minister.joined_date,
+                      minister.joined_date_precision,
+                      minister.joined_date_calendar,
+                      { includeEquivalent: true },
+                    )
+                  : '—'}
               </span>
             </div>
             <div className="info-row">
@@ -512,14 +533,34 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
               </div>
               {family?.children && family.children.length > 0 && (
                 <div style={{ marginTop: 8 }}>
-                  {family.children.map((child) => (
-                    <div key={child.id} className="info-row" style={{ paddingLeft: 12 }}>
-                      <span className="info-label">{child.name}</span>
-                      <span className="info-value">
-                        {child.age !== undefined ? `${child.age} yrs` : child.date_of_birth ? new Date(child.date_of_birth).toLocaleDateString() : '—'}
-                      </span>
-                    </div>
-                  ))}
+                  {family.children.map((child) => {
+                    const childAge = child.date_of_birth
+                      ? computeCalendarAge(
+                          child.date_of_birth,
+                          child.date_of_birth_precision,
+                          child.date_of_birth_calendar,
+                        )
+                      : null;
+                    const dobLabel = child.date_of_birth
+                      ? formatCalendarDate(
+                          child.date_of_birth,
+                          child.date_of_birth_precision,
+                          child.date_of_birth_calendar,
+                        )
+                      : null;
+                    return (
+                      <div key={child.id} className="info-row" style={{ paddingLeft: 12 }}>
+                        <span className="info-label">{child.name}</span>
+                        <span className="info-value">
+                          {childAge
+                            ? `${childAge.label}${dobLabel ? ` (${dobLabel})` : ''}`
+                            : child.age !== undefined && child.age !== null
+                            ? `${child.age} yrs`
+                            : dobLabel || '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -548,7 +589,12 @@ const MinisterDetail = ({ ministerId: ministerIdProp, initialMinister = null }: 
                       <div>
                         <strong>Joined Church Service</strong>
                         <div style={{ fontSize: 12, color: '#64748b' }}>
-                          {new Date(minister.joined_date).toLocaleDateString()}
+                          {formatCalendarDate(
+                            minister.joined_date,
+                            minister.joined_date_precision,
+                            minister.joined_date_calendar,
+                            { includeEquivalent: true },
+                          )}
                         </div>
                       </div>
                     ),

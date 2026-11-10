@@ -24,6 +24,8 @@ import { getApiErrorMessage } from '@/lib/errors';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import './AddBibleStudy.css';
 
 const { Option } = Select;
@@ -79,10 +81,10 @@ const AddBibleStudy = () => {
 
       const leader = decodeLeaderValue(values.leader_key);
       const created = await createBibleStudy({
-        name: values.name,
+        name: normalizeTitleInitials(values.name),
         about: values.about || '',
         schedule: values.schedule || '',
-        location: values.location,
+        location: normalizeTitleInitials(values.location),
         content_type: values.content_type,
         bible_book: values.content_type === 'book' ? values.bible_book : null,
         material_url: values.content_type === 'study_material' ? (materialUrl || null) : null,
@@ -138,7 +140,7 @@ const AddBibleStudy = () => {
                 <BookOutlined style={{ color: '#1565c0' }} /> Bible Study Information
               </h3>
               <Form.Item name="name" label="Bible Study Name" rules={[{ required: true, message: 'Name is required' }]}>
-                <Input size="large" placeholder="e.g. Friday Evening Study" />
+                <NameInput mode="title" size="large" placeholder="e.g. Friday Evening Study" />
               </Form.Item>
               <Form.Item name="about" label="About this Bible Study">
                 <TextArea rows={4} placeholder="Describe the purpose and focus..." />
@@ -162,7 +164,7 @@ const AddBibleStudy = () => {
                 </Col>
               </Row>
               <Form.Item name="location" label="Meeting Location" rules={[{ required: true, message: 'Location is required' }]}>
-                <Input size="large" placeholder="e.g. Church hall / Host home address" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+                <NameInput mode="title" size="large" placeholder="e.g. Church hall / Host home address" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
               </Form.Item>
             </div>
 
@@ -254,9 +256,9 @@ const AddBibleStudy = () => {
                       : 'Not assigned';
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                        <div><strong>Name:</strong> {values.name || '—'}</div>
+                        <div><strong>Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                         <div><strong>Leader:</strong> {leaderName}</div>
-                        <div><strong>Location:</strong> {values.location || '—'}</div>
+                        <div><strong>Location:</strong> {(values.location ? normalizeTitleInitials(values.location) : '') || '—'}</div>
                         <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
                         <div><strong>Content:</strong> {values.content_type === 'book' ? `Book — ${values.bible_book || '—'}` : 'Study Material'}</div>
                         <div><strong>Material file:</strong> {materialFile?.name || 'None'}</div>

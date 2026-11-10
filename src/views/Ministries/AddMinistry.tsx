@@ -16,6 +16,8 @@ import { createMinistry, addMinistryMember } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useToast } from '@/context/ToastContext';
 import LeaderSelect, { decodeLeaderValue } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import './AddMinistry.css';
 
 const { TextArea } = Input;
@@ -59,7 +61,7 @@ const AddMinistry = () => {
 
             const leader = decodeLeaderValue(values.leader_key);
             const ministryData = {
-                name: values.name,
+                name: normalizeTitleInitials(values.name),
                 about: values.about || '',
                 schedule: values.schedule || '',
                 leader_id: leader.leader_id,
@@ -130,7 +132,7 @@ const AddMinistry = () => {
                                         label="Ministry Name"
                                         rules={[{ required: true, message: 'Ministry name is required' }]}
                                     >
-                                        <Input size="large" placeholder="e.g. Worship Team" />
+                                        <NameInput mode="title" size="large" placeholder="e.g. Worship Team" />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -207,7 +209,7 @@ const AddMinistry = () => {
                                                     fontSize: 13,
                                                 }}
                                             >
-                                                <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
+                                                <div><strong>Ministry Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                                                 <div><strong>Leader:</strong> {leaderLabel}</div>
                                                 <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
                                                 <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>

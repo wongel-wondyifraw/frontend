@@ -52,12 +52,22 @@ import {
     updateMember,
 } from '../../services/api';
 import SpouseSelect, { decodeLeaderValue } from '@/Components/common/SpouseSelect';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
 import { useCan } from '@/Components/auth/Can';
 import type { MemberDetailProps, Member, Family, FamilyChild } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
 import { MEMBER_TYPE_OPTIONS } from '@/lib/member-payload';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
+import {
+    computeAgeFromFieldValue,
+    computeCalendarAge,
+    formatCalendarDate,
+    fromEntityDate,
+    toApiDateFields,
+} from '@/lib/ethiopian-calendar';
 import { leaderDisplayName } from '../../Components/common/LeaderLabel';
 import './MemberDetail.css';
 
@@ -101,19 +111,6 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const [childSubmitting, setChildSubmitting] = useState(false);
     const [editingChild, setEditingChild] = useState<FamilyChild | null>(null);
     const [childForm] = Form.useForm();
-
-    const calculateAge = (dobString: string): number | undefined => {
-        if (!dobString) return undefined;
-        const dob = new Date(dobString);
-        if (isNaN(dob.getTime())) return undefined;
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-            age--;
-        }
-        return age >= 0 ? age : 0;
-    };
 
     const fetchMemberDetails = useCallback(async () => {
         try {
@@ -194,9 +191,13 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
             } else {
                 spouseData = {
                     spouse_status: 'external',
-                    external_spouse_name: values.external_spouse_name?.trim(),
+                    external_spouse_name: values.external_spouse_name?.trim()
+                        ? normalizePersonName(values.external_spouse_name)
+                        : undefined,
                     external_spouse_phone: values.external_spouse_phone?.trim() || null,
-                    external_spouse_church: values.external_spouse_church?.trim() || null,
+                    external_spouse_church: values.external_spouse_church?.trim()
+                        ? normalizeTitleInitials(values.external_spouse_church)
+                        : null,
                 };
             }
 
@@ -239,10 +240,28 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
             const values = await childForm.validateFields();
             setChildSubmitting(true);
 
-            const payload: { name: string; date_of_birth?: string; age?: number } = {
-                name: values.name.trim(),
-                date_of_birth: values.date_of_birth || undefined,
+            const dobFields = toApiDateFields(values.date_of_birth, 'date_of_birth', {
+                clearAsNull: Boolean(editingChild),
+            });
+            const payload = {
+                name: normalizePersonName(values.name),
                 age: values.age !== undefined && values.age !== null ? Number(values.age) : undefined,
+                ...(Object.prototype.hasOwnProperty.call(dobFields, 'date_of_birth')
+                    ? {
+                        date_of_birth: dobFields.date_of_birth,
+                        ...(dobFields.date_of_birth_calendar
+                            ? { date_of_birth_calendar: dobFields.date_of_birth_calendar as 'gc' | 'ec' }
+                            : {}),
+                        ...(dobFields.date_of_birth_precision
+                            ? {
+                                date_of_birth_precision: dobFields.date_of_birth_precision as
+                                    | 'day'
+                                    | 'month'
+                                    | 'year',
+                            }
+                            : {}),
+                    }
+                    : {}),
             };
 
             if (editingChild && family?.id) {
@@ -317,7 +336,11 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
         childForm.setFieldsValue({
             name: child.name,
             age: child.age,
-            date_of_birth: child.date_of_birth ? child.date_of_birth.substring(0, 10) : undefined,
+            date_of_birth: fromEntityDate(
+                child.date_of_birth,
+                child.date_of_birth_precision,
+                child.date_of_birth_calendar,
+            ),
         });
         setChildModalOpen(true);
     };
@@ -423,7 +446,14 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                     <tbody>
                                         <tr>
                                             <th><CalendarOutlined /> Date of Birth</th>
-                                            <td>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}</td>
+                                            <td>
+                                                {formatCalendarDate(
+                                                    member.date_of_birth,
+                                                    member.date_of_birth_precision,
+                                                    member.date_of_birth_calendar,
+                                                    { includeEquivalent: true },
+                                                )}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th><UserOutlined /> Gender</th>
@@ -435,7 +465,18 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                         </tr>
                                         <tr>
                                             <th><CalendarOutlined /> Joined</th>
-                                            <td>{member.joined_date ? new Date(member.joined_date).toLocaleDateString() : (member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A')}</td>
+                                            <td>
+                                                {member.joined_date
+                                                    ? formatCalendarDate(
+                                                        member.joined_date,
+                                                        member.joined_date_precision,
+                                                        member.joined_date_calendar,
+                                                        { includeEquivalent: true },
+                                                    )
+                                                    : member.created_at
+                                                        ? formatCalendarDate(member.created_at)
+                                                        : 'N/A'}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -512,7 +553,14 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                         </tr>
                                         <tr>
                                             <th><CalendarOutlined /> Salvation Date</th>
-                                            <td>{member.salvation_date ? new Date(member.salvation_date).toLocaleDateString() : 'N/A'}</td>
+                                            <td>
+                                                {formatCalendarDate(
+                                                    member.salvation_date,
+                                                    member.salvation_date_precision,
+                                                    member.salvation_date_calendar,
+                                                    { includeEquivalent: true },
+                                                )}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th><FilePdfOutlined /> Recommendation Letter</th>
@@ -685,9 +733,26 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                 ) : (
                                     <div className="family-children-stack">
                                         {(family.children || []).map((child) => {
-                                            const displayAge = child.date_of_birth
-                                                ? (calculateAge(child.date_of_birth) ?? child.age)
-                                                : child.age;
+                                            const ageRes = child.date_of_birth
+                                                ? computeCalendarAge(
+                                                    child.date_of_birth,
+                                                    child.date_of_birth_precision,
+                                                    child.date_of_birth_calendar,
+                                                )
+                                                : null;
+                                            const fallbackAge = child.age ?? undefined;
+                                            const ageText = ageRes
+                                                ? `${ageRes.approximate ? '~' : ''}${ageRes.age} ${ageRes.age === 1 ? 'yr' : 'yrs'} old`
+                                                : fallbackAge !== undefined && fallbackAge !== null
+                                                    ? `${fallbackAge} ${fallbackAge === 1 ? 'yr' : 'yrs'} old`
+                                                    : 'Age not specified';
+                                            const dobText = child.date_of_birth
+                                                ? formatCalendarDate(
+                                                    child.date_of_birth,
+                                                    child.date_of_birth_precision,
+                                                    child.date_of_birth_calendar,
+                                                )
+                                                : null;
                                             return (
                                                 <div key={child.id} className="family-child-item">
                                                     <div className="family-child-info">
@@ -701,7 +766,7 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                                                 {child.name}
                                                             </div>
                                                             <div className="family-child-meta">
-                                                                {displayAge !== undefined ? `${displayAge} ${displayAge === 1 ? 'yr' : 'yrs'} old` : 'Age not specified'}
+                                                                {ageText}{dobText ? ` · Born ${dobText}` : ''}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -870,13 +935,13 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                                                 label="Spouse Full Name"
                                                 rules={[{ required: true, message: 'Spouse name is required' }]}
                                             >
-                                                <Input placeholder="Full name" size="large" />
+                                                <NameInput mode="person" placeholder="Full name" size="large" />
                                             </Form.Item>
                                             <Form.Item name="external_spouse_phone" label="Phone Number">
                                                 <Input placeholder="+251 9XX XXX XXXX" size="large" />
                                             </Form.Item>
                                             <Form.Item name="external_spouse_church" label="Local Church / Congregation">
-                                                <Input placeholder="Church name" size="large" />
+                                                <NameInput mode="title" placeholder="Church name" size="large" />
                                             </Form.Item>
                                         </div>
                                     );
@@ -927,8 +992,8 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                         layout="vertical"
                         style={{ marginTop: 12 }}
                         onValuesChange={(changedValues) => {
-                            if (changedValues.date_of_birth) {
-                                const computed = calculateAge(changedValues.date_of_birth);
+                            if ('date_of_birth' in changedValues) {
+                                const computed = computeAgeFromFieldValue(changedValues.date_of_birth);
                                 if (computed !== undefined) {
                                     childForm.setFieldsValue({ age: computed });
                                 }
@@ -940,10 +1005,10 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                             label="Child Full Name"
                             rules={[{ required: true, message: 'Child name is required' }]}
                         >
-                            <Input placeholder="Child name" size="large" />
+                            <NameInput mode="person" placeholder="Child name" size="large" />
                         </Form.Item>
                         <Form.Item name="date_of_birth" label="Date of Birth">
-                            <Input type="date" size="large" style={{ width: '100%' }} />
+                            <CalendarDateInput allowPartial disableFuture size="large" />
                         </Form.Item>
                         <Form.Item name="age" label="Age (Years)">
                             <InputNumber min={0} max={120} style={{ width: '100%' }} size="large" placeholder="Age in years (auto-calculated from DOB)" />

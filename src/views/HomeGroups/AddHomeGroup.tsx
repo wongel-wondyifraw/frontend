@@ -24,6 +24,8 @@ import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useToast } from '@/context/ToastContext';
 import LeaderSelect, { decodeLeaderValue, displayName, type LeaderCandidate } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import { type Dayjs } from 'dayjs';
 import './AddHomeGroup.css';
 
@@ -71,7 +73,7 @@ const AddHomeGroup = () => {
   }, []);
 
   const resolveLocationName = async (raw?: string): Promise<string | undefined> => {
-    const trimmed = raw?.trim();
+    const trimmed = raw ? normalizeTitleInitials(raw) : '';
     if (!trimmed) return undefined;
     const existing = locations.find(
       (l) => l.name.toLowerCase() === trimmed.toLowerCase() || l.id === trimmed,
@@ -105,7 +107,7 @@ const AddHomeGroup = () => {
       const leader = decodeLeaderValue(values.leader_key);
       const locationName = await resolveLocationName(values.location);
       const created = await createHomeGroup({
-        name: values.name,
+        name: normalizeTitleInitials(values.name),
         about: values.about || '',
         schedule: formatSchedule(values.schedule_day, values.schedule_time),
         location: locationName,
@@ -172,7 +174,7 @@ const AddHomeGroup = () => {
                 label="Home Group Name"
                 rules={[{ required: true, message: 'Home group name is required' }]}
               >
-                <Input size="large" placeholder="e.g. Northside Fellowship" prefix={<HomeOutlined style={{ color: '#94a3b8' }} />} />
+                <NameInput mode="title" size="large" placeholder="e.g. Northside Fellowship" prefix={<HomeOutlined style={{ color: '#94a3b8' }} />} />
               </Form.Item>
               <Form.Item name="about" label="About this Home Group">
                 <TextArea rows={4} placeholder="Describe the purpose, regular focus, and activities of this home group..." />
@@ -210,7 +212,7 @@ const AddHomeGroup = () => {
                       }
                       allowClear
                     >
-                      <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#94a3b8' }} />} />
+                      <NameInput mode="title" size="large" prefix={<EnvironmentOutlined style={{ color: '#94a3b8' }} />} />
                     </AutoComplete>
                   </Form.Item>
                 </Col>
@@ -292,9 +294,9 @@ const AddHomeGroup = () => {
                           fontSize: 13,
                         }}
                       >
-                        <div><strong>Name:</strong> {values.name || '—'}</div>
+                        <div><strong>Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                         <div><strong>Leader:</strong> {leaderDisplayName}</div>
-                        <div><strong>Location:</strong> {values.location || '—'}</div>
+                        <div><strong>Location:</strong> {(values.location ? normalizeTitleInitials(values.location) : '') || '—'}</div>
                         <div><strong>Schedule:</strong> {scheduleStr || '—'}</div>
                         <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>

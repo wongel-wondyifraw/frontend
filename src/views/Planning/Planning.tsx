@@ -12,7 +12,6 @@ import {
   Select,
   Tag,
   TimePicker,
-  DatePicker,
   Tabs,
 } from 'antd';
 import { message } from '@/lib/app-message';
@@ -47,6 +46,15 @@ import DataTable from '@/Components/common/DataTable';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '@/Components/common/TableRowActions';
 import DataImportExport from '@/Components/common/DataImportExport';
 import DataTableFilterPopup from '@/Components/common/DataTableFilterPopup';
+import CalendarDateInput, { requiredCalendarDateValidator } from '@/Components/common/CalendarDateInput';
+import NameInput from '@/Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
+import {
+  type CalendarDateFieldValue,
+  formatCalendarDate,
+  fromEntityDate,
+  toApiDateFields,
+} from '@/lib/ethiopian-calendar';
 import {
   downloadPlanTemplate,
   exportPlansExcel,
@@ -92,7 +100,7 @@ function taskOnDay(task: TaskAssignment, day: string) {
 type FormValues = {
   title: string;
   type: PlanType;
-  plan_date: Dayjs;
+  plan_date: CalendarDateFieldValue;
   time_range?: [Dayjs, Dayjs] | null;
   location?: string;
   notes?: string;
@@ -246,9 +254,14 @@ const PlanningContent = () => {
   }, [searchParams, canUpdate, router]);
 
   const openCreate = (date?: Dayjs) => {
+    const baseDate = date || selectedDate;
     setEditing(null);
     setFormSeed({
-      plan_date: date || selectedDate,
+      plan_date: {
+        date: baseDate.format('YYYY-MM-DD'),
+        precision: 'day',
+        calendar: 'gc',
+      },
       type: 'program',
       status: 'planned',
       minister_ids: [],
@@ -267,7 +280,7 @@ const PlanningContent = () => {
     setFormSeed({
       title: plan.title,
       type: plan.type,
-      plan_date: dayjs(plan.plan_date),
+      plan_date: fromEntityDate(plan.plan_date, 'day', plan.plan_date_calendar ?? 'gc'),
       time_range:
         start && end
           ? [dayjs(start, 'HH:mm'), dayjs(end, 'HH:mm')]
@@ -295,13 +308,18 @@ const PlanningContent = () => {
       const values = await form.validateFields();
       setSubmitting(true);
       const range = values.time_range;
+      const dateFields = toApiDateFields(values.plan_date, 'plan_date', {
+        includePrecision: false,
+      });
       const payload = {
-        title: values.title.trim(),
+        title: normalizeTitleInitials(values.title),
         type: values.type,
-        plan_date: values.plan_date.format('YYYY-MM-DD'),
+        ...dateFields,
         start_time: range?.[0] ? range[0].format('HH:mm') : null,
         end_time: range?.[1] ? range[1].format('HH:mm') : null,
-        location: values.location?.trim() || null,
+        location: values.location?.trim()
+          ? normalizeTitleInitials(values.location)
+          : null,
         notes: values.notes?.trim() || null,
         status: values.status || 'planned',
         minister_ids: values.minister_ids || [],
@@ -430,7 +448,13 @@ const PlanningContent = () => {
     {
       title: 'Date',
       key: 'date',
-      render: (_: unknown, record: Plan) => dayjs(record.plan_date).format('MMM D, YYYY'),
+      render: (_: unknown, record: Plan) =>
+        formatCalendarDate(
+          record.plan_date,
+          'day',
+          record.plan_date_calendar ?? 'gc',
+          { includeEquivalent: record.plan_date_calendar === 'ec' },
+        ),
     },
     {
       title: 'Time',
@@ -672,13 +696,17 @@ const PlanningContent = () => {
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false}>
           <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Enter a title' }]}>
-            <Input placeholder="e.g. Youth Crusade" />
+            <NameInput mode="title" placeholder="e.g. Youth Crusade" />
           </Form.Item>
           <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Select a type' }]}>
             <Select options={PLAN_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
           </Form.Item>
-          <Form.Item name="plan_date" label="Date" rules={[{ required: true, message: 'Select a date' }]}>
-            <DatePicker style={{ width: '100%' }} />
+          <Form.Item
+            name="plan_date"
+            label="Date"
+            rules={[{ validator: requiredCalendarDateValidator('Select a date') }]}
+          >
+            <CalendarDateInput allowPartial={false} />
           </Form.Item>
           <Form.Item name="time_range" label="Time">
             <TimePicker.RangePicker format="HH:mm" style={{ width: '100%' }} />
@@ -696,7 +724,7 @@ const PlanningContent = () => {
             />
           </Form.Item>
           <Form.Item name="location" label="Location">
-            <Input placeholder="Optional venue" />
+            <NameInput mode="title" placeholder="Optional venue" />
           </Form.Item>
           <Form.Item name="notes" label="Notes">
             <Input.TextArea rows={3} placeholder="Optional details" />

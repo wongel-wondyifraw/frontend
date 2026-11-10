@@ -8,6 +8,7 @@ import StepperWizard from '@/Components/common/StepperWizard';
 import { getAvatarUrl } from '@/lib/media-url';
 import { getRoles } from '@/services/api';
 import PasswordStrengthMeter from '@/Components/common/PasswordStrengthMeter';
+import NameInput from '@/Components/common/NameInput';
 import type { Role, User } from '@/types';
 
 const USER_WIZARD_STEPS = [{ title: 'Personal' }, { title: 'Account' }, { title: 'Role' }];
@@ -179,10 +180,10 @@ const UserWizardForm = ({
                       name="first_name"
                       rules={[{ required: true, message: 'First name is required' }]}
                     >
-                      <Input placeholder="John" />
+                      <NameInput mode="person" placeholder="John" />
                     </Form.Item>
                     <Form.Item label="Middle name" name="middle_name">
-                      <Input placeholder="Optional" />
+                      <NameInput mode="person" placeholder="Optional" />
                     </Form.Item>
                   </div>
                   <Form.Item
@@ -190,7 +191,7 @@ const UserWizardForm = ({
                     name="last_name"
                     rules={[{ required: true, message: 'Last name is required' }]}
                   >
-                    <Input placeholder="Doe" />
+                    <NameInput mode="person" placeholder="Doe" />
                   </Form.Item>
                 </div>
               </div>
@@ -272,7 +273,7 @@ const UserWizardForm = ({
                       name="title"
                       rules={[{ required: true, message: 'Title is required for this role' }]}
                     >
-                      <Input placeholder="e.g. Senior Pastor, IT Manager" />
+                      <NameInput mode="title" placeholder="e.g. Senior Pastor, IT Manager" />
                     </Form.Item>
                   ) : null;
                 }}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Input, Switch, Tabs, Select, Radio, DatePicker, TimePicker } from 'antd';
+import { Button, Input, Switch, Tabs, Select, Radio, TimePicker } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   PlusOutlined,
@@ -34,12 +34,16 @@ import {
   MessageOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import CalendarDateRangeInput, { type CalendarDateRangeValue } from '@/Components/common/CalendarDateRangeInput';
+import NameInput from '@/Components/common/NameInput';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { getLandingContent, updateLandingContent } from '@/services/api';
-import type { LandingMediaItem, LandingPageContent } from '@/types';
+import type { CalendarSystem, LandingMediaItem, LandingPageContent } from '@/types';
 import { DEFAULT_LANDING_CONTENT, isIsoDate, mergeLandingContent, validateLandingContent } from '@/lib/landing-defaults';
+import { fromEntityDate, parseFlexibleCalendarDate } from '@/lib/ethiopian-calendar';
+import { normalizePersonName } from '@/lib/name-normalizer';
 import { getApiErrorMessage } from '@/lib/errors';
 import { confirmDelete } from '@/lib/confirm-delete';
 import LandingMediaFields from './LandingMediaFields';
@@ -50,7 +54,6 @@ import ChurchFeed from '../LandingPage/ChurchFeed';
 dayjs.extend(customParseFormat);
 
 const { TextArea } = Input;
-const { RangePicker } = DatePicker;
 
 type SectionKey =
   | 'hero'
@@ -94,7 +97,8 @@ function ServiceTimesEditor({
       {rows.map((row, index) => (
         <div key={index} className="la-field-grid la-field-grid--2" style={{ alignItems: 'end' }}>
           <Field label={index === 0 ? 'Service / day' : undefined}>
-            <Input
+            <NameInput
+              mode="title"
               placeholder="e.g. Sunday Worship"
               value={row.name}
               onChange={(e) => update(index, { name: e.target.value })}
@@ -132,9 +136,17 @@ function ServiceTimesEditor({
   );
 }
 
-function Field({ label, children }: { label?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  fullWidth = false,
+  children,
+}: {
+  label?: string;
+  fullWidth?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div>
+    <div style={fullWidth ? { gridColumn: '1 / -1' } : undefined}>
       {label ? <span className="la-label">{label}</span> : null}
       {children}
     </div>
@@ -147,6 +159,7 @@ function ItemBlock({
   onChange,
   onRemove,
   showSchedule = false,
+  normalizeTitle = false,
   allowIconChoice = false,
   hideTagAndRef = false,
   hideRef = false,
@@ -157,6 +170,7 @@ function ItemBlock({
   onChange: (next: LandingMediaItem) => void;
   onRemove: () => void;
   showSchedule?: boolean;
+  normalizeTitle?: boolean;
   allowIconChoice?: boolean;
   hideTagAndRef?: boolean;
   hideRef?: boolean;
@@ -207,10 +221,18 @@ function ItemBlock({
         <div className="la-item-body">
           <div className="la-field-grid">
             <Field label="Title">
-              <Input
-                value={item.title}
-                onChange={(e) => onChange({ ...item, title: e.target.value })}
-              />
+              {normalizeTitle ? (
+                <NameInput
+                  mode="title"
+                  value={item.title}
+                  onChange={(e) => onChange({ ...item, title: e.target.value })}
+                />
+              ) : (
+                <Input
+                  value={item.title}
+                  onChange={(e) => onChange({ ...item, title: e.target.value })}
+                />
+              )}
             </Field>
             <Field label="Description">
               <TextArea
@@ -239,28 +261,55 @@ function ItemBlock({
             )}
             {showSchedule && (
               <div className="la-field-grid la-field-grid--2">
-                <Field label="Event dates">
-                  <RangePicker
-                    style={{ width: '100%' }}
+                <Field label="Event dates" fullWidth>
+                  <CalendarDateRangeInput
+                    allowEmptyEnd
                     value={(() => {
-                      const start = isIsoDate(item.event_date) ? dayjs(item.event_date) : null;
+                      const cal: CalendarSystem = item.event_date_calendar ?? 'gc';
+                      const start = isIsoDate(item.event_date)
+                        ? fromEntityDate(item.event_date, 'day', cal).date
+                        : null;
                       const end = isIsoDate(item.event_date_end)
-                        ? dayjs(item.event_date_end)
-                        : start;
-                      return start ? ([start, end || start] as [Dayjs, Dayjs]) : null;
+                        ? fromEntityDate(item.event_date_end, 'day', cal).date
+                        : null;
+                      return { start, end, calendar: cal };
                     })()}
-                    onChange={(range) => {
-                      const start = range?.[0];
-                      const end = range?.[1];
+                    onChange={(next: CalendarDateRangeValue) => {
+                      const parsedStart = next.start
+                        ? parseFlexibleCalendarDate(next.start, {
+                            calendar: next.calendar,
+                            precision: 'day',
+                            allowPartial: false,
+                          })
+                        : null;
+                      const parsedEnd = next.end
+                        ? parseFlexibleCalendarDate(next.end, {
+                            calendar: next.calendar,
+                            precision: 'day',
+                            allowPartial: false,
+                          })
+                        : null;
                       onChange({
                         ...item,
-                        event_date: start ? start.format('YYYY-MM-DD') : '',
-                        event_date_end: end ? end.format('YYYY-MM-DD') : '',
+                        event_date: parsedStart
+                          ? parsedStart.isoDate
+                          : isIsoDate(item.event_date)
+                            ? ''
+                            : item.event_date,
+                        event_date_end: parsedEnd
+                          ? parsedEnd.isoDate
+                          : isIsoDate(item.event_date_end) || parsedStart
+                            ? ''
+                            : item.event_date_end,
+                        event_date_calendar: next.calendar,
                       });
                     }}
-                    format="MMM D, YYYY"
-                    allowEmpty={[false, true]}
                   />
+                  {item.event_date && !isIsoDate(item.event_date) ? (
+                    <div className="cal-date-input__hint">
+                      Legacy date label: "{item.event_date}". Picking dates above will replace it.
+                    </div>
+                  ) : null}
                 </Field>
                 <Field label="Event time">
                   <TimePicker
@@ -280,13 +329,14 @@ function ItemBlock({
                   />
                 </Field>
                 <Field label="Location">
-                  <Input
+                  <NameInput
+                    mode="title"
                     value={item.location || ''}
                     onChange={(e) => onChange({ ...item, location: e.target.value })}
-                    placeholder="e.g. Main sanctuary"
+                    placeholder="e.g. Main Sanctuary"
                   />
                 </Field>
-                <Field label="Ministers / leads">
+                <Field label="Ministers / leads" fullWidth>
                   <Select
                     mode="tags"
                     style={{ width: '100%' }}
@@ -302,13 +352,16 @@ function ItemBlock({
                               .filter(Boolean)
                           : []
                     }
-                    onChange={(ministers: string[]) =>
+                    onChange={(ministers: string[]) => {
+                      const normalized = ministers
+                        .map((m) => normalizePersonName(m))
+                        .filter(Boolean);
                       onChange({
                         ...item,
-                        ministers,
-                        lead: ministers.join(', '),
-                      })
-                    }
+                        ministers: normalized,
+                        lead: normalized.join(', '),
+                      });
+                    }}
                   />
                 </Field>
               </div>
@@ -760,7 +813,7 @@ const LandingPageManagerContent = () => {
         const section = content.programs || {};
         const list = section.items || [];
         return (
-          <>
+          <div id="la-section-programs" className="la-section-group">
             <SectionPanel
               title="Programs"
               subtitle="Section heading and visibility"
@@ -791,6 +844,7 @@ const LandingPageManagerContent = () => {
                   index={index}
                   item={item}
                   showSchedule
+                  normalizeTitle
                   onChange={(next) => {
                     const items = [...list];
                     items[index] = next;
@@ -810,7 +864,7 @@ const LandingPageManagerContent = () => {
                   onClick={() =>
                     patch('programs', {
                       ...section,
-                      items: [...list, { title: 'New program', text: '' }],
+                      items: [...list, { title: 'New Program', text: '' }],
                     })
                   }
                 >
@@ -818,7 +872,7 @@ const LandingPageManagerContent = () => {
                 </Button>
               </div>
             </SectionPanel>
-          </>
+          </div>
         );
       }
 
@@ -826,7 +880,7 @@ const LandingPageManagerContent = () => {
         const section = content.ministries || {};
         const list = section.items || [];
         return (
-          <>
+          <div id="la-section-ministries" className="la-section-group">
             <SectionPanel
               title="Ministries"
               subtitle="Section heading and visibility"
@@ -861,6 +915,7 @@ const LandingPageManagerContent = () => {
                   allowIconChoice
                   hideTagAndRef
                   imageOnly
+                  normalizeTitle
                   onChange={(next) => {
                     const items = [...list];
                     items[index] = next;
@@ -880,7 +935,7 @@ const LandingPageManagerContent = () => {
                   onClick={() =>
                     patch('ministries', {
                       ...section,
-                      items: [...list, { title: 'New ministry', text: '' }],
+                      items: [...list, { title: 'New Ministry', text: '' }],
                     })
                   }
                 >
@@ -888,7 +943,7 @@ const LandingPageManagerContent = () => {
                 </Button>
               </div>
             </SectionPanel>
-          </>
+          </div>
         );
       }
 
@@ -896,7 +951,7 @@ const LandingPageManagerContent = () => {
         const section = content.projects || {};
         const list = section.items || [];
         return (
-          <>
+          <div id="la-section-projects" className="la-section-group">
             <SectionPanel
               title="Projects"
               subtitle="Section heading and visibility"
@@ -927,6 +982,7 @@ const LandingPageManagerContent = () => {
                   index={index}
                   item={item}
                   hideTagAndRef
+                  normalizeTitle
                   onChange={(next) => {
                     const items = [...list];
                     items[index] = next;
@@ -946,7 +1002,7 @@ const LandingPageManagerContent = () => {
                   onClick={() =>
                     patch('projects', {
                       ...section,
-                      items: [...list, { title: 'New project', text: '' }],
+                      items: [...list, { title: 'New Project', text: '' }],
                     })
                   }
                 >
@@ -954,7 +1010,7 @@ const LandingPageManagerContent = () => {
                 </Button>
               </div>
             </SectionPanel>
-          </>
+          </div>
         );
       }
 

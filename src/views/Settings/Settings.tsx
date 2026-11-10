@@ -31,6 +31,7 @@ import ProfileTab from './components/ProfileTab';
 import SecurityTab from './components/SecurityTab';
 import type { UserWizardValues } from './components/UserWizardModal';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import './Settings.css';
 
 const LocationManagementTab = dynamic(() => import('./components/LocationManagementTab'), {
@@ -131,9 +132,9 @@ const Settings = () => {
       }
 
       await updateProfile({
-        first_name: values.firstName,
-        middle_name: values.middleName,
-        last_name: values.lastName,
+        first_name: normalizePersonName(values.firstName),
+        middle_name: values.middleName ? normalizePersonName(values.middleName) : values.middleName,
+        last_name: normalizePersonName(values.lastName),
       });
 
       message.success('Profile updated successfully');
@@ -176,13 +177,18 @@ const Settings = () => {
     try {
       setUserSubmitting(true);
 
+      const first_name = normalizePersonName(values.first_name);
+      const middle_name = values.middle_name ? normalizePersonName(values.middle_name) : values.middle_name;
+      const last_name = normalizePersonName(values.last_name);
+      const title = values.title?.trim() ? normalizeTitleInitials(values.title) : values.title;
+
       if (editingUser) {
         await updateUser(editingUser.id, {
           ...values,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          middle_name: values.middle_name,
-          title: values.title,
+          first_name,
+          last_name,
+          middle_name,
+          title,
         });
         if (avatarFile) {
           setAvatarUploading(true);
@@ -192,14 +198,14 @@ const Settings = () => {
         message.success('User updated successfully');
       } else {
         const formData = new FormData();
-        formData.append('first_name', values.first_name);
-        formData.append('last_name', values.last_name);
-        formData.append('middle_name', values.middle_name || '');
+        formData.append('first_name', first_name);
+        formData.append('last_name', last_name);
+        formData.append('middle_name', middle_name || '');
         formData.append('email', values.email);
         formData.append('password_hash', values.password ?? '');
         formData.append('role', values.role);
         formData.append('is_active', String(values.is_active ?? true));
-        if (values.title) formData.append('title', values.title);
+        if (title) formData.append('title', title);
         if (avatarFile) formData.append('avatar', avatarFile);
 
         setAvatarUploading(Boolean(avatarFile));

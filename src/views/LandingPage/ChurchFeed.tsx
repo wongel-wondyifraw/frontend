@@ -50,8 +50,10 @@ import { getImageUrl } from '@/lib/media-url';
 import type { LandingMediaItem, LandingPageContent } from '@/types';
 import {
   DEFAULT_LANDING_CONTENT,
+  formatLandingDateRange,
   mergeLandingContent,
 } from '@/lib/landing-defaults';
+import { normalizePersonName } from '@/lib/name-normalizer';
 import './ChurchFeed.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -412,7 +414,7 @@ export default function ChurchFeed({
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const fullName = String(formData.get('full_name') || '').trim();
+    const fullName = normalizePersonName(String(formData.get('full_name') || ''));
     const phone = String(formData.get('phone') || '').trim();
     const messageText = String(formData.get('message') || '').trim();
 
@@ -816,9 +818,7 @@ export default function ChurchFeed({
                 <div className="lp-projects-grid-full">
                   {homepageProjectItems.map((project, i) => {
                     const img = getImageUrl(project.image_url);
-                    const dates = [project.event_date, project.event_date_end]
-                      .filter(Boolean)
-                      .join(' – ');
+                    const dates = formatLandingDateRange(project);
                     return (
                       <article
                         key={`${project.title || 'p'}-${i}`}
@@ -897,6 +897,12 @@ export default function ChurchFeed({
                               name="full_name"
                               required
                               placeholder="e.g. Yohannes Bekele"
+                              onBlur={(e) => {
+                                const normalized = normalizePersonName(e.currentTarget.value);
+                                if (normalized !== e.currentTarget.value) {
+                                  e.currentTarget.value = normalized;
+                                }
+                              }}
                             />
                           </div>
                           <div className="lp-form-group">

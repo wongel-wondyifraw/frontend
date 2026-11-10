@@ -1,4 +1,11 @@
-import type { Dayjs } from "dayjs";
+import {
+  toApiDateFields,
+  type CalendarDateFieldValue,
+} from "@/lib/ethiopian-calendar";
+import {
+  normalizePersonName,
+  normalizeTitleInitials,
+} from "@/lib/name-normalizer";
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -65,7 +72,7 @@ export const MEMBER_TYPE_OPTIONS = [
 
 export const VISITATION_METHOD_OPTIONS = ["Home", "Office", "Phone"];
 
-type MemberFormValues = {
+export type MemberFormValues = {
   first_name?: string;
   middle_name?: string;
   last_name?: string;
@@ -77,9 +84,9 @@ type MemberFormValues = {
   status?: string;
   baptized?: string | boolean;
   holy_spirit_baptized?: string | boolean;
-  date_of_birth?: Dayjs;
-  joined_date?: Dayjs;
-  salvation_date?: Dayjs;
+  date_of_birth?: CalendarDateFieldValue | string | null;
+  joined_date?: CalendarDateFieldValue | string | null;
+  salvation_date?: CalendarDateFieldValue | string | null;
   image_url?: string;
   recommendation_letter_url?: string;
   telegram_username?: string;
@@ -111,18 +118,21 @@ function setOptionalString(
   if (trimmed) payload[key] = trimmed;
 }
 
-/** Build a JSON body Nest can validate — omit empty optional strings. */
+/** Build a JSON body Nest can validate — normalize names & encode dual-calendar partial dates. */
 export function buildMemberPayload(
   values: MemberFormValues,
   extras: Record<string, unknown> = {},
+  options: { clearEmptyDates?: boolean } = {},
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = {
-    first_name: values.first_name?.trim() ?? "",
-    last_name: values.last_name?.trim() ?? "",
+    first_name: normalizePersonName(values.first_name ?? ""),
+    last_name: normalizePersonName(values.last_name ?? ""),
     ...extras,
   };
 
-  setOptionalString(payload, "middle_name", values.middle_name);
+  const middle = normalizePersonName(values.middle_name ?? "");
+  if (middle) payload.middle_name = middle;
+
   setOptionalString(payload, "email", values.email);
   setOptionalString(payload, "phone", values.phone);
   setOptionalString(payload, "address", values.address);
@@ -137,10 +147,16 @@ export function buildMemberPayload(
     values.recommendation_letter_url,
   );
   setOptionalString(payload, "employment_status", values.employment_status);
-  setOptionalString(payload, "profession", values.profession);
-  setOptionalString(payload, "employer", values.employer);
+
+  const profession = normalizeTitleInitials(values.profession ?? "");
+  if (profession) payload.profession = profession;
+  const employer = normalizeTitleInitials(values.employer ?? "");
+  if (employer) payload.employer = employer;
+
   setOptionalString(payload, "education_level", values.education_level);
-  setOptionalString(payload, "education_field", values.education_field);
+  const educationField = normalizeTitleInitials(values.education_field ?? "");
+  if (educationField) payload.education_field = educationField;
+
   setOptionalString(payload, "facebook_username", values.facebook_username);
   setOptionalString(payload, "instagram_username", values.instagram_username);
   setOptionalString(payload, "whatsapp_number", values.whatsapp_number);
@@ -149,12 +165,18 @@ export function buildMemberPayload(
   const telegram = values.telegram_username?.trim().replace(/^@+/, "");
   if (telegram) payload.telegram_username = telegram;
 
-  if (values.date_of_birth)
-    payload.date_of_birth = values.date_of_birth.format("YYYY-MM-DD");
-  if (values.joined_date)
-    payload.joined_date = values.joined_date.format("YYYY-MM-DD");
-  if (values.salvation_date)
-    payload.salvation_date = values.salvation_date.format("YYYY-MM-DD");
+  Object.assign(
+    payload,
+    toApiDateFields(values.date_of_birth, "date_of_birth", {
+      clearAsNull: options.clearEmptyDates,
+    }),
+    toApiDateFields(values.joined_date, "joined_date", {
+      clearAsNull: options.clearEmptyDates,
+    }),
+    toApiDateFields(values.salvation_date, "salvation_date", {
+      clearAsNull: options.clearEmptyDates,
+    }),
+  );
 
   const baptized = yesNoToBool(values.baptized);
   if (baptized !== undefined) payload.baptized = baptized;

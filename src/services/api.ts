@@ -1110,6 +1110,7 @@ export const getPlans = async (
     type?: string;
     from?: string;
     to?: string;
+    calendar?: "gc" | "ec";
     status?: string;
   } = {},
 ): Promise<PaginatedResponse<Plan>> => {
@@ -1268,7 +1269,13 @@ export const deleteFamily = async (id: string): Promise<void> => {
 
 export const addFamilyChild = async (
   familyId: string,
-  data: { name: string; age?: number; date_of_birth?: string },
+  data: {
+    name: string;
+    age?: number;
+    date_of_birth?: string | null;
+    date_of_birth_precision?: "day" | "month" | "year";
+    date_of_birth_calendar?: "gc" | "ec";
+  },
 ): Promise<FamilyChild> => {
   try {
     const response = await api.post<FamilyChild>(

@@ -16,6 +16,8 @@ import MemberTransferList from '../../Components/common/MemberTransferList';
 import { updateMinistry, getMinistry, getMinistryMembers, addMinistryMember, removeMinistryMember } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import './AddMinistry.css';
 
 const { TextArea } = Input;
@@ -119,7 +121,7 @@ const EditMinistry = () => {
             setLoading(true);
             const leader = decodeLeaderValue(values.leader_key);
             const ministryData = {
-                name: values.name,
+                name: normalizeTitleInitials(values.name),
                 about: values.about || '',
                 schedule: values.schedule || '',
                 leader_id: leader.leader_id,
@@ -214,7 +216,7 @@ const EditMinistry = () => {
                                             label="Ministry Name"
                                             rules={[{ required: true, message: 'Ministry name is required' }]}
                                         >
-                                            <Input size="large" placeholder="e.g. Worship Team" />
+                                            <NameInput mode="title" size="large" placeholder="e.g. Worship Team" />
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -279,7 +281,7 @@ const EditMinistry = () => {
                                             const selectedCount = selectedMemberKeys.length;
                                             return (
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                                                    <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
+                                                    <div><strong>Ministry Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                                                     <div><strong>Leader:</strong> {leaderLabel}</div>
                                                     <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
                                                     <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>

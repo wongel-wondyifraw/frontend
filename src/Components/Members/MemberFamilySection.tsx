@@ -5,7 +5,6 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
   Button,
   Checkbox,
   Radio,
@@ -14,6 +13,8 @@ import {
 } from 'antd';
 import { DeleteOutlined, PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import SpouseSelect from '@/Components/common/SpouseSelect';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
 import './MemberFamilySection.css';
 
 /**
@@ -155,7 +156,7 @@ export default function MemberFamilySection() {
                             name="external_spouse_name"
                             rules={[{ required: true, message: 'Spouse name is required' }]}
                           >
-                            <Input size="large" placeholder="Full Name" />
+                            <NameInput mode="person" size="large" placeholder="Full Name" />
                           </Form.Item>
                         </Col>
                         <Col xs={24} md={8}>
@@ -165,7 +166,7 @@ export default function MemberFamilySection() {
                         </Col>
                         <Col xs={24} md={8}>
                           <Form.Item label="Local Church" name="external_spouse_church">
-                            <Input size="large" placeholder="Name of Church" />
+                            <NameInput mode="title" size="large" placeholder="Name of Church" />
                           </Form.Item>
                         </Col>
                       </Row>
@@ -176,7 +177,7 @@ export default function MemberFamilySection() {
             )}
 
             {showChildren && (
-              <>
+              <div id="member-children-block" className="member-children-block">
                 <Form.Item
                   name="has_children"
                   valuePropName="checked"
@@ -190,43 +191,56 @@ export default function MemberFamilySection() {
                 {hasChildren && (
                   <Form.List name="children">
                     {(fields, { add, remove }) => (
-                      <>
+                      <div id="member-children-list" className="member-children-list">
                         {fields.map(({ key, name, ...restField }) => (
-                          <Row gutter={16} key={key} style={{ marginBottom: 8 }} align="middle">
-                            <Col xs={24} sm={10}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'name']}
-                                rules={[{ required: true, message: 'Missing child name' }]}
-                                style={{ marginBottom: 0 }}
-                              >
-                                <Input placeholder="Child Name" />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={10}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'date_of_birth']}
-                                style={{ marginBottom: 0 }}
-                              >
-                                <DatePicker placeholder="Date of Birth" style={{ width: '100%' }} />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={4}>
-                              <Button danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                            </Col>
-                          </Row>
+                          <div
+                            key={key}
+                            className="member-child-row-card"
+                            style={{ marginBottom: 12, padding: 12, borderRadius: 8, border: '1px solid var(--border-color, #e2e8f0)' }}
+                          >
+                            <Row gutter={[12, 12]} align="top">
+                              <Col xs={24} sm={9}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'name']}
+                                  label="Child Name"
+                                  rules={[{ required: true, message: 'Missing child name' }]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <NameInput mode="person" placeholder="Full Name" />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} sm={12}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'date_of_birth']}
+                                  label="Date of Birth"
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <CalendarDateInput allowPartial disableFuture size="middle" />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} sm={3} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+                                <Button
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => remove(name)}
+                                  aria-label="Remove child"
+                                />
+                              </Col>
+                            </Row>
+                          </div>
                         ))}
                         <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
                           <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
                             Add Child
                           </Button>
                         </Form.Item>
-                      </>
+                      </div>
                     )}
                   </Form.List>
                 )}
-              </>
+              </div>
             )}
           </div>
         );

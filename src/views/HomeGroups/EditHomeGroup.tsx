@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Form, Input, Button, Row, Col, Spin, AutoComplete, Select, TimePicker, Space } from 'antd';
+import { Form, Input, Button, Row, Col, Spin, AutoComplete, Select, TimePicker } from 'antd';
 import { message } from '@/lib/app-message';
 import {
   ArrowLeftOutlined,
@@ -27,6 +27,8 @@ import {
 import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue, displayName, type LeaderCandidate } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import dayjs, { type Dayjs } from 'dayjs';
 import './AddHomeGroup.css';
 
@@ -122,7 +124,7 @@ const EditHomeGroup = () => {
   }, [id, router]);
 
   const resolveLocationName = async (raw?: string): Promise<string | undefined> => {
-    const trimmed = raw?.trim();
+    const trimmed = raw ? normalizeTitleInitials(raw) : '';
     if (!trimmed) return undefined;
     const existing = locations.find(
       (l) => l.name.toLowerCase() === trimmed.toLowerCase() || l.id === trimmed,
@@ -185,7 +187,7 @@ const EditHomeGroup = () => {
       const leader = decodeLeaderValue(values.leader_key);
       const locationName = await resolveLocationName(values.location);
       await updateHomeGroup(id, {
-        name: values.name,
+        name: normalizeTitleInitials(values.name),
         about: values.about || '',
         schedule: formatSchedule(values.schedule_day, values.schedule_time),
         location: locationName,
@@ -269,7 +271,7 @@ const EditHomeGroup = () => {
                 <HomeOutlined style={{ color: '#1E40AF' }} /> Home Group Information
               </h3>
               <Form.Item name="name" label="Home Group Name" rules={[{ required: true, message: 'Home group name is required' }]}>
-                <Input size="large" />
+                <NameInput mode="title" size="large" />
               </Form.Item>
               <Form.Item name="about" label="About this Home Group">
                 <TextArea rows={4} />
@@ -307,7 +309,7 @@ const EditHomeGroup = () => {
                       }
                       allowClear
                     >
-                      <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#94a3b8' }} />} />
+                      <NameInput mode="title" size="large" prefix={<EnvironmentOutlined style={{ color: '#94a3b8' }} />} />
                     </AutoComplete>
                   </Form.Item>
                 </Col>
@@ -388,9 +390,9 @@ const EditHomeGroup = () => {
                           fontSize: 13,
                         }}
                       >
-                        <div><strong>Name:</strong> {values.name || '—'}</div>
+                        <div><strong>Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                         <div><strong>Leader:</strong> {leaderDisplayName}</div>
-                        <div><strong>Location:</strong> {values.location || '—'}</div>
+                        <div><strong>Location:</strong> {(values.location ? normalizeTitleInitials(values.location) : '') || '—'}</div>
                         <div><strong>Schedule:</strong> {scheduleStr || '—'}</div>
                         <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>About:</strong> {values.about || '—'}</div>

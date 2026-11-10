@@ -1,15 +1,21 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, App, Select, DatePicker } from 'antd';
+import { Tag, App, Select, Segmented } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import dayjs, { type Dayjs } from 'dayjs';
 import DataTable from '../../Components/common/DataTable';
 import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
 import EntityNameCell from '../../Components/common/EntityNameCell';
 import DataImportExport from '../../Components/common/DataImportExport';
+import CalendarDateInput from '../../Components/common/CalendarDateInput';
+import {
+    type CalendarDateFieldValue,
+    type CalendarSystem,
+    convertFieldCalendar,
+    formatCalendarDate,
+} from '@/lib/ethiopian-calendar';
 import { getMembers, deleteMember, updateMember } from '../../services/api';
 import {
     downloadMemberTemplate,
@@ -27,18 +33,18 @@ import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMembers.css';
 
-const { RangePicker } = DatePicker;
-
 type MemberFilters = {
     status?: string;
     marital_status?: string;
     joined_from?: string;
     joined_to?: string;
+    joined_calendar: CalendarSystem;
     sort_by: 'created_at' | 'joined_date' | 'visit_count';
     sort_order: 'ASC' | 'DESC';
 };
 
 const DEFAULT_FILTERS: MemberFilters = {
+    joined_calendar: 'gc',
     sort_by: 'created_at',
     sort_order: 'DESC',
 };
@@ -57,7 +63,16 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const [pageSize, setPageSize] = useState(initialPage?.limit ?? 10);
     const [total, setTotal] = useState(initialPage?.total ?? 0);
     const [filters, setFilters] = useState<MemberFilters>(DEFAULT_FILTERS);
-    const [joinedRange, setJoinedRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+    const [joinedFromField, setJoinedFromField] = useState<CalendarDateFieldValue>({
+        date: null,
+        precision: 'day',
+        calendar: 'gc',
+    });
+    const [joinedToField, setJoinedToField] = useState<CalendarDateFieldValue>({
+        date: null,
+        precision: 'day',
+        calendar: 'gc',
+    });
 
     const loadMembers = useCallback(async (
         nextPage = page,
@@ -75,6 +90,10 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 marital_status: nextFilters.marital_status,
                 joined_from: nextFilters.joined_from,
                 joined_to: nextFilters.joined_to,
+                joined_calendar:
+                    nextFilters.joined_from || nextFilters.joined_to
+                        ? nextFilters.joined_calendar
+                        : undefined,
                 sort_by: nextFilters.sort_by,
                 sort_order: nextFilters.sort_order,
             };
@@ -112,11 +131,37 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         loadMembers(1, pageSize, searchText, next);
     };
 
-    const handleJoinedRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
-        setJoinedRange(dates);
+    const handleJoinedFromChange = (nextVal: CalendarDateFieldValue) => {
+        const synced: CalendarDateFieldValue = {
+            ...nextVal,
+            calendar: filters.joined_calendar,
+        };
+        setJoinedFromField(synced);
         applyFilters({
-            joined_from: dates?.[0] ? dates[0].format('YYYY-MM-DD') : undefined,
-            joined_to: dates?.[1] ? dates[1].format('YYYY-MM-DD') : undefined,
+            joined_from: synced.date || undefined,
+        });
+    };
+
+    const handleJoinedToChange = (nextVal: CalendarDateFieldValue) => {
+        const synced: CalendarDateFieldValue = {
+            ...nextVal,
+            calendar: filters.joined_calendar,
+        };
+        setJoinedToField(synced);
+        applyFilters({
+            joined_to: synced.date || undefined,
+        });
+    };
+
+    const handleJoinedCalendarChange = (nextCalendar: CalendarSystem) => {
+        const nextFrom = convertFieldCalendar(joinedFromField, nextCalendar);
+        const nextTo = convertFieldCalendar(joinedToField, nextCalendar);
+        setJoinedFromField(nextFrom);
+        setJoinedToField(nextTo);
+        applyFilters({
+            joined_calendar: nextCalendar,
+            joined_from: nextFrom.date || undefined,
+            joined_to: nextTo.date || undefined,
         });
     };
 
@@ -166,25 +211,26 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             key: 'name',
             render: (_: unknown, record: Member) => (
                 <EntityNameCell
-                    title={
-                        <>
-                            {record.first_name}{' '}
-                            {record.middle_name ? `${record.middle_name} ` : ''}
-                            {record.last_name}
-                        </>
-                    }
+                    title={[record.first_name, record.middle_name, record.last_name]
+                        .filter(Boolean)
+                        .join(' ')}
                     subtitle={record.email || undefined}
                     avatarSrc={getImageUrl(record.image_url)}
                     initials={getInitials(record.first_name, record.last_name, record.middle_name)}
                     meta={
-                        <>
-                            {record.member_type && record.member_type !== 'existing' && (
-                                <Tag style={{ marginInlineEnd: 0 }}>{record.member_type}</Tag>
-                            )}
-                            {record.requires_follow_up && (
-                                <Tag color="orange" style={{ marginInlineEnd: 0 }}>Follow-up</Tag>
-                            )}
-                        </>
+                        (record.member_type && record.member_type !== 'existing') ||
+                        record.requires_follow_up ? (
+                            <div className="member-meta-tags">
+                                {record.member_type && record.member_type !== 'existing' && (
+                                    <Tag style={{ marginInlineEnd: 0 }}>{record.member_type}</Tag>
+                                )}
+                                {record.requires_follow_up && (
+                                    <Tag color="orange" style={{ marginInlineEnd: 0 }}>
+                                        Follow-up
+                                    </Tag>
+                                )}
+                            </div>
+                        ) : undefined
                     }
                 />
             ),
@@ -249,8 +295,15 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             key: 'joined',
             responsive: ['lg'],
             render: (_: unknown, record: Member) => {
-                const raw = record.joined_date || record.created_at;
-                return raw ? new Date(raw).toLocaleDateString() : '-';
+                if (record.joined_date) {
+                    return formatCalendarDate(
+                        record.joined_date,
+                        record.joined_date_precision ?? 'day',
+                        record.joined_date_calendar ?? 'gc',
+                        { includeEquivalent: record.joined_date_calendar === 'ec' },
+                    );
+                }
+                return record.created_at ? new Date(record.created_at).toLocaleDateString() : '-';
             },
         },
         {
@@ -319,7 +372,8 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     ].filter(Boolean).length;
 
     const clearAllFilters = () => {
-        setJoinedRange(null);
+        setJoinedFromField({ date: null, precision: 'day', calendar: 'gc' });
+        setJoinedToField({ date: null, precision: 'day', calendar: 'gc' });
         setFilters(DEFAULT_FILTERS);
         loadMembers(1, pageSize, searchText, DEFAULT_FILTERS);
     };
@@ -360,15 +414,68 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 />
             </div>
             <div className="dt-filter-field">
-                <span className="dt-filter-label">Joined date</span>
-                <RangePicker
-                    value={joinedRange}
-                    onChange={handleJoinedRangeChange}
-                    placeholder={['From', 'To']}
-                    allowEmpty={[true, true]}
-                    disabledDate={(current) => current && current.isAfter(dayjs(), 'day')}
-                    style={{ width: '100%' }}
-                />
+                <div
+                    className="dt-filter-label-row"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                    }}
+                >
+                    <span className="dt-filter-label">Joined date</span>
+                    <Segmented
+                        size="small"
+                        aria-label="Joined date calendar"
+                        value={filters.joined_calendar}
+                        onChange={(v) => handleJoinedCalendarChange(v as CalendarSystem)}
+                        options={[
+                            { label: 'GC', value: 'gc' },
+                            { label: 'EC', value: 'ec' },
+                        ]}
+                    />
+                </div>
+                <div
+                    className="dt-filter-date-bounds"
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                    <div className="dt-filter-date-bound">
+                        <span
+                            className="dt-filter-sublabel"
+                            style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}
+                        >
+                            From
+                        </span>
+                        <CalendarDateInput
+                            id="members-filter-joined-from"
+                            allowPartial
+                            hideCalendarSwitch
+                            disableFuture
+                            size="small"
+                            placeholder="From date"
+                            value={joinedFromField}
+                            onChange={handleJoinedFromChange}
+                        />
+                    </div>
+                    <div className="dt-filter-date-bound">
+                        <span
+                            className="dt-filter-sublabel"
+                            style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}
+                        >
+                            To
+                        </span>
+                        <CalendarDateInput
+                            id="members-filter-joined-to"
+                            allowPartial
+                            hideCalendarSwitch
+                            disableFuture
+                            size="small"
+                            placeholder="To date"
+                            value={joinedToField}
+                            onChange={handleJoinedToChange}
+                        />
+                    </div>
+                </div>
             </div>
             <div className="dt-filter-field">
                 <span className="dt-filter-label">Sort by</span>

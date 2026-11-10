@@ -37,6 +37,7 @@ import {
 import { useDashboardStats } from '@/context/DashboardStatsContext';
 import { getMembers } from '@/services/api';
 import type { Member } from '@/types';
+import { extractIsoParts, formatCalendarDate } from '@/lib/ethiopian-calendar';
 import TodoList from '@/Components/Dashboard/Widgets/TodoList/TodoList';
 import UpcomingPrograms from '@/Components/Dashboard/Widgets/UpcomingPrograms/UpcomingPrograms';
 import './AnalysisDashboard.css';
@@ -51,9 +52,32 @@ function formatMemberName(m: { first_name: string; last_name: string; middle_nam
   return [m.first_name, m.middle_name, m.last_name].filter(Boolean).join(' ');
 }
 
-function formatJoinedLabel(iso?: string) {
-  if (!iso) return 'Recently';
-  const d = new Date(iso);
+function memberJoinedTimestamp(m: Member): number {
+  if (m.joined_date) {
+    const parts = extractIsoParts(m.joined_date);
+    if (parts) {
+      return Date.UTC(parts.year, parts.month - 1, parts.day);
+    }
+  }
+  if (m.created_at) {
+    const t = new Date(m.created_at).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  return 0;
+}
+
+function formatJoinedLabel(m: Member): string {
+  if (m.joined_date) {
+    const formatted = formatCalendarDate(
+      m.joined_date,
+      m.joined_date_precision ?? 'day',
+      m.joined_date_calendar ?? 'gc',
+      { short: true, includeEquivalent: m.joined_date_calendar === 'ec' },
+    );
+    if (formatted !== 'N/A') return formatted;
+  }
+  if (!m.created_at) return 'Recently';
+  const d = new Date(m.created_at);
   if (Number.isNaN(d.getTime())) return 'Recently';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -207,16 +231,12 @@ export default function AnalysisDashboard() {
 
   const newMemberTimeline = useMemo(() => {
     return [...recentMembers]
-      .sort((a, b) => {
-        const da = new Date(a.joined_date || a.created_at || 0).getTime();
-        const db = new Date(b.joined_date || b.created_at || 0).getTime();
-        return db - da;
-      })
+      .sort((a, b) => memberJoinedTimestamp(b) - memberJoinedTimestamp(a))
       .slice(0, 7)
       .map((m) => ({
         id: m.id,
         name: formatMemberName(m),
-        when: formatJoinedLabel(m.joined_date || m.created_at),
+        when: formatJoinedLabel(m),
       }));
   }, [recentMembers]);
 

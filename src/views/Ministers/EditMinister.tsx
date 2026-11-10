@@ -5,7 +5,6 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
   Button,
   Upload,
   Row,
@@ -20,14 +19,17 @@ import {
   HomeOutlined, GlobalOutlined, CheckCircleOutlined,
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
+import { formatCalendarDateField, fromEntityDate } from '@/lib/ethiopian-calendar';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import { updateMinister, getMinisterById, uploadMemberImage } from '../../services/api';
-import { buildMinisterPayload } from '@/lib/minister-payload';
+import { buildMinisterPayload, type MinisterFormValues } from '@/lib/minister-payload';
 import { getApiErrorMessage } from '@/lib/errors';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import { getImageUrl } from '@/lib/media-url';
 import type { UploadChangeParam } from 'antd/es/upload';
 import type { Minister } from '@/types';
-import dayjs, { type Dayjs } from 'dayjs';
 import './AddMinister.css';
 
 const { Option } = Select;
@@ -93,12 +95,20 @@ const EditMinister = () => {
       email: ministerData.email,
       phone: ministerData.phone,
       address: ministerData.address,
-      date_of_birth: ministerData.date_of_birth ? dayjs(ministerData.date_of_birth) : null,
+      date_of_birth: fromEntityDate(
+        ministerData.date_of_birth,
+        ministerData.date_of_birth_precision ?? 'day',
+        ministerData.date_of_birth_calendar ?? 'gc',
+      ),
       marital_status: ministerData.marital_status,
       gender: ministerData.gender || undefined,
       status: ministerData.status,
       title: ministerData.title,
-      joined_date: ministerData.joined_date ? dayjs(ministerData.joined_date) : null,
+      joined_date: fromEntityDate(
+        ministerData.joined_date,
+        ministerData.joined_date_precision ?? 'day',
+        ministerData.joined_date_calendar ?? 'gc',
+      ),
     });
     if (ministerData.image_url) setAvatarPreview(getImageUrl(ministerData.image_url));
   }, [initialLoading, ministerData, form]);
@@ -118,17 +128,18 @@ const EditMinister = () => {
 
   const prev = () => setCurrentStep(currentStep - 1);
 
-  const onFinish = async (values: Record<string, unknown> & {
-    date_of_birth?: Dayjs;
-    joined_date?: Dayjs;
-  }) => {
+  const onFinish = async (values: MinisterFormValues) => {
     setLoading(true);
     try {
       let imageUrl: string | undefined;
       if (avatarFile) {
         imageUrl = await uploadMemberImage(avatarFile, setUploadPercent);
       }
-      const payload = buildMinisterPayload(values, imageUrl ? { image_url: imageUrl } : {});
+      const payload = buildMinisterPayload(
+        values,
+        imageUrl ? { image_url: imageUrl } : {},
+        { clearEmptyDates: true },
+      );
       delete payload.email;
       await updateMinister(id, payload);
       message.success('Minister updated successfully');
@@ -184,21 +195,21 @@ const EditMinister = () => {
                 <div className="member-name-fields">
                   <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true }]}>
-                      <Input size="large" />
+                      <NameInput mode="person" size="large" />
                     </Form.Item>
                     <Form.Item label="Middle Name" name="middle_name">
-                      <Input size="large" />
+                      <NameInput mode="person" size="large" />
                     </Form.Item>
                   </div>
                   <Form.Item label="Last Name" name="last_name" rules={[{ required: true }]}>
-                    <Input size="large" />
+                    <NameInput mode="person" size="large" />
                   </Form.Item>
                 </div>
               </div>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -250,7 +261,7 @@ const EditMinister = () => {
               <Row gutter={24}>
                 <Col xs={24} md={12}>
                   <Form.Item name="title" label="Title / Designation">
-                    <Input size="large" />
+                    <NameInput mode="title" size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -263,7 +274,7 @@ const EditMinister = () => {
                 </Col>
               </Row>
               <Form.Item name="joined_date" label="Joined Date">
-                <DatePicker style={{ width: '100%' }} size="large" />
+                <CalendarDateInput allowPartial disableFuture size="large" />
               </Form.Item>
             </div>
             <div>
@@ -273,10 +284,12 @@ const EditMinister = () => {
                   const values = form.getFieldsValue();
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                      <div><strong>Name:</strong> {values.first_name} {values.last_name}</div>
+                      <div><strong>Name:</strong> {[normalizePersonName(values.first_name || ''), normalizePersonName(values.middle_name || ''), normalizePersonName(values.last_name || '')].filter(Boolean).join(' ') || '—'}</div>
+                      <div><strong>Birthdate:</strong> {formatCalendarDateField(values.date_of_birth, { includeEquivalent: true })}</div>
+                      <div><strong>Joined Date:</strong> {formatCalendarDateField(values.joined_date, { includeEquivalent: true })}</div>
                       <div><strong>Email:</strong> {values.email}</div>
                       <div><strong>Phone:</strong> {values.phone || '—'}</div>
-                      <div><strong>Title:</strong> {values.title || '—'}</div>
+                      <div><strong>Title:</strong> {values.title ? normalizeTitleInitials(values.title) : '—'}</div>
                       <div><strong>Status:</strong> {values.status || '—'}</div>
                     </div>
                   );
