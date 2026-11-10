@@ -39,7 +39,7 @@ export default function TopbarActions() {
   const { user } = useUser();
   const router = useRouter();
   const canReadNotifications = hasPermission(user, 'notifications.read');
-  const { items, unreadCount, loading, markRead, markAllRead } = useNotifications();
+  const { items, unreadCount, loading, refresh, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
   const notificationContent = (
@@ -127,13 +127,19 @@ export default function TopbarActions() {
   );
 
   return (
-    <>
+    <div id="topbar-actions" className="topbar-actions">
       {canReadNotifications && (
         <Popover
           content={notificationContent}
           trigger="click"
           open={open}
-          onOpenChange={setOpen}
+          destroyOnHidden
+          onOpenChange={(nextOpen) => {
+            setOpen(nextOpen);
+            if (nextOpen && items.length === 0 && !loading) {
+              void refresh();
+            }
+          }}
           placement="bottomRight"
           arrow={false}
           overlayClassName="notif-popover"
@@ -149,6 +155,6 @@ export default function TopbarActions() {
       <div className="logo-wrapper">
         <AppLogo variant="topbar" href="/dashboard" />
       </div>
-    </>
+    </div>
   );
 }

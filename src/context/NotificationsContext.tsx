@@ -78,18 +78,37 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    refresh();
+    let cancelled = false;
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
 
-    cleanupRef.current?.();
-    cleanupRef.current = subscribeNotificationStream((event) => {
-      if (event.type === 'notification' && event.notification) {
-        const n = event.notification as AppNotification;
-        setItems((prev) => [n, ...prev.filter((i) => i.id !== n.id)].slice(0, 20));
-        setUnreadCount((c) => c + 1);
-      }
-    });
+    const startSync = () => {
+      if (cancelled) return;
+      void refresh();
+      cleanupRef.current?.();
+      cleanupRef.current = subscribeNotificationStream((event) => {
+        if (event.type === 'notification' && event.notification) {
+          const n = event.notification as AppNotification;
+          setItems((prev) => [n, ...prev.filter((i) => i.id !== n.id)].slice(0, 20));
+          setUnreadCount((c) => c + 1);
+        }
+      });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleHandle = window.requestIdleCallback(startSync, { timeout: 1500 });
+    } else {
+      timeoutHandle = setTimeout(startSync, 1000);
+    }
 
     return () => {
+      cancelled = true;
+      if (idleHandle !== undefined && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== undefined) {
+        clearTimeout(timeoutHandle);
+      }
       cleanupRef.current?.();
       cleanupRef.current = null;
     };

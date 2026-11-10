@@ -93,7 +93,7 @@ const landingTheme = {
     colorPrimary: '#003198',
     colorLink: '#003198',
     borderRadius: 4,
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    fontFamily: "var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif",
   },
   algorithm: theme.defaultAlgorithm,
 };

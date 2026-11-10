@@ -347,6 +347,219 @@ export function parseFlexibleCalendarDate(
   };
 }
 
+const GC_MONTH_NAME_MAP: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+export interface ParsedGcTextInput {
+  date: string;
+  precision: DatePrecision;
+  year: number;
+  month: number;
+  day: number;
+}
+
+/**
+ * Parse natural Gregorian user input and infer precision automatically:
+ * - "YYYY" -> precision 'year'
+ * - "YYYY-MM", "YYYY/MM", "MM/YYYY", "Mon YYYY" -> precision 'month'
+ * - "YYYY-MM-DD", "YYYY/MM/DD", "DD/MM/YYYY", "Mon D, YYYY", "D Mon YYYY" -> precision 'day'
+ */
+export function parseTypedGcDateInput(
+  rawInput: string,
+  options: { minYear?: number; maxYear?: number } = {},
+): ParsedGcTextInput | null {
+  if (typeof rawInput !== "string") return null;
+  const s = rawInput.trim().replace(/\s+/g, " ");
+  if (!s) return null;
+
+  const minY = Math.max(MIN_YEAR, options.minYear ?? MIN_YEAR);
+  const maxY = Math.min(MAX_YEAR, options.maxYear ?? MAX_YEAR);
+  const inRange = (y: number) => Number.isInteger(y) && y >= minY && y <= maxY;
+
+  const yearOnly = /^(\d{4})$/.exec(s);
+  if (yearOnly) {
+    const year = Number(yearOnly[1]);
+    if (!inRange(year)) return null;
+    return {
+      date: formatByPrecision(year, 1, 1, "year"),
+      precision: "year",
+      year,
+      month: 1,
+      day: 1,
+    };
+  }
+
+  const ymIso = /^(\d{4})[-/.](\d{1,2})$/.exec(s);
+  if (ymIso) {
+    const year = Number(ymIso[1]);
+    const month = Number(ymIso[2]);
+    if (!inRange(year) || month < 1 || month > 12) return null;
+    return {
+      date: formatByPrecision(year, month, 1, "month"),
+      precision: "month",
+      year,
+      month,
+      day: 1,
+    };
+  }
+
+  const myNumeric = /^(\d{1,2})[-/](\d{4})$/.exec(s);
+  if (myNumeric) {
+    const month = Number(myNumeric[1]);
+    const year = Number(myNumeric[2]);
+    if (!inRange(year) || month < 1 || month > 12) return null;
+    return {
+      date: formatByPrecision(year, month, 1, "month"),
+      precision: "month",
+      year,
+      month,
+      day: 1,
+    };
+  }
+
+  const ymdIso = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s);
+  if (ymdIso) {
+    const year = Number(ymdIso[1]);
+    const month = Number(ymdIso[2]);
+    const day = Number(ymdIso[3]);
+    if (!inRange(year) || !isValidGregorianDate(year, month, day)) return null;
+    return {
+      date: formatByPrecision(year, month, day, "day"),
+      precision: "day",
+      year,
+      month,
+      day,
+    };
+  }
+
+  const dmyNumeric = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(s);
+  if (dmyNumeric) {
+    let day = Number(dmyNumeric[1]);
+    let month = Number(dmyNumeric[2]);
+    const year = Number(dmyNumeric[3]);
+    if (month > 12 && day <= 12) {
+      const tmp = day;
+      day = month;
+      month = tmp;
+    }
+    if (!inRange(year) || !isValidGregorianDate(year, month, day)) return null;
+    return {
+      date: formatByPrecision(year, month, day, "day"),
+      precision: "day",
+      year,
+      month,
+      day,
+    };
+  }
+
+  const monYear = /^([a-zA-Z]+)[,\s-]+(\d{4})$/.exec(s);
+  if (monYear) {
+    const month = GC_MONTH_NAME_MAP[monYear[1].toLowerCase()];
+    const year = Number(monYear[2]);
+    if (!month || !inRange(year)) return null;
+    return {
+      date: formatByPrecision(year, month, 1, "month"),
+      precision: "month",
+      year,
+      month,
+      day: 1,
+    };
+  }
+
+  const monDayYear = /^([a-zA-Z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})$/.exec(s);
+  if (monDayYear) {
+    const month = GC_MONTH_NAME_MAP[monDayYear[1].toLowerCase()];
+    const day = Number(monDayYear[2]);
+    const year = Number(monDayYear[3]);
+    if (!month || !inRange(year) || !isValidGregorianDate(year, month, day)) {
+      return null;
+    }
+    return {
+      date: formatByPrecision(year, month, day, "day"),
+      precision: "day",
+      year,
+      month,
+      day,
+    };
+  }
+
+  const dayMonYear = /^(\d{1,2})(?:st|nd|rd|th)?[-\s]+([a-zA-Z]+)[,\s-]+(\d{4})$/.exec(s);
+  if (dayMonYear) {
+    const day = Number(dayMonYear[1]);
+    const month = GC_MONTH_NAME_MAP[dayMonYear[2].toLowerCase()];
+    const year = Number(dayMonYear[3]);
+    if (!month || !inRange(year) || !isValidGregorianDate(year, month, day)) {
+      return null;
+    }
+    return {
+      date: formatByPrecision(year, month, day, "day"),
+      precision: "day",
+      year,
+      month,
+      day,
+    };
+  }
+
+  return null;
+}
+
+export function isCalendarDateInFuture(
+  year: number,
+  month: number,
+  day: number,
+  precision: DatePrecision,
+  calendar: CalendarSystem,
+  today: CalendarDateValue = getTodayInCalendar(calendar),
+): boolean {
+  if (year > today.year) return true;
+  if (year < today.year || precision === "year") return false;
+  if (month > today.month) return true;
+  if (month < today.month || precision === "month") return false;
+  return day > today.day;
+}
+
+export function formatGcFieldDisplay(
+  value?: CalendarDateFieldValue | null,
+): string {
+  if (!value?.date || value.calendar !== "gc") return "";
+  const parts = parseFieldDateParts(value);
+  if (!parts) return "";
+  if (value.precision === "year" || parts.month === undefined) {
+    return String(parts.year);
+  }
+  const mon = GREGORIAN_MONTHS_SHORT[parts.month - 1] ?? "";
+  if (value.precision === "month" || parts.day === undefined) {
+    return mon ? `${mon} ${parts.year}` : String(parts.year);
+  }
+  return mon
+    ? `${mon} ${parts.day}, ${parts.year}`
+    : formatByPrecision(parts.year, parts.month, parts.day, "day");
+}
+
 export function getTodayInCalendar(
   calendar: CalendarSystem,
 ): CalendarDateValue & { isoDate: string } {

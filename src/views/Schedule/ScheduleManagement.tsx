@@ -145,7 +145,7 @@ const ScheduleManagement = () => {
                             <label className="poster-upload-label">
                                 <CloudUploadOutlined style={{ fontSize: 24, color: '#1565c0' }} />
                                 <span>Click to upload poster (optional)</span>
-                                <input type="file" accept="image/*" hidden />
+                                <input type="file" accept="image/*" style={{ display: 'none' }} />
                             </label>
                         </div>
                     </Form.Item>

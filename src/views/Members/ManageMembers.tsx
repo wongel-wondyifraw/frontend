@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, App, Select, Segmented } from 'antd';
+import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -424,14 +424,17 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                     }}
                 >
                     <span className="dt-filter-label">Joined date</span>
-                    <Segmented
+                    <Select
                         size="small"
                         aria-label="Joined date calendar"
                         value={filters.joined_calendar}
+                        popupMatchSelectWidth={false}
+                        style={{ width: 72 }}
+                        labelRender={({ value: cal }) => (cal === 'ec' ? 'EC' : 'GC')}
                         onChange={(v) => handleJoinedCalendarChange(v as CalendarSystem)}
                         options={[
-                            { label: 'GC', value: 'gc' },
-                            { label: 'EC', value: 'ec' },
+                            { label: 'GC — Gregorian', value: 'gc' },
+                            { label: 'EC — Ethiopian', value: 'ec' },
                         ]}
                     />
                 </div>

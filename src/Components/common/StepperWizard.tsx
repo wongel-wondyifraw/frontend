@@ -1,5 +1,5 @@
 'use client';
-import React, { type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { Card, Button } from 'antd';
 import './StepperWizard.css';
 
@@ -19,10 +19,13 @@ interface StepperWizardProps {
   steps?: StepDefinition[];
   currentStep?: number;
   onNext?: () => void;
+  onNextIntent?: () => void;
   onPrev?: () => void;
   onCancel?: () => void;
   submitText?: string;
   submitLoading?: boolean;
+  submitDisabled?: boolean;
+  lazyMount?: boolean;
   lastStepLabel?: string;
   children?: ReactNode;
   stepBackgrounds?: StepBackground[];
@@ -43,10 +46,13 @@ const StepperWizard = ({
   steps = [],
   currentStep = 0,
   onNext,
+  onNextIntent,
   onPrev,
   onCancel,
   submitText = 'Submit',
   submitLoading = false,
+  submitDisabled = false,
+  lazyMount = false,
   lastStepLabel,
   children,
   stepBackgrounds,
@@ -56,6 +62,11 @@ const StepperWizard = ({
   const totalSteps = steps.length;
   const lastStepIndex = Math.max(totalSteps - 1, 0);
   const safeStep = Math.min(Math.max(currentStep, 0), lastStepIndex);
+  const [mountedSteps, setMountedSteps] = useState<number[]>(() => [safeStep]);
+  if (!mountedSteps.includes(safeStep)) {
+    setMountedSteps((prev) => (prev.includes(safeStep) ? prev : [...prev, safeStep]));
+  }
+
   const active = steps[safeStep];
   const subtitle = active?.content || active?.description;
   const progress = totalSteps > 0 ? ((safeStep + 1) / totalSteps) * 100 : 0;
@@ -138,16 +149,19 @@ const StepperWizard = ({
         </header>
 
         <div className="wizard-panel">
-          {panels.map((panel, index) => (
-            <div
-              key={index}
-              className="wizard-panel-step"
-              hidden={safeStep !== index}
-              aria-hidden={safeStep !== index}
-            >
-              {panel}
-            </div>
-          ))}
+          {panels.map((panel, index) => {
+            const isMounted = !lazyMount || mountedSteps.includes(index);
+            return (
+              <div
+                key={index}
+                className="wizard-panel-step"
+                hidden={safeStep !== index}
+                aria-hidden={safeStep !== index}
+              >
+                {isMounted ? panel : null}
+              </div>
+            );
+          })}
         </div>
 
         <div className="wizard-actions">
@@ -167,6 +181,8 @@ const StepperWizard = ({
                 className="wizard-action-next"
                 type="primary"
                 onClick={onNext}
+                onMouseEnter={onNextIntent}
+                onFocus={onNextIntent}
                 size="large"
               >
                 {getNextLabel()}
@@ -179,6 +195,7 @@ const StepperWizard = ({
                 htmlType="submit"
                 size="large"
                 loading={submitLoading}
+                disabled={submitDisabled}
               >
                 {submitText}
               </Button>

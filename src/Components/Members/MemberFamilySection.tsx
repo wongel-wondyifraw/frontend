@@ -11,7 +11,7 @@ import {
   Row,
   Col,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Trash2, Plus, Info } from 'lucide-react';
 import SpouseSelect from '@/Components/common/SpouseSelect';
 import NameInput from '@/Components/common/NameInput';
 import CalendarDateInput from '@/Components/common/CalendarDateInput';
@@ -99,7 +99,7 @@ export default function MemberFamilySection() {
                     className="spouse-skipped-notice"
                   >
                     <div className="spouse-skipped-content">
-                      <InfoCircleOutlined className="spouse-skipped-icon" />
+                      <Info size={16} className="spouse-skipped-icon" />
                       <div className="spouse-skipped-text">
                         <div className="spouse-skipped-title">
                           Family details skipped
@@ -223,7 +223,7 @@ export default function MemberFamilySection() {
                               <Col xs={24} sm={3} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
                                 <Button
                                   danger
-                                  icon={<DeleteOutlined />}
+                                  icon={<Trash2 size={15} />}
                                   onClick={() => remove(name)}
                                   aria-label="Remove child"
                                 />
@@ -232,7 +232,7 @@ export default function MemberFamilySection() {
                           </div>
                         ))}
                         <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
-                          <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                          <Button type="dashed" onClick={() => add()} block icon={<Plus size={15} />}>
                             Add Child
                           </Button>
                         </Form.Item>

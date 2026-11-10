@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, DatePicker, Segmented, Select } from 'antd';
-import { CloseCircleOutlined } from '@ant-design/icons';
+import { Button, DatePicker, Select, Space } from 'antd';
+import { XCircle } from 'lucide-react';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
   ETHIOPIC_MONTHS,
@@ -19,6 +19,11 @@ import {
 import './CalendarDateInput.css';
 
 const { RangePicker } = DatePicker;
+
+const CALENDAR_SWITCH_OPTIONS = [
+  { value: 'gc', label: 'GC — Gregorian' },
+  { value: 'ec', label: 'EC — Ethiopian' },
+];
 
 export interface CalendarDateRangeValue {
   start: string | null;
@@ -217,12 +222,26 @@ const CalendarDateRangeInput: React.FC<CalendarDateRangeInputProps> = ({
     });
   };
 
+  const renderCalendarSelect = (selectSize: 'small' | 'middle' | 'large') => (
+    <Select
+      aria-label="Calendar system"
+      className="cal-date-input__cal-select"
+      size={selectSize}
+      value={effectiveCalendar}
+      popupMatchSelectWidth={false}
+      labelRender={({ value: cal }) => (cal === 'ec' ? 'EC' : 'GC')}
+      onChange={(v) => handleCalendarSwitch(v as CalendarSystem)}
+      options={CALENDAR_SWITCH_OPTIONS}
+    />
+  );
+
   const renderEcSlot = (
     slot: 'start' | 'end',
     label: string,
     parts: { year: number; month?: number; day?: number } | null,
     draft: EcDraft | null,
     committedStr: string | null,
+    headerAction?: React.ReactNode,
   ) => {
     const activeY = parts?.year ?? draft?.year;
     const activeM = parts?.month ?? draft?.month;
@@ -251,7 +270,10 @@ const CalendarDateRangeInput: React.FC<CalendarDateRangeInputProps> = ({
 
     return (
       <div className="cal-date-range__row">
-        <span className="cal-date-range__row-label">{label}</span>
+        <div className="cal-date-range__ec-header">
+          <span className="cal-date-range__row-label">{label}</span>
+          {headerAction ?? null}
+        </div>
         <div className="cal-date-input__ec-row">
           <Select
             className="cal-date-input__ec-year"
@@ -316,7 +338,7 @@ const CalendarDateRangeInput: React.FC<CalendarDateRangeInputProps> = ({
             <Button
               type="text"
               size="small"
-              icon={<CloseCircleOutlined />}
+              icon={<XCircle size={14} />}
               className="cal-date-input__clear-btn"
               aria-label={`Clear ${label}`}
               onClick={() => commitEcSlot(slot, {})}
@@ -367,41 +389,38 @@ const CalendarDateRangeInput: React.FC<CalendarDateRangeInputProps> = ({
   }, [startStr, endStr, effectiveCalendar]);
 
   return (
-    <div id={id} className={`cal-date-range ${className}`.trim()}>
-      <div className="cal-date-range__toolbar">
-        <Segmented
-          size="small"
-          aria-label="Calendar system"
-          value={effectiveCalendar}
-          onChange={(v) => handleCalendarSwitch(v as CalendarSystem)}
-          options={[
-            { label: 'GC', value: 'gc' },
-            { label: 'EC', value: 'ec' },
-          ]}
-        />
-      </div>
-
+    <div id={id} className={`cal-date-range cal-date-input--${size} ${className}`.trim()}>
       {effectiveCalendar === 'gc' ? (
-        <RangePicker
-          style={{ width: '100%' }}
-          size={size}
-          format="MMM D, YYYY"
-          value={gcRangeValue}
-          allowEmpty={[true, allowEmptyEnd]}
-          disabledDate={
-            disableFuture ? (cur) => cur.isAfter(dayjs(), 'day') : undefined
-          }
-          onChange={(range) => {
-            emitChange({
-              start: range?.[0] ? range[0].format('YYYY-MM-DD') : null,
-              end: range?.[1] ? range[1].format('YYYY-MM-DD') : null,
-              calendar: 'gc',
-            });
-          }}
-        />
+        <Space.Compact className="cal-date-input__compact" style={{ width: '100%' }}>
+          <RangePicker
+            style={{ flex: 1, minWidth: 0 }}
+            size={size}
+            format="MMM D, YYYY"
+            value={gcRangeValue}
+            allowEmpty={[true, allowEmptyEnd]}
+            disabledDate={
+              disableFuture ? (cur) => cur.isAfter(dayjs(), 'day') : undefined
+            }
+            onChange={(range) => {
+              emitChange({
+                start: range?.[0] ? range[0].format('YYYY-MM-DD') : null,
+                end: range?.[1] ? range[1].format('YYYY-MM-DD') : null,
+                calendar: 'gc',
+              });
+            }}
+          />
+          {renderCalendarSelect(size)}
+        </Space.Compact>
       ) : (
         <div className="cal-date-range__ec-list">
-          {renderEcSlot('start', 'Start date (E.C.)', startParts, startDraft, startStr)}
+          {renderEcSlot(
+            'start',
+            'Start date (E.C.)',
+            startParts,
+            startDraft,
+            startStr,
+            renderCalendarSelect('small'),
+          )}
           {renderEcSlot(
             'end',
             allowEmptyEnd ? 'End date (E.C., optional)' : 'End date (E.C.)',
@@ -424,4 +443,3 @@ const CalendarDateRangeInput: React.FC<CalendarDateRangeInputProps> = ({
 };
 
 export default CalendarDateRangeInput;
-

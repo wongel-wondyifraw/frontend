@@ -1,25 +1,33 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Button, DatePicker, Segmented, Select } from 'antd';
-import { CloseCircleOutlined } from '@ant-design/icons';
-import dayjs, { type Dayjs } from 'dayjs';
+import React, { useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Input, Select, Space } from 'antd';
+import { Calendar } from 'lucide-react';
+import type { Dayjs } from 'dayjs';
 import {
   ETHIOPIC_MONTHS,
   convertFieldCalendar,
-  convertFieldPrecision,
   formatByPrecision,
   formatFieldEquivalent,
+  formatGcFieldDisplay,
   getEthiopianMonthDays,
   getTodayInCalendar,
+  isCalendarDateInFuture,
   isValidEthiopianDate,
   parseFieldDateParts,
   parseFlexibleCalendarDate,
+  parseTypedGcDateInput,
   type CalendarDateFieldValue,
   type CalendarSystem,
   type DatePrecision,
 } from '@/lib/ethiopian-calendar';
 import './CalendarDateInput.css';
+
+const DynamicGcDatePicker = dynamic(() => import('./GcDatePicker'), {
+  ssr: false,
+  loading: () => <div className="cal-date-input__picker-skeleton" aria-hidden="true" />,
+});
 
 export interface CalendarDateInputProps {
   id?: string;
@@ -39,10 +47,23 @@ export interface CalendarDateInputProps {
   maxYear?: number;
 }
 
+function inferPrecisionFromString(
+  rawDate: string | null | undefined,
+  fallback: DatePrecision = 'day',
+): DatePrecision {
+  if (!rawDate) return fallback;
+  const parts = parseFieldDateParts({ date: rawDate, precision: fallback, calendar: 'gc' });
+  if (!parts) return fallback;
+  if (parts.day !== undefined) return 'day';
+  if (parts.month !== undefined) return 'month';
+  return 'year';
+}
+
 function normalizePropValue(
   raw: CalendarDateFieldValue | string | null | undefined,
   defaultCalendar: CalendarSystem,
   defaultPrecision: DatePrecision,
+  allowPartial: boolean,
 ): CalendarDateFieldValue {
   if (!raw) {
     return {
@@ -54,7 +75,7 @@ function normalizePropValue(
   if (typeof raw === 'string') {
     const parsed = parseFlexibleCalendarDate(raw, {
       calendar: defaultCalendar,
-      allowPartial: true,
+      allowPartial,
     });
     if (!parsed) {
       return {
@@ -74,10 +95,14 @@ function normalizePropValue(
       calendar: parsed.calendar,
     };
   }
+  const cal = raw.calendar ?? defaultCalendar;
+  const prec = allowPartial
+    ? (raw.date ? inferPrecisionFromString(raw.date, raw.precision ?? defaultPrecision) : (raw.precision ?? defaultPrecision))
+    : 'day';
   return {
     date: raw.date ?? null,
-    precision: raw.precision ?? defaultPrecision,
-    calendar: raw.calendar ?? defaultCalendar,
+    precision: prec,
+    calendar: cal,
   };
 }
 
@@ -93,6 +118,11 @@ export function requiredCalendarDateValidator(
     }
   };
 }
+
+const CALENDAR_SWITCH_OPTIONS = [
+  { value: 'gc', label: 'GC — Gregorian' },
+  { value: 'ec', label: 'EC — Ethiopian' },
+];
 
 const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
   id,
@@ -116,7 +146,7 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
     precision: DatePrecision;
   }>({
     calendar: defaultCalendar,
-    precision: defaultPrecision,
+    precision: allowPartial ? defaultPrecision : 'day',
   });
 
   const [ecDraft, setEcDraft] = useState<{
@@ -125,15 +155,52 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
     day?: number;
   } | null>(null);
 
+  const [gcDraft, setGcDraft] = useState<{
+    text: string;
+    error: string | null;
+  } | null>(null);
+
+  const [isGcFocused, setIsGcFocused] = useState(false);
+  const [pickerMounted, setPickerMounted] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const wasOpenBeforeClickRef = useRef(false);
+
   const normalized = useMemo(() => {
     if (value && typeof value === 'object') {
-      return normalizePropValue(value, value.calendar, value.precision);
+      return normalizePropValue(
+        value,
+        value.calendar ?? internalMeta.calendar,
+        value.precision ?? internalMeta.precision,
+        allowPartial,
+      );
     }
     if (typeof value === 'string') {
-      return normalizePropValue(value, internalMeta.calendar, internalMeta.precision);
+      return normalizePropValue(
+        value,
+        internalMeta.calendar,
+        internalMeta.precision,
+        allowPartial,
+      );
     }
-    return normalizePropValue(null, internalMeta.calendar, internalMeta.precision);
-  }, [value, internalMeta.calendar, internalMeta.precision]);
+    return normalizePropValue(
+      null,
+      internalMeta.calendar,
+      internalMeta.precision,
+      allowPartial,
+    );
+  }, [value, internalMeta.calendar, internalMeta.precision, allowPartial]);
+
+  const valueKey = `${normalized.calendar}:${normalized.precision}:${normalized.date ?? ''}`;
+  const [prevValueProp, setPrevValueProp] = useState(value);
+  const [selfEmittedKey, setSelfEmittedKey] = useState<string | null>(null);
+
+  if (value !== prevValueProp) {
+    setPrevValueProp(value);
+    if (valueKey !== selfEmittedKey) {
+      setGcDraft(null);
+      setEcDraft(null);
+    }
+  }
 
   const effectivePrecision: DatePrecision = allowPartial
     ? normalized.precision
@@ -156,6 +223,8 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
     effectiveCalendar === 'ec' ? (parsedParts?.day ?? ecDraft?.day) : undefined;
 
   const emitChange = (next: CalendarDateFieldValue) => {
+    const nextKey = `${next.calendar}:${next.precision}:${next.date ?? ''}`;
+    setSelfEmittedKey(nextKey);
     setInternalMeta({ calendar: next.calendar, precision: next.precision });
     onChange?.(next);
   };
@@ -163,6 +232,8 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
   const handleCalendarSwitch = (nextCal: CalendarSystem) => {
     if (nextCal === effectiveCalendar) return;
     setEcDraft(null);
+    setGcDraft(null);
+    setCalendarOpen(false);
     const converted = convertFieldCalendar(
       { ...normalized, precision: effectivePrecision },
       nextCal,
@@ -170,42 +241,12 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
     emitChange(converted);
   };
 
-  const handlePrecisionSwitch = (nextPrecision: DatePrecision) => {
-    if (nextPrecision === effectivePrecision) return;
-    const resized = convertFieldPrecision(
-      { ...normalized, precision: effectivePrecision },
-      nextPrecision,
-    );
-    if (effectiveCalendar === 'ec' && ecDraft?.year && !resized.date) {
-      if (nextPrecision === 'year') {
-        setEcDraft(null);
-        emitChange({
-          date: String(ecDraft.year).padStart(4, '0'),
-          precision: 'year',
-          calendar: 'ec',
-        });
-        return;
-      }
-      if (nextPrecision === 'month' && ecDraft.month) {
-        setEcDraft(null);
-        emitChange({
-          date: formatByPrecision(ecDraft.year, ecDraft.month, 1, 'month'),
-          precision: 'month',
-          calendar: 'ec',
-        });
-        return;
-      }
-    }
-    setEcDraft(null);
-    emitChange(resized);
-  };
-
   const commitEcParts = (next: { year?: number; month?: number; day?: number }) => {
     if (!next.year && !next.month && !next.day) {
       setEcDraft(null);
       emitChange({
         date: null,
-        precision: effectivePrecision,
+        precision: 'day',
         calendar: 'ec',
       });
       return;
@@ -215,39 +256,32 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
       setEcDraft(next);
       emitChange({
         date: null,
-        precision: effectivePrecision,
+        precision: 'day',
         calendar: 'ec',
       });
       return;
     }
 
-    if (effectivePrecision === 'year') {
-      setEcDraft(null);
-      emitChange({
-        date: String(next.year).padStart(4, '0'),
-        precision: 'year',
-        calendar: 'ec',
-      });
-      return;
-    }
-
-    if (effectivePrecision === 'month') {
+    if (allowPartial) {
       if (!next.month) {
-        setEcDraft({ year: next.year });
+        setEcDraft(null);
         emitChange({
-          date: null,
+          date: String(next.year).padStart(4, '0'),
+          precision: 'year',
+          calendar: 'ec',
+        });
+        return;
+      }
+
+      if (!next.day) {
+        setEcDraft(null);
+        emitChange({
+          date: formatByPrecision(next.year, next.month, 1, 'month'),
           precision: 'month',
           calendar: 'ec',
         });
         return;
       }
-      setEcDraft(null);
-      emitChange({
-        date: formatByPrecision(next.year, next.month, 1, 'month'),
-        precision: 'month',
-        calendar: 'ec',
-      });
-      return;
     }
 
     if (!next.month || !next.day) {
@@ -274,46 +308,91 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
     });
   };
 
-  const handleClearAll = () => {
-    setEcDraft(null);
+  const handleGcTextChange = (rawText: string) => {
+    if (!rawText.trim()) {
+      setGcDraft(isGcFocused ? { text: '', error: null } : null);
+      emitChange({
+        date: null,
+        precision: 'day',
+        calendar: 'gc',
+      });
+      return;
+    }
+
+    const parsed = parseTypedGcDateInput(rawText, { minYear, maxYear });
+    if (!parsed) {
+      setGcDraft({ text: rawText, error: null });
+      emitChange({
+        date: null,
+        precision: 'day',
+        calendar: 'gc',
+      });
+      return;
+    }
+
+    if (
+      disableFuture &&
+      isCalendarDateInFuture(
+        parsed.year,
+        parsed.month,
+        parsed.day,
+        parsed.precision,
+        'gc',
+        todayGc,
+      )
+    ) {
+      setGcDraft({ text: rawText, error: 'Future date is not allowed' });
+      emitChange({
+        date: null,
+        precision: 'day',
+        calendar: 'gc',
+      });
+      return;
+    }
+
+    setGcDraft({ text: rawText, error: null });
     emitChange({
-      date: null,
-      precision: effectivePrecision,
-      calendar: effectiveCalendar,
+      date: parsed.date,
+      precision: parsed.precision,
+      calendar: 'gc',
     });
   };
 
-  const gcPickerValue = useMemo(() => {
-    if (effectiveCalendar !== 'gc' || !parsedParts) return null;
-    const m = parsedParts.month ?? 1;
-    const d = parsedParts.day ?? 1;
-    const iso = formatByPrecision(parsedParts.year, m, d, 'day');
-    const parsed = dayjs(iso, 'YYYY-MM-DD');
-    return parsed.isValid() ? parsed : null;
-  }, [effectiveCalendar, parsedParts]);
-
-  const gcDisabledDate = useMemo(() => {
-    if (!disableFuture && !disabledDate) return undefined;
-    return (current: Dayjs) => {
-      if (disableFuture) {
-        if (effectivePrecision === 'year' && current.year() > todayGc.year) {
-          return true;
-        }
-        if (
-          effectivePrecision === 'month' &&
-          (current.year() > todayGc.year ||
-            (current.year() === todayGc.year &&
-              current.month() + 1 > todayGc.month))
-        ) {
-          return true;
-        }
-        if (effectivePrecision === 'day' && current.isAfter(dayjs(), 'day')) {
-          return true;
-        }
-      }
-      return disabledDate ? disabledDate(current) : false;
-    };
-  }, [disableFuture, disabledDate, effectivePrecision, todayGc.year, todayGc.month]);
+  const handleGcInputBlur = () => {
+    setIsGcFocused(false);
+    if (!gcDraft) return;
+    const trimmed = gcDraft.text.trim();
+    if (!trimmed) {
+      setGcDraft(null);
+      return;
+    }
+    const parsed = parseTypedGcDateInput(trimmed, { minYear, maxYear });
+    if (!parsed) {
+      setGcDraft({
+        text: gcDraft.text,
+        error: 'Enter YYYY (e.g. 1995), YYYY-MM, or full date',
+      });
+      return;
+    }
+    if (
+      disableFuture &&
+      isCalendarDateInFuture(
+        parsed.year,
+        parsed.month,
+        parsed.day,
+        parsed.precision,
+        'gc',
+        todayGc,
+      )
+    ) {
+      setGcDraft({
+        text: gcDraft.text,
+        error: 'Future date is not allowed',
+      });
+      return;
+    }
+    setGcDraft(null);
+  };
 
   const ecYearOptions = useMemo(() => {
     const list: { value: number; label: string }[] = [];
@@ -397,113 +476,204 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
 
   const gcPlaceholder =
     placeholder ||
-    (effectivePrecision === 'year'
-      ? 'Select year (G.C.)'
-      : effectivePrecision === 'month'
-        ? 'Select month & year'
-        : 'Select date (G.C.)');
+    (allowPartial ? 'Select date or enter year' : 'Select date (G.C.)');
 
-  const ecIncompleteNotice =
+  const gcInputDisplay =
+    gcDraft !== null
+      ? gcDraft.text
+      : formatGcFieldDisplay(normalized);
+
+  const ecNotice =
     effectiveCalendar === 'ec' &&
     !normalized.date &&
     (activeEcYear !== undefined || activeEcMonth !== undefined || activeEcDay !== undefined)
       ? activeEcYear === undefined
-        ? 'Select an Ethiopian year to complete'
-        : effectivePrecision === 'month'
-          ? 'Select an Ethiopian month to complete'
-          : !activeEcMonth
+        ? 'Select Ethiopian year to set date'
+        : !allowPartial
+          ? !activeEcMonth
             ? 'Select Ethiopian month and day'
             : 'Select day to complete'
+          : null
       : null;
 
-  return (
-    <div id={id} className={`cal-date-input ${className}`.trim()}>
-      {!hideCalendarSwitch || allowPartial ? (
-        <div className="cal-date-input__toolbar">
-          {!hideCalendarSwitch ? (
-            <Segmented
-              size="small"
-              aria-label="Calendar system"
-              value={effectiveCalendar}
-              onChange={(v) => handleCalendarSwitch(v as CalendarSystem)}
-              options={[
-                { label: 'GC', value: 'gc' },
-                { label: 'EC', value: 'ec' },
-              ]}
-            />
-          ) : null}
-          {allowPartial ? (
-            <Segmented
-              size="small"
-              aria-label="Date precision"
-              value={effectivePrecision}
-              onChange={(v) => handlePrecisionSwitch(v as DatePrecision)}
-              options={[
-                { label: 'Exact', value: 'day' },
-                { label: 'Month & Year', value: 'month' },
-                { label: 'Year Only', value: 'year' },
-              ]}
-            />
-          ) : null}
-        </div>
-      ) : null}
+  const calendarSelect = !hideCalendarSwitch ? (
+    <Select
+      aria-label="Calendar system"
+      className="cal-date-input__cal-select"
+      size={size}
+      value={effectiveCalendar}
+      popupMatchSelectWidth={false}
+      labelRender={({ value: cal }) => (cal === 'ec' ? 'EC' : 'GC')}
+      onChange={(v) => handleCalendarSwitch(v as CalendarSystem)}
+      options={CALENDAR_SWITCH_OPTIONS}
+    />
+  ) : null;
 
+  const gcControlNode = !allowPartial ? (
+    hideCalendarSwitch ? (
+      <DynamicGcDatePicker
+        mode="inline"
+        parsedParts={parsedParts}
+        disableFuture={disableFuture}
+        todayGc={todayGc}
+        disabledDate={disabledDate}
+        size={size}
+        allowClear={allowClear}
+        placeholder={gcPlaceholder}
+        minYear={minYear}
+        maxYear={maxYear}
+        onChange={(dateStr) =>
+          emitChange({
+            date: dateStr,
+            precision: 'day',
+            calendar: 'gc',
+          })
+        }
+      />
+    ) : (
+      <Space.Compact className="cal-date-input__compact" style={{ width: '100%' }}>
+        <DynamicGcDatePicker
+          mode="inline"
+          parsedParts={parsedParts}
+          disableFuture={disableFuture}
+          todayGc={todayGc}
+          disabledDate={disabledDate}
+          size={size}
+          allowClear={allowClear}
+          placeholder={gcPlaceholder}
+          minYear={minYear}
+          maxYear={maxYear}
+          onChange={(dateStr) =>
+            emitChange({
+              date: dateStr,
+              precision: 'day',
+              calendar: 'gc',
+            })
+          }
+        />
+        {calendarSelect}
+      </Space.Compact>
+    )
+  ) : (
+    <div className="cal-date-input__gc-wrap">
+      {hideCalendarSwitch ? (
+        <Input
+          className="cal-date-input__gc-text"
+          size={size}
+          value={gcInputDisplay}
+          allowClear={allowClear}
+          status={gcDraft?.error ? 'warning' : undefined}
+          placeholder={gcPlaceholder}
+          onFocus={() => {
+            setIsGcFocused(true);
+            if (gcDraft === null) {
+              setGcDraft({ text: formatGcFieldDisplay(normalized), error: null });
+            }
+          }}
+          onBlur={handleGcInputBlur}
+          onChange={(e) => handleGcTextChange(e.target.value)}
+          suffix={
+            <button
+              type="button"
+              className="cal-date-input__calendar-btn"
+              aria-label="Open calendar picker"
+              onMouseDownCapture={() => {
+                wasOpenBeforeClickRef.current = calendarOpen;
+              }}
+              onClick={() => {
+                setPickerMounted(true);
+                setCalendarOpen(!wasOpenBeforeClickRef.current);
+              }}
+            >
+              <Calendar size={15} />
+            </button>
+          }
+        />
+      ) : (
+        <Space.Compact className="cal-date-input__compact" style={{ width: '100%' }}>
+          <Input
+            className="cal-date-input__gc-text"
+            size={size}
+            value={gcInputDisplay}
+            allowClear={allowClear}
+            status={gcDraft?.error ? 'warning' : undefined}
+            placeholder={gcPlaceholder}
+            onFocus={() => {
+              setIsGcFocused(true);
+              if (gcDraft === null) {
+                setGcDraft({ text: formatGcFieldDisplay(normalized), error: null });
+              }
+            }}
+            onBlur={handleGcInputBlur}
+            onChange={(e) => handleGcTextChange(e.target.value)}
+            suffix={
+              <button
+                type="button"
+                className="cal-date-input__calendar-btn"
+                aria-label="Open calendar picker"
+                onMouseDownCapture={() => {
+                  wasOpenBeforeClickRef.current = calendarOpen;
+                }}
+                onClick={() => {
+                  setPickerMounted(true);
+                  setCalendarOpen(!wasOpenBeforeClickRef.current);
+                }}
+              >
+                <Calendar size={15} />
+              </button>
+            }
+          />
+          {calendarSelect}
+        </Space.Compact>
+      )}
+
+      {pickerMounted ? (
+        <DynamicGcDatePicker
+          mode="popover"
+          open={calendarOpen}
+          onOpenChange={setCalendarOpen}
+          parsedParts={parsedParts}
+          disableFuture={disableFuture}
+          todayGc={todayGc}
+          disabledDate={disabledDate}
+          size={size}
+          minYear={minYear}
+          maxYear={maxYear}
+          onChange={(dateStr) => {
+            setGcDraft(null);
+            setCalendarOpen(false);
+            emitChange({
+              date: dateStr,
+              precision: 'day',
+              calendar: 'gc',
+            });
+          }}
+        />
+      ) : null}
+    </div>
+  );
+
+  return (
+    <div id={id} className={`cal-date-input cal-date-input--${size} ${className}`.trim()}>
       <div className="cal-date-input__control">
         {effectiveCalendar === 'gc' ? (
-          <DatePicker
-            style={{ width: '100%' }}
-            size={size}
-            picker={
-              effectivePrecision === 'year'
-                ? 'year'
-                : effectivePrecision === 'month'
-                  ? 'month'
-                  : 'date'
-            }
-            format={
-              effectivePrecision === 'year'
-                ? 'YYYY'
-                : effectivePrecision === 'month'
-                  ? 'MMM YYYY'
-                  : 'MMM D, YYYY'
-            }
-            value={gcPickerValue}
-            allowClear={allowClear}
-            disabledDate={gcDisabledDate}
-            placeholder={gcPlaceholder}
-            onChange={(d) => {
-              if (!d) {
-                emitChange({
-                  date: null,
-                  precision: effectivePrecision,
-                  calendar: 'gc',
-                });
-                return;
-              }
-              const fmt =
-                effectivePrecision === 'year'
-                  ? 'YYYY'
-                  : effectivePrecision === 'month'
-                    ? 'YYYY-MM'
-                    : 'YYYY-MM-DD';
-              emitChange({
-                date: d.format(fmt),
-                precision: effectivePrecision,
-                calendar: 'gc',
-              });
-            }}
-          />
+          gcControlNode
         ) : (
           <div className="cal-date-input__ec-row">
             <Select
               className="cal-date-input__ec-year"
               size={size}
               showSearch
+              allowClear={allowClear}
               optionFilterProp="label"
               placeholder="Year (EC)"
               value={activeEcYear}
               options={ecYearOptions}
-              onChange={(y: number) => {
+              onChange={(y: number | undefined) => {
+                if (y === undefined) {
+                  commitEcParts({});
+                  return;
+                }
                 const clampedMonth =
                   disableFuture && y === todayEc.year && activeEcMonth && activeEcMonth > todayEc.month
                     ? todayEc.month
@@ -527,74 +697,76 @@ const CalendarDateInput: React.FC<CalendarDateInputProps> = ({
               }}
             />
 
-            {effectivePrecision !== 'year' ? (
-              <Select
-                className="cal-date-input__ec-month"
-                size={size}
-                showSearch
-                optionFilterProp="label"
-                placeholder="Month (EC)"
-                value={activeEcMonth}
-                options={ecMonthOptions}
-                onChange={(m: number) => {
-                  const y = activeEcYear ?? todayEc.year;
-                  const maxDay = getEthiopianMonthDays(y, m);
-                  const nextDay =
-                    activeEcDay !== undefined
-                      ? Math.min(
-                          activeEcDay,
-                          disableFuture && y === todayEc.year && m === todayEc.month
-                            ? todayEc.day
-                            : maxDay,
-                        )
-                      : undefined;
+            <Select
+              className="cal-date-input__ec-month"
+              size={size}
+              showSearch
+              allowClear={allowPartial && allowClear}
+              optionFilterProp="label"
+              placeholder={allowPartial ? 'Month (opt)' : 'Month (EC)'}
+              value={activeEcMonth}
+              options={ecMonthOptions}
+              onChange={(m: number | undefined) => {
+                if (m === undefined) {
                   commitEcParts({
                     year: activeEcYear,
-                    month: m,
-                    day: nextDay,
+                    month: undefined,
+                    day: undefined,
                   });
-                }}
-              />
-            ) : null}
+                  return;
+                }
+                const y = activeEcYear ?? todayEc.year;
+                const maxDay = getEthiopianMonthDays(y, m);
+                const nextDay =
+                  activeEcDay !== undefined
+                    ? Math.min(
+                        activeEcDay,
+                        disableFuture && y === todayEc.year && m === todayEc.month
+                          ? todayEc.day
+                          : maxDay,
+                      )
+                    : undefined;
+                commitEcParts({
+                  year: activeEcYear,
+                  month: m,
+                  day: nextDay,
+                });
+              }}
+            />
 
-            {effectivePrecision === 'day' ? (
-              <Select
-                className="cal-date-input__ec-day"
-                size={size}
-                placeholder="Day"
-                value={activeEcDay}
-                options={ecDayOptions}
-                onChange={(d: number) => {
-                  commitEcParts({
-                    year: activeEcYear,
-                    month: activeEcMonth,
-                    day: d,
-                  });
-                }}
-              />
-            ) : null}
+            <Select
+              className="cal-date-input__ec-day"
+              size={size}
+              allowClear={allowPartial && allowClear}
+              disabled={!activeEcMonth}
+              placeholder={allowPartial ? 'Day (opt)' : 'Day'}
+              value={activeEcDay}
+              options={ecDayOptions}
+              onChange={(d: number | undefined) => {
+                commitEcParts({
+                  year: activeEcYear,
+                  month: activeEcMonth,
+                  day: d,
+                });
+              }}
+            />
 
-            {allowClear && (normalized.date || ecDraft) ? (
-              <Button
-                type="text"
-                size="small"
-                icon={<CloseCircleOutlined />}
-                className="cal-date-input__clear-btn"
-                aria-label="Clear Ethiopian date"
-                onClick={handleClearAll}
-              />
-            ) : null}
+            {calendarSelect}
           </div>
         )}
       </div>
 
-      {equivalent ? (
+      {gcDraft?.error ? (
+        <div className="cal-date-input__hint cal-date-input__hint--warn">
+          {gcDraft.error}
+        </div>
+      ) : equivalent ? (
         <div className="cal-date-input__hint">
           {`= ${equivalent}`}
         </div>
-      ) : ecIncompleteNotice ? (
+      ) : ecNotice ? (
         <div className="cal-date-input__hint cal-date-input__hint--warn">
-          {ecIncompleteNotice}
+          {ecNotice}
         </div>
       ) : null}
     </div>

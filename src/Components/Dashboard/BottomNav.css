@@ -226,4 +226,11 @@
   body:has(.ant-drawer-open) .bottom-nav {
     pointer-events: none !important;
   }
+
+  .bottom-nav-skeleton-item {
+    flex: 1;
+    margin: 12px 10px;
+    border-radius: 8px;
+    background: var(--bg-hover, #f1f5f9);
+  }
 }

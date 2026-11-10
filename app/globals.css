@@ -90,10 +90,10 @@ body {
   min-height: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif;
+  font-family: var(--font-poppins), var(--font-noto-ethiopic), system-ui, sans-serif;
   box-sizing: border-box;
   background-color: var(--bg-body);
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 html h1,

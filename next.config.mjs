@@ -50,6 +50,7 @@ const nextConfig = {
     ],
   },
   experimental: {
+    inlineCss: true,
     optimizePackageImports: [
       'antd',
       '@ant-design/icons',

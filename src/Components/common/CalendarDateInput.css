@@ -5,16 +5,72 @@
   width: 100%;
 }
 
-.cal-date-input__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
 .cal-date-input__control {
   width: 100%;
+}
+
+.cal-date-input__gc-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.cal-date-input__compact {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+}
+
+.cal-date-input__compact > .cal-date-input__gc-text,
+.cal-date-input__compact > .cal-date-input__gc-picker,
+.cal-date-input__compact > .ant-picker-range {
+  flex: 1 1 0%;
+  width: auto !important;
+  min-width: 0;
+}
+
+.cal-date-input__cal-select {
+  flex: 0 0 74px;
+  width: 74px;
+}
+
+.cal-date-input__calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  margin: 0;
+  cursor: pointer;
+  color: var(--text-secondary, #64748b);
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.cal-date-input__calendar-btn:hover {
+  color: var(--primary-blue, #1e40af);
+}
+
+.cal-date-input__popover-anchor {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: 0;
+}
+
+/* Match AntD controlHeightLG (48px) for affixed GC text inputs */
+.cal-date-input--large .ant-input-affix-wrapper {
+  min-height: 48px;
+}
+
+.cal-date-input--large .ant-input-affix-wrapper > input.ant-input {
+  height: 46px;
+  line-height: 46px;
 }
 
 .cal-date-input__ec-row {
@@ -26,18 +82,18 @@
 }
 
 .cal-date-input__ec-year {
-  flex: 1 1 82px;
-  min-width: 76px;
+  flex: 1 1 84px;
+  min-width: 78px;
 }
 
 .cal-date-input__ec-month {
-  flex: 1.4 1 116px;
+  flex: 1.35 1 116px;
   min-width: 104px;
 }
 
 .cal-date-input__ec-day {
-  flex: 0.8 1 68px;
-  min-width: 62px;
+  flex: 0.75 1 70px;
+  min-width: 64px;
 }
 
 .cal-date-input__clear-btn {
@@ -62,18 +118,18 @@
   width: 100%;
 }
 
-.cal-date-range__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
 .cal-date-range__ec-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
+}
+
+.cal-date-range__ec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .cal-date-range__row {
@@ -86,4 +142,18 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary, #64748b);
+}
+
+.cal-date-input__picker-skeleton {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-hover, #f8fafc);
+}
+
+.cal-date-input--large .cal-date-input__picker-skeleton {
+  height: 48px;
 }

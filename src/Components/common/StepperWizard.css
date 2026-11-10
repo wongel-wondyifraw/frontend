@@ -152,6 +152,12 @@
   display: none !important;
 }
 
+.wizard-step-loading {
+  padding: 24px 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
 .wizard-actions {
   display: flex;
   justify-content: flex-end;

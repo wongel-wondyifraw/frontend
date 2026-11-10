@@ -3,6 +3,7 @@ import axios, {
   type AxiosProgressEvent,
   type InternalAxiosRequestConfig,
 } from "axios";
+import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookies";
 import { ApiRequestError } from "@/lib/errors";
 import type {
   ApiSearchResult,
@@ -47,9 +48,6 @@ const api = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
   },
 });
 
@@ -160,6 +158,10 @@ api.interceptors.response.use(
         );
         if (typeof window !== "undefined") {
           localStorage.setItem("token", data.access_token);
+          setAuthCookie(
+            data.access_token,
+            localStorage.getItem("cms_remember_me") === "1",
+          );
           if (data.refresh_token) {
             localStorage.setItem("refresh_token", data.refresh_token);
           }
@@ -176,6 +178,7 @@ api.interceptors.response.use(
         if (typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("refresh_token");
+          clearAuthCookie();
           window.dispatchEvent(new Event("auth:logout")); // Optional custom event
         }
         return Promise.reject(err);
