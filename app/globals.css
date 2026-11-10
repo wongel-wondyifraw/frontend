@@ -164,31 +164,18 @@ button {
   object-position: center center;
 }
 
-/* System-wide taller form controls (inputs, selects, filters) */
-.ant-input-affix-wrapper,
-.ant-input:not(textarea),
-.ant-input-number,
-.ant-picker,
-.ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
-  min-height: 42px;
-}
-
-.ant-input-affix-wrapper {
-  padding-top: 0;
-  padding-bottom: 0;
+/* Form controls inherit exact sizes from ConfigProvider tokens
+   (sm = 36px, middle = 42px, lg = 48px) without stacking extra padding */
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-textarea-with-clear-btn) {
   align-items: center;
 }
 
-.ant-input-affix-wrapper > input.ant-input {
+.ant-input-affix-wrapper > input.ant-input,
+.ant-picker .ant-picker-input > input {
   min-height: 0;
-  height: 40px;
-  line-height: 40px;
-}
-
-.ant-input:not(textarea):not(.ant-input-borderless) {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  line-height: 1.4;
+  height: auto;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 textarea.ant-input,
@@ -196,30 +183,6 @@ textarea.ant-input,
   min-height: 88px;
   padding: 10px 12px;
   line-height: 1.5;
-}
-
-.ant-select-single .ant-select-selector {
-  align-items: center;
-}
-
-.ant-select-single .ant-select-selection-item,
-.ant-select-single .ant-select-selection-placeholder {
-  line-height: 40px !important;
-}
-
-.ant-picker {
-  padding-top: 0;
-  padding-bottom: 0;
-  align-items: center;
-}
-
-.ant-picker-input > input {
-  height: 40px;
-  line-height: 40px;
-}
-
-.ant-input-number-input {
-  height: 40px;
 }
 
 /* No horizontal scrollbars; tables must not create nested vertical scroll.
