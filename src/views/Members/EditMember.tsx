@@ -253,11 +253,13 @@ const EditMember = () => {
           'error',
           getApiErrorMessage(familyError, 'Member updated, but family could not be synced.'),
         );
+        router.refresh();
         router.push('/members/manage');
         return;
       }
 
       showToast('success', 'Member updated successfully');
+      router.refresh();
       router.push('/members/manage');
     } catch (error: unknown) {
       showToast('error', getApiErrorMessage(error, 'Failed to update member'));

@@ -54,6 +54,7 @@ import {
   mergeLandingContent,
 } from '@/lib/landing-defaults';
 import { normalizePersonName } from '@/lib/name-normalizer';
+import { getApiErrorMessage } from '@/lib/errors';
 import './ChurchFeed.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -452,9 +453,7 @@ export default function ChurchFeed({
       form.reset();
     } catch (err: unknown) {
       message.error(
-        err instanceof Error
-          ? err.message
-          : 'Failed to send your message. Please try again.',
+        getApiErrorMessage(err, 'Failed to send your message. Please try again.'),
       );
     } finally {
       setSubmittingContact(false);

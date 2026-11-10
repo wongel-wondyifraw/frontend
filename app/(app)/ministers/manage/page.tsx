@@ -1,6 +1,8 @@
 import ManageMinisters from '@/views/Ministers/ManageMinisters';
 import { getMinistersServer } from '@/lib/api-server';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Manage Ministers — Goro Full Gospel Church',
 };

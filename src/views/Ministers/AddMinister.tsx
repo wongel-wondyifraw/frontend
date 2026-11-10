@@ -292,7 +292,10 @@ const AddMinister = () => {
         open={!!credentials}
         closable={false}
         mask={{ closable: false }}
-        onOk={() => router.push('/ministers/manage')}
+        onOk={() => {
+          router.refresh();
+          router.push('/ministers/manage');
+        }}
         okText="Go to Ministers"
         cancelButtonProps={{ style: { display: 'none' } }}
       >

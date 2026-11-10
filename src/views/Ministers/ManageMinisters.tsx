@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
@@ -39,15 +39,21 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
   const [pageSize, setPageSize] = useState(initialPage?.limit ?? 10);
   const [total, setTotal] = useState(initialPage?.total ?? 0);
   const [filters, setFilters] = useState<MinisterFilters>(DEFAULT_FILTERS);
+  const requestSeqRef = useRef(0);
+  const hasHydratedRef = useRef(false);
 
   const loadMinisters = useCallback(async (
     nextPage = page,
     nextPageSize = pageSize,
     search = searchText,
     nextFilters = filters,
+    options: { silent?: boolean } = {},
   ) => {
+    const seq = ++requestSeqRef.current;
     try {
-      setLoading(true);
+      if (!options.silent) {
+        setLoading(true);
+      }
       const params: PaginationParams = {
         page: nextPage,
         limit: nextPageSize,
@@ -55,23 +61,44 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
         status: nextFilters.status,
       };
       const result = await getMinisters(params);
+      if (seq !== requestSeqRef.current) return;
       setMinisters(result.data);
       setTotal(result.total);
       setPage(result.page);
       setPageSize(result.limit);
     } catch {
-      message.error('Failed to load ministers');
+      if (seq !== requestSeqRef.current) return;
+      if (!options.silent) {
+        message.error('Failed to load ministers');
+      }
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, searchText, filters]);
 
   const debouncedSearch = useDebouncedCallback((value: string) => {
-    loadMinisters(1, pageSize, value, filters);
+    void loadMinisters(1, pageSize, value, filters);
   }, 300);
 
   useEffect(() => {
-    if (initialPage !== null) return;
+    if (hasHydratedRef.current) return;
+    hasHydratedRef.current = true;
+    if (initialPage !== null) {
+      setMinisters(initialPage.data);
+      setTotal(initialPage.total);
+      setPage(initialPage.page);
+      setPageSize(initialPage.limit);
+      void loadMinisters(
+        initialPage.page,
+        initialPage.limit,
+        '',
+        DEFAULT_FILTERS,
+        { silent: true },
+      );
+      return;
+    }
     void loadMinisters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPage]);
@@ -104,7 +131,8 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
         try {
           await deleteMinister(minister.id);
           message.success('Minister deleted successfully');
-          loadMinisters(page, pageSize, searchText, filters);
+          router.refresh();
+          await loadMinisters(page, pageSize, searchText, filters);
         } catch (error: unknown) {
           message.error(getApiErrorMessage(error, 'Failed to delete minister'));
         }

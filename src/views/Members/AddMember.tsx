@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Form, Select, Button, Avatar, Row, Col } from 'antd';
 import { ArrowLeft, Trash2, Upload as UploadIcon, User } from 'lucide-react';
 import StepperWizard from '../../Components/common/StepperWizard';
+import ChunkLoadBoundary from '@/Components/common/ChunkLoadBoundary';
+import {
+  ContactStepSkeleton,
+  MemberFamilySectionSkeleton,
+  MinistryStepSkeleton,
+  ProfessionalStepSkeleton,
+  ReviewStepSkeleton,
+  SpiritualStepSkeleton,
+} from '@/Components/Members/MemberStepSkeletons';
 import NameInput from '@/Components/common/NameInput';
 import CalendarDateInput from '@/Components/common/CalendarDateInput';
 import { normalizeTitleInitials } from '@/lib/name-normalizer';
@@ -30,38 +39,34 @@ import './AddMember.css';
 
 const { Option } = Select;
 
-const StepLoadingFallback = () => (
-  <div className="wizard-step-loading">Loading step...</div>
-);
-
 const DynamicMemberFamilySection = dynamic(
   () => import('@/Components/Members/MemberFamilySection'),
   {
-    loading: () => <div className="wizard-step-loading">Loading family fields...</div>,
+    loading: (props) => <MemberFamilySectionSkeleton {...props} />,
   },
 );
 
 const DynamicContactStep = dynamic(() => import('./steps/ContactStep'), {
-  loading: StepLoadingFallback,
+  loading: (props) => <ContactStepSkeleton {...props} />,
 });
 
 const DynamicProfessionalStep = dynamic(
   () => import('./steps/ProfessionalStep'),
   {
-    loading: StepLoadingFallback,
+    loading: (props) => <ProfessionalStepSkeleton {...props} />,
   },
 );
 
 const DynamicSpiritualStep = dynamic(() => import('./steps/SpiritualStep'), {
-  loading: StepLoadingFallback,
+  loading: (props) => <SpiritualStepSkeleton {...props} />,
 });
 
 const DynamicMinistryStep = dynamic(() => import('./steps/MinistryStep'), {
-  loading: StepLoadingFallback,
+  loading: (props) => <MinistryStepSkeleton {...props} />,
 });
 
 const DynamicReviewStep = dynamic(() => import('./steps/ReviewStep'), {
-  loading: StepLoadingFallback,
+  loading: (props) => <ReviewStepSkeleton {...props} />,
 });
 
 const DynamicUploadProgressBar = dynamic(
@@ -285,11 +290,13 @@ const AddMember = () => {
             'Member saved, but family could not be created. Update family from Family Management.',
           ),
         );
+        router.refresh();
         router.push('/members/manage');
         return;
       }
 
       showToast('success', 'Member registered successfully! Needs approval.');
+      router.refresh();
       router.push('/members/manage');
     } catch (error: unknown) {
       console.error(error);
@@ -465,33 +472,83 @@ const AddMember = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              {familySectionNeeded ? <DynamicMemberFamilySection /> : null}
+              {familySectionNeeded ? (
+                <ChunkLoadBoundary
+                  id="member-family-chunk-boundary"
+                  onRetry={() => import('@/Components/Members/MemberFamilySection')}
+                  renderFallback={(error, retry) => (
+                    <MemberFamilySectionSkeleton error={error} retry={retry} isLoading={false} />
+                  )}
+                >
+                  <DynamicMemberFamilySection />
+                </ChunkLoadBoundary>
+              ) : null}
             </div>
 
             {/* STEP 2: Contact */}
-            <DynamicContactStep locations={locations} />
+            <ChunkLoadBoundary
+              id="member-step-contact-boundary"
+              onRetry={() => STEP_PREFETCHERS[1]?.()}
+              renderFallback={(error, retry) => (
+                <ContactStepSkeleton error={error} retry={retry} isLoading={false} />
+              )}
+            >
+              <DynamicContactStep locations={locations} />
+            </ChunkLoadBoundary>
 
             {/* STEP 3: Professional */}
-            <DynamicProfessionalStep />
+            <ChunkLoadBoundary
+              id="member-step-professional-boundary"
+              onRetry={() => STEP_PREFETCHERS[2]?.()}
+              renderFallback={(error, retry) => (
+                <ProfessionalStepSkeleton error={error} retry={retry} isLoading={false} />
+              )}
+            >
+              <DynamicProfessionalStep />
+            </ChunkLoadBoundary>
 
             {/* STEP 4: Spiritual */}
-            <DynamicSpiritualStep
-              uploading={uploading}
-              uploadPercent={uploadPercent}
-              churchLetterFile={churchLetterFile}
-              letterUrl={letterUrl}
-              onLetterSelect={handleLetterSelect}
-              onClearLetter={clearLetter}
-            />
+            <ChunkLoadBoundary
+              id="member-step-spiritual-boundary"
+              onRetry={() => STEP_PREFETCHERS[3]?.()}
+              renderFallback={(error, retry) => (
+                <SpiritualStepSkeleton error={error} retry={retry} isLoading={false} />
+              )}
+            >
+              <DynamicSpiritualStep
+                uploading={uploading}
+                uploadPercent={uploadPercent}
+                churchLetterFile={churchLetterFile}
+                letterUrl={letterUrl}
+                onLetterSelect={handleLetterSelect}
+                onClearLetter={clearLetter}
+              />
+            </ChunkLoadBoundary>
 
             {/* STEP 5: Ministry */}
-            <DynamicMinistryStep ministries={ministries} />
+            <ChunkLoadBoundary
+              id="member-step-ministry-boundary"
+              onRetry={() => STEP_PREFETCHERS[4]?.()}
+              renderFallback={(error, retry) => (
+                <MinistryStepSkeleton error={error} retry={retry} isLoading={false} />
+              )}
+            >
+              <DynamicMinistryStep ministries={ministries} />
+            </ChunkLoadBoundary>
 
             {/* STEP 6: Review */}
-            <DynamicReviewStep
-              churchLetterFile={churchLetterFile}
-              letterUrl={letterUrl}
-            />
+            <ChunkLoadBoundary
+              id="member-step-review-boundary"
+              onRetry={() => STEP_PREFETCHERS[5]?.()}
+              renderFallback={(error, retry) => (
+                <ReviewStepSkeleton error={error} retry={retry} isLoading={false} />
+              )}
+            >
+              <DynamicReviewStep
+                churchLetterFile={churchLetterFile}
+                letterUrl={letterUrl}
+              />
+            </ChunkLoadBoundary>
           </StepperWizard>
         </Form>
       </div>

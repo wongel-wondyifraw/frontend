@@ -4,7 +4,15 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookies";
-import { ApiRequestError } from "@/lib/errors";
+import {
+  ApiRequestError,
+  NETWORK_EVENT,
+  NETWORK_UNAVAILABLE_MESSAGE,
+  emitNetworkSignal,
+  getApiErrorMessage,
+  getAxiosErrorMessage,
+  isNetworkUnavailableError,
+} from "@/lib/errors";
 import type {
   ApiSearchResult,
   DashboardStats,
@@ -39,10 +47,6 @@ export const API_BASE_URL = rawUrl
   .trim()
   .replace(/\/api\/v1$/i, "");
 
-if (process.env.NODE_ENV === "development") {
-  console.log("API_BASE_URL:", API_BASE_URL);
-}
-
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   withCredentials: true,
@@ -51,28 +55,44 @@ const api = axios.create({
   },
 });
 
-function toApiError(error: unknown): ApiRequestError {
+const publicApi = axios.create({
+  baseURL: `${API_BASE_URL}/api/v1`,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+export function toApiError(error: unknown): ApiRequestError {
   if (error instanceof ApiRequestError) {
+    if (error.isNetworkError) {
+      emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+    }
     return error;
+  }
+
+  if (isNetworkUnavailableError(error)) {
+    emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+    return new ApiRequestError(NETWORK_UNAVAILABLE_MESSAGE, undefined, {
+      isNetworkError: true,
+    });
   }
 
   if (axios.isAxiosError(error)) {
     if (!error.response) {
+      const isNetworkError = error.code !== "ERR_CANCELED";
+      if (isNetworkError) {
+        emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+      }
       return new ApiRequestError(
-        `Unable to reach the API at ${API_BASE_URL}. Check that the backend is running.`,
+        isNetworkError ? NETWORK_UNAVAILABLE_MESSAGE : "Request canceled",
+        undefined,
+        { isNetworkError },
       );
     }
 
-    const data = error.response.data as
-      { message?: string | string[]; statusCode?: number } | undefined;
-    const rawMessage = Array.isArray(data?.message)
-      ? data.message[0]
-      : data?.message;
-    const message =
-      (typeof rawMessage === "string" && rawMessage.trim()) ||
-      error.message ||
-      "Request failed";
-
+    const message = getAxiosErrorMessage(error, "Request failed");
+    const data = error.response.data as { statusCode?: number } | undefined;
     return new ApiRequestError(
       message,
       data?.statusCode ?? error.response.status,
@@ -80,10 +100,23 @@ function toApiError(error: unknown): ApiRequestError {
   }
 
   if (error instanceof Error) {
-    return new ApiRequestError(error.message || "Request failed");
+    return new ApiRequestError(getApiErrorMessage(error, "Request failed"));
   }
 
   return new ApiRequestError("Request failed");
+}
+
+export async function postPublicAuth<T = void>(
+  path: string,
+  body: unknown,
+): Promise<T> {
+  try {
+    const response = await publicApi.post<T>(path, body);
+    emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
 }
 
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -115,7 +148,10 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequest | undefined;
     if (!originalRequest) {
@@ -175,11 +211,16 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("token");
-          localStorage.removeItem("refresh_token");
-          clearAuthCookie();
-          window.dispatchEvent(new Event("auth:logout")); // Optional custom event
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+        if (status === 401 || status === 403) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("refresh_token");
+            clearAuthCookie();
+            window.dispatchEvent(new Event("auth:logout")); // Optional custom event
+          }
+        } else if (isNetworkUnavailableError(err)) {
+          emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
         }
         return Promise.reject(err);
       } finally {
@@ -187,11 +228,8 @@ api.interceptors.response.use(
       }
     }
 
-    if (!error.response) {
-      console.error(
-        "NETWORK ERROR: Possible causes include CORS failure, backend down, or incorrect NEXT_PUBLIC_API_URL.",
-      );
-      console.error("Target URL:", error.config?.url);
+    if (!error.response && error.code !== "ERR_CANCELED") {
+      emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
     }
     return Promise.reject(error);
   },
@@ -252,7 +290,9 @@ export const logoutUser = async (): Promise<void> => {
       await api.post("/auth/logout", { refresh_token: refreshToken });
     }
   } catch (error) {
-    console.error("Logout API failed:", error);
+    if (!isNetworkUnavailableError(error)) {
+      console.error("Logout API failed:", getApiErrorMessage(error));
+    }
   }
 };
 
@@ -1636,13 +1676,30 @@ export function subscribeNotificationStream(
   if (!token) return () => {};
 
   let es: EventSource | null = null;
+  let retryTimer: number | undefined;
   let retryMs = 1000;
   let closed = false;
 
+  const clearRetryTimer = () => {
+    if (retryTimer !== undefined) {
+      window.clearTimeout(retryTimer);
+      retryTimer = undefined;
+    }
+  };
+
   const connect = () => {
-    if (closed) return;
+    if (closed || es) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return;
+    }
+    clearRetryTimer();
     const url = `${API_BASE_URL}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
     es = new EventSource(url);
+
+    es.onopen = () => {
+      retryMs = 1000;
+      emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    };
 
     es.onmessage = (ev) => {
       try {
@@ -1657,17 +1714,37 @@ export function subscribeNotificationStream(
     es.onerror = () => {
       es?.close();
       es = null;
-      if (!closed) {
-        setTimeout(connect, retryMs);
-        retryMs = Math.min(retryMs * 2, 30000);
+      if (closed) return;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        return;
       }
+      clearRetryTimer();
+      retryTimer = window.setTimeout(connect, retryMs);
+      retryMs = Math.min(retryMs * 2, 30000);
     };
   };
 
+  const handleRestored = () => {
+    if (closed) return;
+    clearRetryTimer();
+    retryMs = 1000;
+    if (!es || es.readyState === EventSource.CLOSED) {
+      es?.close();
+      es = null;
+      connect();
+    }
+  };
+
+  window.addEventListener(NETWORK_EVENT.RESTORED, handleRestored);
+  window.addEventListener("online", handleRestored);
   connect();
 
   return () => {
     closed = true;
+    clearRetryTimer();
+    window.removeEventListener(NETWORK_EVENT.RESTORED, handleRestored);
+    window.removeEventListener("online", handleRestored);
     es?.close();
+    es = null;
   };
 }

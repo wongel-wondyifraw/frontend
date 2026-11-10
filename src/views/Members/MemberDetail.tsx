@@ -112,9 +112,11 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const [editingChild, setEditingChild] = useState<FamilyChild | null>(null);
     const [childForm] = Form.useForm();
 
-    const fetchMemberDetails = useCallback(async () => {
+    const fetchMemberDetails = useCallback(async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) {
+                setLoading(true);
+            }
             const [data, familyData] = await Promise.all([
                 getMemberById(id),
                 getFamilyByMember(id).catch(() => null),
@@ -122,8 +124,10 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
             setMember(data);
             setFamily(familyData);
         } catch (_error) {
-            message.error('Failed to load member details');
-            router.push('/members/manage');
+            if (!silent) {
+                message.error('Failed to load member details');
+                router.push('/members/manage');
+            }
         } finally {
             setLoading(false);
         }
@@ -131,18 +135,18 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
 
     useEffect(() => {
         if (initialMember !== null) {
-            getFamilyByMember(id)
-                .then(setFamily)
-                .catch(() => setFamily(null));
+            setMember(initialMember);
+            void fetchMemberDetails(true);
             return;
         }
-        fetchMemberDetails();
-    }, [initialMember, fetchMemberDetails, id]);
+        void fetchMemberDetails();
+    }, [initialMember, fetchMemberDetails]);
 
     const handleDelete = async () => {
         try {
             await deleteMember(id);
             message.success('Member deleted successfully');
+            router.refresh();
             router.push('/members/manage');
         } catch (_error) {
             message.error('Failed to delete member');
@@ -382,13 +386,32 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
                         <div className="member-header-info">
                             <h1 className="member-name">{fullName}</h1>
                             <div className="member-role-tags">
-                                <Tag
-                                    icon={member.status === 'active' ? <CheckCircleOutlined /> : <UserOutlined />}
-                                    color={member.status === 'active' ? 'success' : 'error'}
-                                    style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
-                                >
-                                    {member.status === 'active' ? 'Active Member' : 'Inactive Member'}
-                                </Tag>
+                                {(() => {
+                                    const s = (member.status || 'active').toLowerCase();
+                                    const tagColor =
+                                        s === 'active'
+                                            ? 'success'
+                                            : s === 'pending'
+                                                ? 'warning'
+                                                : 'error';
+                                    const tagLabel =
+                                        s === 'active'
+                                            ? 'Active Member'
+                                            : s === 'pending'
+                                                ? 'Pending Approval'
+                                                : s === 'rejected'
+                                                    ? 'Rejected'
+                                                    : 'Inactive Member';
+                                    return (
+                                        <Tag
+                                            icon={s === 'active' ? <CheckCircleOutlined /> : <UserOutlined />}
+                                            color={tagColor}
+                                            style={{ fontSize: '14px', padding: '4px 10px', borderRadius: '12px' }}
+                                        >
+                                            {tagLabel}
+                                        </Tag>
+                                    );
+                                })()}
 
                             </div>
                         </div>

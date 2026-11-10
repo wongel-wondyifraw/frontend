@@ -7,9 +7,8 @@ import { useRouter } from "next/navigation";
 import { TENANT } from "@/lib/tenant";
 import { useToast } from "@/context/ToastContext";
 import PoweredByShepherd from "@/Components/common/PoweredByShepherd";
-import axios from "axios";
-import { API_BASE_URL } from "@/services/api";
-import { getAxiosErrorMessage } from "@/lib/errors";
+import { postPublicAuth } from "@/services/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import "@/views/LoginPage/LoginPage.css";
 
 const { Title, Text } = Typography;
@@ -23,10 +22,10 @@ export default function ForgotPasswordPage() {
   const handleFinish = async (values: { email: string }) => {
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`, { email: values.email });
+      await postPublicAuth("/auth/forgot-password", { email: values.email });
       setSubmitted(true);
     } catch (error: unknown) {
-      showToast("error", getAxiosErrorMessage(error, "Failed to process request"));
+      showToast("error", getApiErrorMessage(error, "Failed to process request"));
     } finally {
       setLoading(false);
     }

@@ -4,10 +4,12 @@ import { App, ConfigProvider } from 'antd';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { UserProvider } from '@/context/UserContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { NetworkProvider } from '@/context/NetworkContext';
 import type { ReactNode } from 'react';
 
 import AntdStyleRegistry from '@/Components/common/AntdStyleRegistry';
 import { AntdAppExtractor } from '@/Components/common/AntdAppExtractor';
+import NetworkStatusBanner from '@/Components/common/NetworkStatusBanner';
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
@@ -30,7 +32,12 @@ export default function Providers({ children }: { children: ReactNode }) {
           >
             <App>
               <AntdAppExtractor />
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <NetworkProvider>
+                  <NetworkStatusBanner />
+                  {children}
+                </NetworkProvider>
+              </ToastProvider>
             </App>
           </ConfigProvider>
         </UserProvider>

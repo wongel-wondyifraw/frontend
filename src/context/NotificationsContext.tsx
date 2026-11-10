@@ -17,6 +17,11 @@ import {
   subscribeNotificationStream,
 } from '@/services/api';
 import { useUser } from '@/context/UserContext';
+import {
+  NETWORK_EVENT,
+  getApiErrorMessage,
+  isNetworkUnavailableError,
+} from '@/lib/errors';
 import { hasPermission } from '@/types';
 
 export interface AppNotification {
@@ -65,7 +70,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setItems(data.items);
       setUnreadCount(data.unreadCount);
     } catch (err) {
-      console.error('Failed to load notifications', err);
+      if (!isNetworkUnavailableError(err)) {
+        console.error('Failed to load notifications', getApiErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -101,8 +108,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       timeoutHandle = setTimeout(startSync, 1000);
     }
 
+    const handleNetworkRestored = () => {
+      if (!cancelled) {
+        void refresh();
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
+    }
+
     return () => {
       cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
+      }
       if (idleHandle !== undefined && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
         window.cancelIdleCallback(idleHandle);
       }

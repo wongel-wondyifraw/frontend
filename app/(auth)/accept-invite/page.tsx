@@ -8,9 +8,8 @@ import { TENANT } from "@/lib/tenant";
 import { useToast } from "@/context/ToastContext";
 import PoweredByShepherd from "@/Components/common/PoweredByShepherd";
 import PasswordStrengthMeter from "@/Components/common/PasswordStrengthMeter";
-import axios from "axios";
-import { API_BASE_URL } from "@/services/api";
-import { getAxiosErrorMessage } from "@/lib/errors";
+import { postPublicAuth } from "@/services/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import "@/views/LoginPage/LoginPage.css";
 
 const { Title, Text } = Typography;
@@ -39,15 +38,15 @@ function AcceptInviteContent() {
     if (!token || !email) return;
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`, { 
-        token, 
-        email, 
-        new_password: values.newPassword 
+      await postPublicAuth("/auth/reset-password", {
+        token,
+        email,
+        new_password: values.newPassword,
       });
       showToast("success", "Account set up successfully. Please log in.");
       router.push("/login");
     } catch (error: unknown) {
-      showToast("error", getAxiosErrorMessage(error, "Failed to set up account"));
+      showToast("error", getApiErrorMessage(error, "Failed to set up account"));
     } finally {
       setLoading(false);
     }

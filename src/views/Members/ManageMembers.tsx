@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
@@ -73,15 +73,21 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         precision: 'day',
         calendar: 'gc',
     });
+    const requestSeqRef = useRef(0);
+    const hasHydratedRef = useRef(false);
 
     const loadMembers = useCallback(async (
         nextPage = page,
         nextPageSize = pageSize,
         search = searchText,
         nextFilters = filters,
+        options: { silent?: boolean } = {},
     ) => {
+        const seq = ++requestSeqRef.current;
         try {
-            setLoading(true);
+            if (!options.silent) {
+                setLoading(true);
+            }
             const params: PaginationParams = {
                 page: nextPage,
                 limit: nextPageSize,
@@ -98,25 +104,46 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 sort_order: nextFilters.sort_order,
             };
             const result = await getMembers(params);
+            if (seq !== requestSeqRef.current) return;
             setMembers(result.data);
             setTotal(result.total);
             setPage(result.page);
             setPageSize(result.limit);
         } catch {
-            message.error('Failed to load members');
+            if (seq !== requestSeqRef.current) return;
+            if (!options.silent) {
+                message.error('Failed to load members');
+            }
         } finally {
-            setLoading(false);
+            if (seq === requestSeqRef.current) {
+                setLoading(false);
+            }
         }
     }, [page, pageSize, searchText, filters]);
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
-        loadMembers(1, pageSize, value, filters);
+        void loadMembers(1, pageSize, value, filters);
     }, 300);
 
     useEffect(() => {
-        if (initialPage !== null) return;
+        if (hasHydratedRef.current) return;
+        hasHydratedRef.current = true;
+        if (initialPage !== null) {
+            setMembers(initialPage.data);
+            setTotal(initialPage.total);
+            setPage(initialPage.page);
+            setPageSize(initialPage.limit);
+            void loadMembers(
+                initialPage.page,
+                initialPage.limit,
+                '',
+                DEFAULT_FILTERS,
+                { silent: true },
+            );
+            return;
+        }
         void loadMembers();
-        // Initial load only; search/filters call loadMembers explicitly.
+        // Initial load and silent Router-Cache revalidation; search/filters call loadMembers explicitly.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialPage]);
 
@@ -177,7 +204,8 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 try {
                     await deleteMember(member.id);
                     message.success('Member deleted successfully');
-                    loadMembers(page, pageSize, searchText, filters);
+                    router.refresh();
+                    await loadMembers(page, pageSize, searchText, filters);
                 } catch (error: unknown) {
                     message.error(getApiErrorMessage(error, 'Failed to delete member'));
                 }
@@ -187,9 +215,21 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
 
     const handleApprove = async (member: Member) => {
         try {
-            await updateMember(member.id, { status: 'active' });
-            message.success('Member approved successfully');
-            loadMembers(page, pageSize, searchText, filters);
+            const updated = await updateMember(member.id, { status: 'active' });
+            setMembers((prev) =>
+                prev.map((m) =>
+                    m.id === member.id
+                        ? { ...m, ...updated, status: updated.status || 'active' }
+                        : m,
+                ),
+            );
+            message.success(
+                filters.status && filters.status !== 'active'
+                    ? 'Member approved (moved out of current status filter)'
+                    : 'Member approved successfully',
+            );
+            router.refresh();
+            await loadMembers(page, pageSize, searchText, filters, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to approve member'));
         }
@@ -197,9 +237,17 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
 
     const handleReject = async (member: Member) => {
         try {
-            await updateMember(member.id, { status: 'rejected' });
+            const updated = await updateMember(member.id, { status: 'rejected' });
+            setMembers((prev) =>
+                prev.map((m) =>
+                    m.id === member.id
+                        ? { ...m, ...updated, status: updated.status || 'rejected' }
+                        : m,
+                ),
+            );
             message.success('Member rejected');
-            loadMembers(page, pageSize, searchText, filters);
+            router.refresh();
+            await loadMembers(page, pageSize, searchText, filters, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to reject member'));
         }
@@ -525,7 +573,10 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                         onExportExcel={exportMembersExcel}
                         onExportPdf={exportMembersPdf}
                         onImportFile={importMembersFromFile}
-                        onImportComplete={() => loadMembers(1, pageSize, searchText, filters)}
+                        onImportComplete={() => {
+                            router.refresh();
+                            void loadMembers(1, pageSize, searchText, filters);
+                        }}
                     />
                 }
                 serverPagination={{
