@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useRouter, useParams } from 'next/navigation';
 import {
   Form,
@@ -35,8 +36,6 @@ import CalendarDateInput from '@/Components/common/CalendarDateInput';
 import { formatCalendarDateField, fromEntityDate } from '@/lib/ethiopian-calendar';
 import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import {
-  updateMember,
-  getMemberById,
   uploadMemberImage,
   getLocations,
   getMinistries,
@@ -48,6 +47,7 @@ import { buildMemberPayload, validateImageFile, validateDocumentFile, fileDispla
 import { upsertMemberFamily, familyToFormValues } from '@/lib/member-family';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
+import { useMembers } from '@/context/MembersContext';
 import { useToast } from '@/context/ToastContext';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { UploadChangeParam } from 'antd/es/upload';
@@ -91,6 +91,7 @@ const EditMember = () => {
   const params = useParams();
   const id = params?.id as string;
   const { showToast } = useToast();
+  const { fetchMemberById, updateMember } = useMembers();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,11 +114,15 @@ const EditMember = () => {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const member = await getMemberById(id);
+        const [member, family] = await Promise.all([
+          fetchMemberById(id, { signal: controller.signal }),
+          getFamilyByMember(id).catch(() => null),
+        ]);
+        if (!member || controller.signal.aborted) return;
         setMemberData(member);
-        const family = await getFamilyByMember(id).catch(() => null);
         form.setFieldsValue({
           first_name: member.first_name,
           middle_name: member.middle_name,
@@ -163,14 +168,20 @@ const EditMember = () => {
         if (member.image_url) setAvatarPreview(getImageUrl(member.image_url) || undefined);
         if (member.recommendation_letter_url) setLetterUrl(member.recommendation_letter_url);
       } catch (error: unknown) {
+        if (controller.signal.aborted) return;
         showToast('error', getApiErrorMessage(error, 'Failed to fetch member details'));
         router.push('/members/manage');
       } finally {
-        setInitialLoading(false);
+        if (!controller.signal.aborted) {
+          setInitialLoading(false);
+        }
       }
     };
-    load();
-  }, [id, router, form, showToast]);
+    void load();
+    return () => {
+      controller.abort(new axios.CanceledError('EditMember unmounted'));
+    };
+  }, [id, router, form, showToast, fetchMemberById]);
 
   const next = async () => {
     try {
@@ -253,13 +264,11 @@ const EditMember = () => {
           'error',
           getApiErrorMessage(familyError, 'Member updated, but family could not be synced.'),
         );
-        router.refresh();
         router.push('/members/manage');
         return;
       }
 
       showToast('success', 'Member updated successfully');
-      router.refresh();
       router.push('/members/manage');
     } catch (error: unknown) {
       showToast('error', getApiErrorMessage(error, 'Failed to update member'));

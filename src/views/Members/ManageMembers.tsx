@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
@@ -16,7 +17,16 @@ import {
     convertFieldCalendar,
     formatCalendarDate,
 } from '@/lib/ethiopian-calendar';
-import { getMembers, deleteMember, updateMember } from '../../services/api';
+import {
+    DEFAULT_DATE_BOUND_FIELD,
+    DEFAULT_MEMBER_FILTERS,
+    type MemberFilters,
+    type MembersQueryState,
+    buildMembersQueryKey,
+    isDefaultUnfilteredPageOneQuery,
+    resolveMembersPageFromState,
+    useMembers,
+} from '@/context/MembersContext';
 import {
     downloadMemberTemplate,
     exportMembersExcel,
@@ -24,7 +34,7 @@ import {
     importMembersFromFile,
 } from '@/lib/data-io/members-io';
 import type { ColumnsType } from 'antd/es/table';
-import type { ManageMembersProps, Member, PaginationParams } from '@/types';
+import type { ManageMembersProps, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
@@ -33,22 +43,6 @@ import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMembers.css';
 
-type MemberFilters = {
-    status?: string;
-    marital_status?: string;
-    joined_from?: string;
-    joined_to?: string;
-    joined_calendar: CalendarSystem;
-    sort_by: 'created_at' | 'joined_date' | 'visit_count';
-    sort_order: 'ASC' | 'DESC';
-};
-
-const DEFAULT_FILTERS: MemberFilters = {
-    joined_calendar: 'gc',
-    sort_by: 'created_at',
-    sort_order: 'DESC',
-};
-
 const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const router = useRouter();
     const canCreate = useCan('members.create');
@@ -56,106 +50,81 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const canDelete = useCan('members.delete');
     const canApprove = useCan('members.approve');
     const { modal } = App.useApp();
-    const [members, setMembers] = useState<Member[]>(initialPage?.data ?? []);
-    const [loading, setLoading] = useState(initialPage === null);
-    const [searchText, setSearchText] = useState('');
-    const [page, setPage] = useState(initialPage?.page ?? 1);
-    const [pageSize, setPageSize] = useState(initialPage?.limit ?? 10);
-    const [total, setTotal] = useState(initialPage?.total ?? 0);
-    const [filters, setFilters] = useState<MemberFilters>(DEFAULT_FILTERS);
-    const [joinedFromField, setJoinedFromField] = useState<CalendarDateFieldValue>({
-        date: null,
-        precision: 'day',
-        calendar: 'gc',
-    });
-    const [joinedToField, setJoinedToField] = useState<CalendarDateFieldValue>({
-        date: null,
-        precision: 'day',
-        calendar: 'gc',
-    });
-    const requestSeqRef = useRef(0);
-    const hasHydratedRef = useRef(false);
+    const {
+        state,
+        hydrateInitialPage,
+        setSearchInput,
+        setDateBounds,
+        fetchMembersPage,
+        updateMember,
+        deleteMember,
+        markBulkImported,
+    } = useMembers();
 
-    const loadMembers = useCallback(async (
-        nextPage = page,
-        nextPageSize = pageSize,
-        search = searchText,
-        nextFilters = filters,
-        options: { silent?: boolean } = {},
-    ) => {
-        const seq = ++requestSeqRef.current;
-        try {
-            if (!options.silent) {
-                setLoading(true);
+    const { activeQuery, joinedFromField, joinedToField } = state;
+    const { page, limit: pageSize, search: searchText, filters } = activeQuery;
+    const { rows: members, total, loading } = resolveMembersPageFromState(state, initialPage);
+
+    const hydratedInitialRef = useRef<typeof initialPage | undefined>(undefined);
+
+    const loadMembers = useCallback(
+        async (
+            patch?: Partial<MembersQueryState> & { filters?: MemberFilters },
+            options: { silent?: boolean; signal?: AbortSignal } = {},
+        ) => {
+            try {
+                await fetchMembersPage(patch, {
+                    ...options,
+                    throwOnError: !options.silent,
+                });
+            } catch (error: unknown) {
+                if (!options.silent) {
+                    message.error(getApiErrorMessage(error, 'Failed to load members'));
+                }
             }
-            const params: PaginationParams = {
-                page: nextPage,
-                limit: nextPageSize,
-                search: search || undefined,
-                status: nextFilters.status,
-                marital_status: nextFilters.marital_status,
-                joined_from: nextFilters.joined_from,
-                joined_to: nextFilters.joined_to,
-                joined_calendar:
-                    nextFilters.joined_from || nextFilters.joined_to
-                        ? nextFilters.joined_calendar
-                        : undefined,
-                sort_by: nextFilters.sort_by,
-                sort_order: nextFilters.sort_order,
-            };
-            const result = await getMembers(params);
-            if (seq !== requestSeqRef.current) return;
-            setMembers(result.data);
-            setTotal(result.total);
-            setPage(result.page);
-            setPageSize(result.limit);
-        } catch {
-            if (seq !== requestSeqRef.current) return;
-            if (!options.silent) {
-                message.error('Failed to load members');
-            }
-        } finally {
-            if (seq === requestSeqRef.current) {
-                setLoading(false);
-            }
-        }
-    }, [page, pageSize, searchText, filters]);
+        },
+        [fetchMembersPage],
+    );
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
-        void loadMembers(1, pageSize, value, filters);
+        void loadMembers({ page: 1, search: value });
     }, 300);
 
     useEffect(() => {
-        if (hasHydratedRef.current) return;
-        hasHydratedRef.current = true;
-        if (initialPage !== null) {
-            setMembers(initialPage.data);
-            setTotal(initialPage.total);
-            setPage(initialPage.page);
-            setPageSize(initialPage.limit);
-            void loadMembers(
-                initialPage.page,
-                initialPage.limit,
-                '',
-                DEFAULT_FILTERS,
-                { silent: true },
-            );
-            return;
+        if (hydratedInitialRef.current !== initialPage) {
+            hydratedInitialRef.current = initialPage;
+            hydrateInitialPage(initialPage);
         }
-        void loadMembers();
-        // Initial load and silent Router-Cache revalidation; search/filters call loadMembers explicitly.
+    }, [initialPage, hydrateInitialPage]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const activeKey = buildMembersQueryKey(activeQuery);
+        const canSilentRevalidate = Boolean(
+            state.pagesByKey[activeKey] ||
+                (initialPage !== null &&
+                    isDefaultUnfilteredPageOneQuery(activeQuery) &&
+                    activeQuery.limit === initialPage.limit),
+        );
+        void loadMembers(undefined, {
+            silent: canSilentRevalidate,
+            signal: controller.signal,
+        });
+        return () => {
+            controller.abort(new axios.CanceledError('ManageMembers unmounted'));
+        };
+        // Revalidate once per mount against live server state; user interactions call loadMembers explicitly.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialPage]);
+    }, []);
 
     const handleSearchChange = (value: string) => {
-        setSearchText(value);
+        setSearchInput(value);
         debouncedSearch(value);
     };
 
     const applyFilters = (patch: Partial<MemberFilters>) => {
-        const next = { ...filters, ...patch };
-        setFilters(next);
-        loadMembers(1, pageSize, searchText, next);
+        const nextFilters: MemberFilters = { ...filters, ...patch };
+        void loadMembers({ page: 1, filters: nextFilters });
     };
 
     const handleJoinedFromChange = (nextVal: CalendarDateFieldValue) => {
@@ -163,7 +132,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             ...nextVal,
             calendar: filters.joined_calendar,
         };
-        setJoinedFromField(synced);
+        setDateBounds(synced, undefined);
         applyFilters({
             joined_from: synced.date || undefined,
         });
@@ -174,7 +143,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             ...nextVal,
             calendar: filters.joined_calendar,
         };
-        setJoinedToField(synced);
+        setDateBounds(undefined, synced);
         applyFilters({
             joined_to: synced.date || undefined,
         });
@@ -183,8 +152,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const handleJoinedCalendarChange = (nextCalendar: CalendarSystem) => {
         const nextFrom = convertFieldCalendar(joinedFromField, nextCalendar);
         const nextTo = convertFieldCalendar(joinedToField, nextCalendar);
-        setJoinedFromField(nextFrom);
-        setJoinedToField(nextTo);
+        setDateBounds(nextFrom, nextTo);
         applyFilters({
             joined_calendar: nextCalendar,
             joined_from: nextFrom.date || undefined,
@@ -204,8 +172,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 try {
                     await deleteMember(member.id);
                     message.success('Member deleted successfully');
-                    router.refresh();
-                    await loadMembers(page, pageSize, searchText, filters);
+                    await loadMembers(undefined, { silent: true });
                 } catch (error: unknown) {
                     message.error(getApiErrorMessage(error, 'Failed to delete member'));
                 }
@@ -215,21 +182,13 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
 
     const handleApprove = async (member: Member) => {
         try {
-            const updated = await updateMember(member.id, { status: 'active' });
-            setMembers((prev) =>
-                prev.map((m) =>
-                    m.id === member.id
-                        ? { ...m, ...updated, status: updated.status || 'active' }
-                        : m,
-                ),
-            );
+            await updateMember(member.id, { status: 'active' });
             message.success(
                 filters.status && filters.status !== 'active'
                     ? 'Member approved (moved out of current status filter)'
                     : 'Member approved successfully',
             );
-            router.refresh();
-            await loadMembers(page, pageSize, searchText, filters, { silent: true });
+            await loadMembers(undefined, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to approve member'));
         }
@@ -237,17 +196,9 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
 
     const handleReject = async (member: Member) => {
         try {
-            const updated = await updateMember(member.id, { status: 'rejected' });
-            setMembers((prev) =>
-                prev.map((m) =>
-                    m.id === member.id
-                        ? { ...m, ...updated, status: updated.status || 'rejected' }
-                        : m,
-                ),
-            );
+            await updateMember(member.id, { status: 'rejected' });
             message.success('Member rejected');
-            router.refresh();
-            await loadMembers(page, pageSize, searchText, filters, { silent: true });
+            await loadMembers(undefined, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to reject member'));
         }
@@ -414,16 +365,14 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         filters.status,
         filters.marital_status,
         filters.joined_from || filters.joined_to,
-        filters.sort_by !== DEFAULT_FILTERS.sort_by || filters.sort_order !== DEFAULT_FILTERS.sort_order
+        filters.sort_by !== DEFAULT_MEMBER_FILTERS.sort_by || filters.sort_order !== DEFAULT_MEMBER_FILTERS.sort_order
             ? true
             : null,
     ].filter(Boolean).length;
 
     const clearAllFilters = () => {
-        setJoinedFromField({ date: null, precision: 'day', calendar: 'gc' });
-        setJoinedToField({ date: null, precision: 'day', calendar: 'gc' });
-        setFilters(DEFAULT_FILTERS);
-        loadMembers(1, pageSize, searchText, DEFAULT_FILTERS);
+        setDateBounds(DEFAULT_DATE_BOUND_FIELD, DEFAULT_DATE_BOUND_FIELD);
+        void loadMembers({ page: 1, filters: DEFAULT_MEMBER_FILTERS });
     };
 
     const filterPanel = (
@@ -574,8 +523,9 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                         onExportPdf={exportMembersPdf}
                         onImportFile={importMembersFromFile}
                         onImportComplete={() => {
-                            router.refresh();
-                            void loadMembers(1, pageSize, searchText, filters);
+                            void markBulkImported().catch(() => {
+                                message.error('Failed to reload members');
+                            });
                         }}
                     />
                 }
@@ -583,8 +533,9 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                     current: page,
                     pageSize,
                     total,
-                    onChange: (nextPage, nextPageSize) =>
-                        loadMembers(nextPage, nextPageSize, searchText, filters),
+                    onChange: (nextPage, nextPageSize) => {
+                        void loadMembers({ page: nextPage, limit: nextPageSize });
+                    },
                 }}
                 actionButton={canCreate ? {
                     label: 'Add Member',

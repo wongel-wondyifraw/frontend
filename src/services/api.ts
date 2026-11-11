@@ -63,12 +63,24 @@ const publicApi = axios.create({
   },
 });
 
+const isCanceledRequest = (error: unknown): boolean => {
+  if (axios.isCancel(error)) return true;
+  if (axios.isAxiosError(error) && error.code === "ERR_CANCELED") return true;
+  return error instanceof Error && error.name === "AbortError";
+};
+
 export function toApiError(error: unknown): ApiRequestError {
   if (error instanceof ApiRequestError) {
     if (error.isNetworkError) {
       emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
     }
     return error;
+  }
+
+  if (isCanceledRequest(error)) {
+    return new ApiRequestError("Request canceled", undefined, {
+      isNetworkError: false,
+    });
   }
 
   if (isNetworkUnavailableError(error)) {
@@ -80,7 +92,7 @@ export function toApiError(error: unknown): ApiRequestError {
 
   if (axios.isAxiosError(error)) {
     if (!error.response) {
-      const isNetworkError = error.code !== "ERR_CANCELED";
+      const isNetworkError = !isCanceledRequest(error);
       if (isNetworkError) {
         emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
       }
@@ -228,7 +240,7 @@ api.interceptors.response.use(
       }
     }
 
-    if (!error.response && error.code !== "ERR_CANCELED") {
+    if (!error.response && !isCanceledRequest(error)) {
       emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
     }
     return Promise.reject(error);
@@ -547,12 +559,28 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 };
 
+const MEMBERS_NO_STORE_CONFIG = {
+  adapter: ["fetch", "xhr", "http"] as ("fetch" | "xhr" | "http")[],
+  fetchOptions: { cache: "no-store" as RequestCache },
+  headers: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+  },
+};
+
+export interface MemberRequestOptions {
+  signal?: AbortSignal;
+}
+
 export const getMembers = async (
   params: PaginationParams = {},
+  options?: MemberRequestOptions,
 ): Promise<PaginatedResponse<Member>> => {
   try {
     const response = await api.get<PaginatedResponse<Member>>("/members", {
       params,
+      signal: options?.signal,
+      ...MEMBERS_NO_STORE_CONFIG,
     });
     return response.data;
   } catch (error) {
@@ -565,9 +593,15 @@ export const getMembersList = async (): Promise<Member[]> => {
   return result.data;
 };
 
-export const getMemberById = async (id: string): Promise<Member> => {
+export const getMemberById = async (
+  id: string,
+  options?: MemberRequestOptions,
+): Promise<Member> => {
   try {
-    const response = await api.get<Member>(`/members/${id}`);
+    const response = await api.get<Member>(`/members/${id}`, {
+      signal: options?.signal,
+      ...MEMBERS_NO_STORE_CONFIG,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);

@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import {
     App,
@@ -40,8 +41,6 @@ import {
     PlusOutlined,
 } from '@ant-design/icons';
 import {
-    getMemberById,
-    deleteMember,
     removeMinistryMember,
     getFamilyByMember,
     createFamily,
@@ -49,8 +48,8 @@ import {
     addFamilyChild,
     updateFamilyChild,
     deleteFamilyChild,
-    updateMember,
 } from '../../services/api';
+import { useMembers } from '@/context/MembersContext';
 import SpouseSelect, { decodeLeaderValue } from '@/Components/common/SpouseSelect';
 import NameInput from '@/Components/common/NameInput';
 import CalendarDateInput from '@/Components/common/CalendarDateInput';
@@ -93,9 +92,18 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const params = useParams();
     const id = (memberIdProp || params?.id) as string;
     const router = useRouter();
-    const [member, setMember] = useState<Member | null>(initialMember);
+    const {
+        state: membersState,
+        hydrateInitialMember,
+        fetchMemberById,
+        updateMember,
+        deleteMember,
+    } = useMembers();
+    const cachedMember = id ? membersState.byId[id] : undefined;
+    const member = cachedMember ?? initialMember;
     const [family, setFamily] = useState<Family | null>(null);
-    const [loading, setLoading] = useState(initialMember === null);
+    const [loading, setLoading] = useState(!member);
+    const hydratedMemberRef = useRef<Member | null>(null);
 
     const { modal } = App.useApp();
 
@@ -112,41 +120,57 @@ const MemberDetail = ({ memberId: memberIdProp, initialMember = null }: MemberDe
     const [editingChild, setEditingChild] = useState<FamilyChild | null>(null);
     const [childForm] = Form.useForm();
 
-    const fetchMemberDetails = useCallback(async (silent = false) => {
+    const fetchMemberDetails = useCallback(async (silent = false, signal?: AbortSignal) => {
         try {
             if (!silent) {
                 setLoading(true);
             }
             const [data, familyData] = await Promise.all([
-                getMemberById(id),
+                fetchMemberById(id, { silent, signal }),
                 getFamilyByMember(id).catch(() => null),
             ]);
-            setMember(data);
-            setFamily(familyData);
+            if (signal?.aborted) return;
+            if (data) {
+                setFamily(familyData);
+            }
         } catch (_error) {
+            if (signal?.aborted) return;
             if (!silent) {
                 message.error('Failed to load member details');
                 router.push('/members/manage');
             }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
-    }, [id, router]);
+    }, [id, router, fetchMemberById]);
 
     useEffect(() => {
-        if (initialMember !== null) {
-            setMember(initialMember);
-            void fetchMemberDetails(true);
-            return;
+        if (initialMember && hydratedMemberRef.current !== initialMember) {
+            hydratedMemberRef.current = initialMember;
+            hydrateInitialMember(initialMember);
         }
-        void fetchMemberDetails();
-    }, [initialMember, fetchMemberDetails]);
+    }, [initialMember, hydrateInitialMember]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const hasInitial = Boolean(initialMember || membersState.byId[id]);
+        if (hasInitial) {
+            setLoading(false);
+        }
+        void fetchMemberDetails(hasInitial, controller.signal);
+        return () => {
+            controller.abort(new axios.CanceledError('MemberDetail unmounted'));
+        };
+        // Fetch once per member id; explicit mutations refresh via fetchMemberDetails.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]);
 
     const handleDelete = async () => {
         try {
             await deleteMember(id);
             message.success('Member deleted successfully');
-            router.refresh();
             router.push('/members/manage');
         } catch (_error) {
             message.error('Failed to delete member');

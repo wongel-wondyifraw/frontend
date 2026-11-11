@@ -18,7 +18,6 @@ import NameInput from '@/Components/common/NameInput';
 import CalendarDateInput from '@/Components/common/CalendarDateInput';
 import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import {
-  createMember,
   uploadMemberImage,
   getLocations,
   getMinistries,
@@ -32,6 +31,7 @@ import {
 } from '@/lib/member-payload';
 import { upsertMemberFamily } from '@/lib/member-family';
 import { getApiErrorMessage } from '@/lib/errors';
+import { useMembers } from '@/context/MembersContext';
 import { useToast } from '@/context/ToastContext';
 import { useUser } from '@/context/UserContext';
 import type { Location, Ministry } from '@/types';
@@ -102,6 +102,7 @@ const AddMember = () => {
   const router = useRouter();
   const { showToast } = useToast();
   const { user } = useUser();
+  const { createMember } = useMembers();
   const [form] = Form.useForm();
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -290,13 +291,11 @@ const AddMember = () => {
             'Member saved, but family could not be created. Update family from Family Management.',
           ),
         );
-        router.refresh();
         router.push('/members/manage');
         return;
       }
 
       showToast('success', 'Member registered successfully! Needs approval.');
-      router.refresh();
       router.push('/members/manage');
     } catch (error: unknown) {
       console.error(error);
