@@ -90,7 +90,7 @@ const DashboardContentInner = () => {
       key: 'overview',
       label: (
         <span className="dashboard-tab-label">
-          <BarChartOutlined style={{ fontSize: 16 }} />
+          <BarChartOutlined style={{ fontSize: 14 }} />
           <span>Overview</span>
         </span>
       ),
@@ -104,7 +104,7 @@ const DashboardContentInner = () => {
       key: 'requests',
       label: (
         <span className="dashboard-tab-label">
-          <HeartOutlined style={{ fontSize: 16 }} />
+          <HeartOutlined style={{ fontSize: 14 }} />
           <span>Prayer & Messages</span>
           {newRequestsCount > 0 ? (
             <Badge count={newRequestsCount} size="small" style={{ backgroundColor: '#EF4444' }} />

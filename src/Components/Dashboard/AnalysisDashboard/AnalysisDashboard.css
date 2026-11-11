@@ -144,18 +144,100 @@
   padding: 0 0 8px;
 }
 
-.ad-main-tabs .ant-tabs-nav {
+.ad-main-tabs > .ant-tabs-nav {
   margin: 0;
   padding: 0 24px;
+  min-height: 44px;
 }
 
-.ad-main-tabs .ant-tabs-tab {
-  padding: 16px 0;
-  font-size: 15px;
+.ad-main-tabs > .ant-tabs-nav::before {
+  border-bottom: 1px solid var(--border-color, #f1f5f9) !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-operations,
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-more {
+  display: none !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  overflow: visible !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-list {
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: nowrap !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-tab {
+  flex: 0 0 auto !important;
+  padding: 11px 2px;
+  margin: 0 !important;
+  font-size: 13.5px;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap !important;
+  transition: color 0.18s ease;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: var(--text-main, #0f172a);
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-tab-btn {
+  width: auto !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 600;
+  color: var(--primary-blue, #1E40AF) !important;
+}
+
+.ad-main-tabs > .ant-tabs-nav .ant-tabs-ink-bar {
+  height: 2px !important;
+  border-radius: 2px 2px 0 0 !important;
+  background: var(--primary-blue, #1e40af) !important;
 }
 
 .ad-range-select {
-  min-width: 132px;
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .ad-main-tabs > .ant-tabs-nav {
+    padding: 0 16px;
+  }
+
+  .ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-list {
+    gap: 14px;
+    transform: none !important;
+  }
+
+  .ad-main-tabs > .ant-tabs-nav .ant-tabs-tab {
+    padding: 10px 2px;
+    font-size: 13px;
+  }
+
+  .ad-range-select {
+    min-width: 104px;
+  }
+
+  .ad-main-body {
+    padding: 8px 16px 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ad-main-tabs > .ant-tabs-nav .ant-tabs-nav-list {
+    gap: 10px;
+  }
+
+  .ad-main-tabs > .ant-tabs-nav .ant-tabs-tab {
+    font-size: 12.5px;
+  }
 }
 
 .ad-main-body {
