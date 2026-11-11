@@ -3,10 +3,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Empty, Spin, Tag } from 'antd';
 import { message } from '@/lib/app-message';
-import dayjs from 'dayjs';
 import { completeTask, getMyTasks } from '@/services/api';
 import type { TaskAssignment } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
+import { formatCalendarDate, getTodayInCalendar } from '@/lib/ethiopian-calendar';
 import './TodoList.css';
 
 function personName(p?: { first_name?: string; middle_name?: string; last_name?: string } | null) {
@@ -60,7 +60,7 @@ const TodoList = () => {
     }
   };
 
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = getTodayInCalendar('gc').isoDate;
 
   return (
     <div className="todo-list-card">
@@ -81,7 +81,7 @@ const TodoList = () => {
         ) : (
           tasks.map((task) => {
             const done = task.status === 'completed';
-            const overdue = !done && task.end_date < today;
+            const overdue = !done && String(task.end_date).slice(0, 10) < today;
             const visitName = task.target_member ? personName(task.target_member) : '';
             const label = visitName
               ? `${task.definition?.name || 'Task'}: visit ${visitName}`
@@ -104,7 +104,19 @@ const TodoList = () => {
                   <span className="todo-text">{label}</span>
                   <div className="todo-meta">
                     <span>
-                      {dayjs(task.start_date).format('MMM D')} – {dayjs(task.end_date).format('MMM D, YYYY')}
+                      {formatCalendarDate(
+                        task.start_date,
+                        'day',
+                        task.date_calendar ?? 'gc',
+                        { short: true },
+                      )}{' '}
+                      –{' '}
+                      {formatCalendarDate(
+                        task.end_date,
+                        'day',
+                        task.date_calendar ?? 'gc',
+                        { includeEquivalent: task.date_calendar === 'ec' },
+                      )}
                     </span>
                     {overdue && <Tag color="error">Overdue</Tag>}
                     {done && <Tag color="success">Done</Tag>}

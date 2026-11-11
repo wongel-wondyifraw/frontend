@@ -6,9 +6,14 @@ import { ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { Spin, Tag } from 'antd';
 import { getPlans } from '@/services/api';
 import type { Plan, PlanType } from '@/types';
+import {
+  ETHIOPIC_MONTHS,
+  GREGORIAN_MONTHS_SHORT,
+  extractIsoParts,
+  gcToEc,
+  getTodayInCalendar,
+} from '@/lib/ethiopian-calendar';
 import './UpcomingPrograms.css';
-
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 const TYPE_META: Record<PlanType, { label: string; color: string }> = {
   program: { label: 'Program', color: 'blue' },
@@ -20,9 +25,19 @@ const TYPE_META: Record<PlanType, { label: string; color: string }> = {
 };
 
 function formatPlanSlot(plan: Plan) {
-  const date = new Date(String(plan.plan_date).slice(0, 10) + 'T12:00:00');
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = MONTHS[date.getMonth()] || '';
+  const parts = extractIsoParts(plan.plan_date);
+  let day = '--';
+  let month = '';
+  if (parts) {
+    if (plan.plan_date_calendar === 'ec') {
+      const ec = gcToEc(parts.year, parts.month, parts.day);
+      day = String(ec.day).padStart(2, '0');
+      month = `${ETHIOPIC_MONTHS[ec.month - 1]?.short.toUpperCase() || ''} · EC`;
+    } else {
+      day = String(parts.day).padStart(2, '0');
+      month = (GREGORIAN_MONTHS_SHORT[parts.month - 1] || '').toUpperCase();
+    }
+  }
   const start = plan.start_time ? String(plan.start_time).slice(0, 5) : '';
   const end = plan.end_time ? String(plan.end_time).slice(0, 5) : '';
   const time = start && end ? `${start} – ${end}` : start || end || 'All day';
@@ -37,7 +52,7 @@ const UpcomingPrograms = () => {
     let cancelled = false;
     (async () => {
       try {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getTodayInCalendar('gc').isoDate;
         const res = await getPlans({
           page: 1,
           limit: 8,
@@ -101,10 +116,13 @@ const UpcomingPrograms = () => {
                     <ClockCircleOutlined style={{ fontSize: 14 }} />
                     {time}
                     {plan.location ? (
-                      <>
+                      <span
+                        className="program-location-wrap"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
                         <EnvironmentOutlined style={{ fontSize: 14, marginLeft: 8 }} />
                         <span className="program-location">{plan.location}</span>
-                      </>
+                      </span>
                     ) : null}
                   </div>
                 </div>

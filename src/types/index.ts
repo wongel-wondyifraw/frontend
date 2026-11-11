@@ -1,5 +1,14 @@
 import type { ReactNode } from "react";
 
+export type DatePrecision = "day" | "month" | "year";
+export type CalendarSystem = "gc" | "ec";
+
+export interface CalendarDateFieldValue {
+  date: string | null;
+  precision: DatePrecision;
+  calendar: CalendarSystem;
+}
+
 export interface Permission {
   id?: string;
   slug: string;
@@ -64,6 +73,8 @@ export interface LandingMediaItem {
   event_date?: string;
   /** Program / event end date (YYYY-MM-DD) for ranges */
   event_date_end?: string;
+  /** Calendar used when entering event_date / event_date_end ('gc' | 'ec') */
+  event_date_calendar?: CalendarSystem;
   /** Program / event time (HH:mm) or legacy display string */
   event_time?: string;
   /** Optional venue or location line */
@@ -200,12 +211,18 @@ export interface Member {
   image_url?: string;
   recommendation_letter_url?: string;
   date_of_birth?: string;
+  date_of_birth_precision?: DatePrecision;
+  date_of_birth_calendar?: CalendarSystem;
   marital_status?: string;
   gender?: string | null;
   baptized?: boolean | string;
   holy_spirit_baptized?: boolean | string;
   joined_date?: string;
+  joined_date_precision?: DatePrecision;
+  joined_date_calendar?: CalendarSystem;
   salvation_date?: string;
+  salvation_date_precision?: DatePrecision;
+  salvation_date_calendar?: CalendarSystem;
   telegram_username?: string;
   facebook_username?: string | null;
   instagram_username?: string | null;
@@ -252,10 +269,14 @@ export interface Minister {
   status?: string;
   image_url?: string;
   date_of_birth?: string;
+  date_of_birth_precision?: DatePrecision;
+  date_of_birth_calendar?: CalendarSystem;
   marital_status?: string;
   gender?: string | null;
   title?: string;
   joined_date?: string;
+  joined_date_precision?: DatePrecision;
+  joined_date_calendar?: CalendarSystem;
   created_at?: string;
   temporary_password?: string;
   user?: MinisterAccount;
@@ -371,6 +392,7 @@ export interface TaskAssignment {
   >;
   start_date: string;
   end_date: string;
+  date_calendar?: CalendarSystem;
   status: TaskStatus;
   notes?: string | null;
   visitation_methods?: string[] | null;
@@ -403,6 +425,7 @@ export interface Plan {
   title: string;
   type: PlanType;
   plan_date: string;
+  plan_date_calendar?: CalendarSystem;
   start_time?: string | null;
   end_time?: string | null;
   location?: string | null;
@@ -419,6 +442,8 @@ export interface FamilyChild {
   name: string;
   age?: number | null;
   date_of_birth?: string | null;
+  date_of_birth_precision?: DatePrecision;
+  date_of_birth_calendar?: CalendarSystem;
   created_at?: string;
 }
 
@@ -495,6 +520,7 @@ export interface PaginationParams {
   marital_status?: string;
   joined_from?: string;
   joined_to?: string;
+  joined_calendar?: CalendarSystem;
   sort_by?: "created_at" | "joined_date" | "visit_count";
   sort_order?: "ASC" | "DESC" | "asc" | "desc";
 }
@@ -617,3 +643,35 @@ export interface SearchResult {
   icon: ReactNode;
   action: () => void;
 }
+
+export type ContactRequestStatus =
+  | 'new'
+  | 'read'
+  | 'in_progress'
+  | 'responded'
+  | 'archived';
+
+export type ContactRequestCategory =
+  | 'prayer'
+  | 'cell'
+  | 'baptism'
+  | 'counseling'
+  | 'chms'
+  | 'general';
+
+export interface ContactRequestItem {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  category: ContactRequestCategory;
+  message: string;
+  is_confidential: boolean;
+  status: ContactRequestStatus;
+  assigned_to: string | null;
+  notes: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+

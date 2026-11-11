@@ -8,6 +8,8 @@ import { ArrowLeftOutlined, TeamOutlined } from '@ant-design/icons';
 import { createFamily } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import SpouseSelect, { decodeLeaderValue } from '../../Components/common/SpouseSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './AddFamily.css';
 
@@ -67,16 +69,20 @@ const AddFamilyContent = () => {
 
       setLoading(true);
       const created = await createFamily({
-        name: values.name || undefined,
+        name: values.name?.trim() ? normalizeTitleInitials(values.name) : undefined,
         notes: values.notes || undefined,
         husband_id: husbandId,
         husband_type: husbandType,
         wife_id: wifeId,
         wife_type: wifeType,
         spouse_status,
-        external_spouse_name: values.external_spouse_name || undefined,
-        external_spouse_phone: values.external_spouse_phone || undefined,
-        external_spouse_church: values.external_spouse_church || undefined,
+        external_spouse_name: values.external_spouse_name?.trim()
+          ? normalizePersonName(values.external_spouse_name)
+          : undefined,
+        external_spouse_phone: values.external_spouse_phone?.trim() || undefined,
+        external_spouse_church: values.external_spouse_church?.trim()
+          ? normalizeTitleInitials(values.external_spouse_church)
+          : undefined,
       });
       message.success('Family created.');
       router.push(`/families/details/${created.id}`);
@@ -109,7 +115,7 @@ const AddFamilyContent = () => {
 
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ husband_status: 'registered', wife_status: 'registered' }}>
           <Form.Item name="name" label="Family name">
-            <Input size="large" placeholder="Optional — defaults to spouse last name" />
+            <NameInput mode="title" size="large" placeholder="Optional — defaults to spouse last name" />
           </Form.Item>
 
           <Row gutter={16}>
@@ -178,7 +184,7 @@ const AddFamilyContent = () => {
                     label="Name"
                     rules={[{ required: true, message: 'External spouse name is required' }]}
                   >
-                    <Input size="large" placeholder="Full name" />
+                    <NameInput mode="person" size="large" placeholder="Full name" />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
@@ -188,7 +194,7 @@ const AddFamilyContent = () => {
                 </Col>
                 <Col span={8}>
                   <Form.Item name="external_spouse_church" label="Local church">
-                    <Input size="large" placeholder="Church name" />
+                    <NameInput mode="title" size="large" placeholder="Church name" />
                   </Form.Item>
                 </Col>
               </Row>

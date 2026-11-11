@@ -7,7 +7,7 @@
   position: relative;
   overflow: hidden;
   background-color: #ffffff;
-  font-family: 'Poppins', 'Noto Sans Ethiopic', system-ui, sans-serif;
+  font-family: var(--font-poppins), var(--font-noto-ethiopic), system-ui, sans-serif;
   display: flex;
   flex-direction: column;
 }

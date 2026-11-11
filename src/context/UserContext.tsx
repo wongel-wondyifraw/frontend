@@ -1,8 +1,13 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { getProfile, logoutUser } from '../services/api';
 import { clearAuthCookie, setAuthCookie } from '../lib/auth-cookies';
+import {
+  NETWORK_EVENT,
+  getApiErrorMessage,
+  isNetworkUnavailableError,
+} from '@/lib/errors';
 import type { ApiError, User, UserContextValue } from '@/types';
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -23,6 +28,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  const userRef = useRef<User | null>(null);
 
   const logout = () => {
     if (typeof window === 'undefined') return;
@@ -31,6 +37,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       localStorage.removeItem('refresh_token');
       clearAuthCookie();
       sessionStorage.removeItem('welcomeToastShown');
+      userRef.current = null;
       setUser(null);
       window.location.href = '/login';
     });
@@ -40,6 +47,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (typeof window === 'undefined') return;
     const token = localStorage.getItem('token');
     if (!token) {
+      userRef.current = null;
       setUser(null);
       setLoading(false);
       return;
@@ -48,9 +56,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     try {
       if (!silent) setLoading(true);
       const data = await getProfile();
+      userRef.current = data;
       setUser(data);
     } catch (error: unknown) {
-      console.error('Failed to fetch user profile:', error);
+      if (!isNetworkUnavailableError(error)) {
+        console.error('Failed to fetch user profile:', getApiErrorMessage(error));
+      }
       const apiError = error as ApiError;
       const status = apiError.statusCode || apiError.status;
       if (status === 401) {
@@ -70,10 +81,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
     fetchUser();
     const handleAuthLogout = () => logout();
+    const handleNetworkRestored = () => {
+      if (!userRef.current && localStorage.getItem('token')) {
+        void fetchUser(true);
+      }
+    };
     window.addEventListener('auth:logout', handleAuthLogout);
-    
+    window.addEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
+
     return () => {
       window.removeEventListener('auth:logout', handleAuthLogout);
+      window.removeEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -2,9 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { TENANT } from '@/lib/tenant';
-import PoweredByShepherd from './PoweredByShepherd';
 import './AppLogo.css';
+
+const PoweredByShepherd = dynamic(() => import('./PoweredByShepherd'));
 
 const LOGO_SIZES = {
   full: { width: 160, height: 40, className: 'brand-logo' },

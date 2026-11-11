@@ -1,8 +1,16 @@
 'use client';
 import React, { useState } from 'react';
-import { Calendar, Badge, Modal, Form, Input, DatePicker, TimePicker, Button, Select } from 'antd';
+import { Calendar, Badge, Modal, Form, TimePicker, Button, Select } from 'antd';
 import { PlusOutlined, EnvironmentOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
+import CalendarDateInput, { requiredCalendarDateValidator } from '@/Components/common/CalendarDateInput';
+import NameInput from '@/Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
+import {
+    type CalendarDateFieldValue,
+    type CalendarSystem,
+    parseFlexibleCalendarDate,
+} from '@/lib/ethiopian-calendar';
 import './ScheduleManagement.css';
 
 type EventType = 'warning' | 'success' | 'error' | 'default' | 'processing';
@@ -11,6 +19,7 @@ interface ScheduleEvent {
     type: EventType;
     content: string;
     date: string;
+    calendar?: CalendarSystem;
 }
 
 const ScheduleManagement = () => {
@@ -34,20 +43,32 @@ const ScheduleManagement = () => {
             <ul className="events">
                 {listData.map((item, index) => (
                     <li key={index}>
-                        <Badge status={item.type} text={item.content} />
+                        <Badge
+                            status={item.type}
+                            text={item.calendar === 'ec' ? `${item.content} (E.C.)` : item.content}
+                        />
                     </li>
                 ))}
             </ul>
         );
     };
 
-    const onFinish = (values: { title: string; date: Dayjs }) => {
+    const onFinish = (values: { title: string; date: CalendarDateFieldValue }) => {
+        const parsed = values.date?.date
+            ? parseFlexibleCalendarDate(values.date.date, {
+                calendar: values.date.calendar,
+                precision: 'day',
+                allowPartial: false,
+            })
+            : null;
+        if (!parsed) return;
         const newEvent: ScheduleEvent = {
             type: 'default',
-            content: values.title,
-            date: values.date.format('YYYY-MM-DD'),
+            content: normalizeTitleInitials(values.title),
+            date: parsed.isoDate,
+            calendar: parsed.calendar,
         };
-        setEvents([...events, newEvent]);
+        setEvents((prev) => [...prev, newEvent]);
         form.resetFields();
         setIsModalVisible(false);
     };
@@ -87,15 +108,15 @@ const ScheduleManagement = () => {
                         name="title"
                         rules={[{ required: true, message: 'Please enter an event title' }]}
                     >
-                        <Input placeholder="e.g. Sunday Service" size="large" />
+                        <NameInput mode="title" placeholder="e.g. Sunday Service" size="large" />
                     </Form.Item>
 
                     <Form.Item
                         label="Date"
                         name="date"
-                        rules={[{ required: true, message: 'Please select a date' }]}
+                        rules={[{ validator: requiredCalendarDateValidator('Please select a date') }]}
                     >
-                        <DatePicker style={{ width: '100%' }} size="large" />
+                        <CalendarDateInput id="schedule-event-date" allowPartial={false} size="large" />
                     </Form.Item>
 
                     <Form.Item label="Time">
@@ -115,8 +136,8 @@ const ScheduleManagement = () => {
                         />
                     </Form.Item>
 
-                    <Form.Item label="Location">
-                        <Input prefix={<EnvironmentOutlined />} placeholder="Event location" size="large" />
+                    <Form.Item label="Location" name="location">
+                        <NameInput mode="title" prefix={<EnvironmentOutlined />} placeholder="Event location" size="large" />
                     </Form.Item>
 
                     <Form.Item label="Event Poster">
@@ -124,7 +145,7 @@ const ScheduleManagement = () => {
                             <label className="poster-upload-label">
                                 <CloudUploadOutlined style={{ fontSize: 24, color: '#1565c0' }} />
                                 <span>Click to upload poster (optional)</span>
-                                <input type="file" accept="image/*" hidden />
+                                <input type="file" accept="image/*" style={{ display: 'none' }} />
                             </label>
                         </div>
                     </Form.Item>

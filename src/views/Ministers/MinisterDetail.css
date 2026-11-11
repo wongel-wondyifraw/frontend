@@ -8,15 +8,14 @@
 }
 
 .member-detail-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    color: var(--dark);
+    width: 100%;
+    color: var(--text-main, #101828);
     padding: 0;
 }
 
 /* Unified Card Container */
 .content-card-unified {
-    background: var(--bg-card);
+    background: var(--bg-card, var(--white));
     border-radius: 16px;
     padding: 40px;
     box-shadow: none;
@@ -28,9 +27,9 @@
     display: flex;
     align-items: center;
     gap: 32px;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
     padding-bottom: 32px;
-    border-bottom: 1px solid var(--light-blue-bg);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .member-profile-image {
@@ -52,371 +51,230 @@
 
 .member-header-info {
     flex: 1;
+    min-width: 0;
 }
 
 .member-name {
     font-size: 32px;
     font-weight: 700;
     margin: 0 0 12px 0;
-    color: var(--navy);
+    color: var(--text-main, #101828);
     letter-spacing: -0.5px;
+    line-height: 1.25;
 }
 
 .member-role-tags {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 16px;
-}
-
-.member-id {
-    color: #64748b;
-    font-size: 14px;
-}
-
-.member-actions {
-    display: flex;
-    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
 }
 
 .member-actions-stacked {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
     margin-left: auto;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: flex-end;
 }
 
-/* Grid Layout for details */
-.member-details-grid {
+/* KPI summary row */
+.member-kpi-row {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 40px;
-    /* Generous gap for clean layout */
-}
-
-/* Inner Sections - No longer cards */
-.detail-section {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
     margin-bottom: 32px;
 }
 
-.detail-section h3 {
-    font-size: 18px;
+@media (max-width: 1100px) {
+    .member-kpi-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .member-kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.member-kpi-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.member-kpi-card .ant-statistic-title {
+    color: var(--text-secondary, #64748b);
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 24px;
-    color: var(--blue);
-    /* Blue Theme */
+    margin-bottom: 4px;
+}
+
+.member-kpi-card .ant-statistic-content {
+    color: var(--text-main, #101828);
+    font-weight: 600;
+}
+
+/* Grid Layout for details — multi-column on wide screens */
+.member-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+@media (min-width: 1400px) {
+    .member-details-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Sections marked by soft gray fill — no outer border */
+.detail-section {
+    margin-bottom: 0;
+    background: var(--bg-hover, #F1F5F9);
+    border: none;
+    border-radius: 14px;
+    padding: 20px 22px;
+}
+
+.detail-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary, #64748B);
+    margin: 0 0 16px 0;
     display: flex;
     align-items: center;
     gap: 8px;
-    border-bottom: 1px solid var(--light-blue-bg);
-    padding-bottom: 12px;
-}
-
-/* Elegant Info Table */
-.elegant-info-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--light-blue-bg);
-}
-
-.elegant-info-table th,
-.elegant-info-table td {
-    padding: 14px 20px;
-    text-align: left;
-    border-bottom: 1px solid var(--light-blue-bg);
-    font-size: 14px;
-}
-
-.elegant-info-table tr:last-child th,
-.elegant-info-table tr:last-child td {
-    border-bottom: none;
-}
-
-.elegant-info-table th {
-    background-color: var(--white);
-    color: var(--blue);
-    font-weight: 600;
-    width: 1%;
-    padding-right: 32px;
-    white-space: nowrap;
-    border-right: 1px solid var(--light-blue-bg);
-}
-
-.elegant-info-table th .anticon {
-    margin-right: 8px;
-    color: var(--blue);
-    font-size: 15px;
-}
-
-.elegant-info-table td {
-    background-color: var(--white);
-    color: var(--navy);
-    font-weight: 500;
-}
-
-.elegant-info-table tr:hover td {
-    background-color: var(--bg-card);
 }
 
 .info-row {
     display: flex;
-    margin-bottom: 16px;
-    align-items: flex-start;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.15));
+    font-size: 13.5px;
+    gap: 12px;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .info-label {
-    width: 140px;
-    color: var(--dark);
-    opacity: 0.8;
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
+    color: var(--text-secondary, #64748B);
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-}
-
-.info-label .anticon {
-    color: var(--cyan);
-    background: var(--light-blue-bg);
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 14px;
+    gap: 6px;
+    font-size: 13px;
+    flex-shrink: 0;
 }
 
 .info-value {
-    flex: 1;
-    color: var(--navy);
-    font-weight: 600;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
+    color: var(--text-main, #0F172A);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
 }
 
-.ministry-involvement-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-}
-
+/* Mobile responsive layout */
 @media (max-width: 768px) {
-    .ministry-involvement-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.member-card-elegant {
-    border-radius: 16px;
-    border: 1px solid var(--light-blue-bg);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--bg-card);
-    overflow: hidden;
-}
-
-.member-card-elegant:hover {
-    border-color: var(--blue);
-}
-
-.member-card-elegant .ant-card-meta-title {
-    color: var(--navy) !important;
-}
-
-.member-card-elegant .ant-card-actions {
-    background: #fafafa;
-    border-top: 1px solid var(--light-blue-bg);
-}
-
-.member-card-elegant .ant-card-actions li {
-    margin: 0 !important;
-}
-
-@media (max-width: 1024px) {
-    .member-details-grid {
-        grid-template-columns: 1fr;
+    .content-card-unified {
+        padding: 16px !important;
+        border-radius: 12px !important;
     }
 
     .member-header-section {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
-    }
-
-    .member-role-tags {
-        justify-content: center;
-    }
-
-    .content-card-unified {
-        padding: 24px;
-    }
-}
-
-@media print {
-
-    /* Print Styles - Signature Section Default Hidden */
-    .print-signature-section {
-        display: none;
-    }
-
-    @page {
-        size: A4;
-        margin: 15mm;
-    }
-
-    /* Hide UI Elements */
-    .sidebar-container,
-    .ant-btn,
-    .ant-layout-sider,
-    button,
-    a[href],
-    .member-actions,
-    .member-actions-stacked,
-    .ant-tag {
-        display: none !important;
-    }
-
-    /* Reset Layout for Print */
-    body,
-    #root,
-    .dashboard-layout,
-    .sidebar-layout,
-    .main-content {
-        background: white !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-    }
-
-    .member-detail-container {
-        max-width: 100% !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Content Card Styling */
-    .content-card-unified {
-        border: none !important;
-        box-shadow: none;
-        padding: 0 !important;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Header Background Styling */
-    .member-header-section {
-        background-color: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 12px;
-        padding: 20px !important;
-        margin-bottom: 24px !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .member-profile-image {
-        width: 100px;
-        height: 100px;
-        border-color: #cbd5e1;
-    }
-
-    /* Vertical Stack Layout */
-    .member-details-grid {
-        display: block !important;
-    }
-
-    .left-column,
-    .right-column {
-        width: 100% !important;
-    }
-
-    .detail-section {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 16px !important;
+        padding-bottom: 20px !important;
         margin-bottom: 20px !important;
-        break-inside: avoid;
     }
 
-    .detail-section h3 {
-        font-size: 16px !important;
-        margin-bottom: 12px !important;
-        border-bottom: 2px solid #a855f7 !important;
-        padding-bottom: 4px !important;
-    }
-
-    .info-row {
-        margin-bottom: 10px !important;
-    }
-
-    .info-label {
-        color: #475569 !important;
-        font-size: 13px !important;
-    }
-
-    .info-value {
-        font-size: 14px !important;
-    }
-
-    /* Watermark */
-    .content-card-unified::before {
-        content: "";
-        position: absolute;
-        top: 45%;
-        /* Slightly higher to avoid signature overlap */
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 600px;
-        height: 600px;
-        background-image: url('/full-gospel-logo.jpg');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        opacity: 0.08;
-        z-index: -1;
-    }
-
-    /* Signature Section Reveal */
-    .print-signature-section {
-        display: block !important;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 2px solid #f1f5f9;
-        page-break-inside: avoid;
-    }
-
-    .signature-line {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 16px;
-    }
-
-    .signature-box {
-        flex: 1;
-    }
-
-    .signature-label {
-        display: block;
-        font-size: 12px;
-        color: #64748b;
-        margin-bottom: 40px;
-        /* Space for signing */
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .signature-input {
-        border-bottom: 1px solid #94a3b8;
-        height: 1px;
+    .member-header-info {
         width: 100%;
     }
 
-    .signature-disclaimer {
-        font-size: 10px;
-        color: #94a3b8;
-        text-align: center;
-        margin-top: 10px;
+    .member-name {
+        font-size: 24px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .member-role-tags {
+        justify-content: center !important;
+    }
+
+    .member-actions-stacked {
+        margin-left: 0 !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    .member-actions-stacked .ant-btn {
+        flex: 1 1 calc(50% - 6px);
+        min-height: 38px;
+    }
+
+    .member-details-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    .detail-section {
+        padding: 16px !important;
+    }
+
+    .info-row {
+        padding: 10px 0 !important;
+    }
+
+    .info-value {
+        font-size: 13px !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 12pt;
+    }
+
+    .ant-layout-header,
+    .ant-layout-sider,
+    .member-actions-stacked,
+    .member-detail-container > .ant-btn,
+    .bottom-nav {
+        display: none !important;
+    }
+
+    .member-detail-container {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .content-card-unified {
+        border: none !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .detail-section {
+        background: transparent !important;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 0;
+        padding: 12px 0;
+        break-inside: avoid;
     }
 }

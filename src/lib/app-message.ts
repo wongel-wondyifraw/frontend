@@ -1,6 +1,10 @@
 "use client";
 
 import type { MessageInstance } from "antd/es/message/interface";
+import {
+  NETWORK_RESTORED_MESSAGE,
+  NETWORK_UNAVAILABLE_MESSAGE,
+} from "./errors";
 
 /**
  * Context-aware antd message API.
@@ -22,14 +26,68 @@ function ensureApi(): MessageInstance {
   return messageApi;
 }
 
+function resolveNetworkToastKey(content: unknown): string | null {
+  if (typeof content !== "string") return null;
+  const trimmed = content.trim();
+  if (trimmed === NETWORK_UNAVAILABLE_MESSAGE) {
+    return "cms-network-unavailable";
+  }
+  if (trimmed === NETWORK_RESTORED_MESSAGE) {
+    return "cms-network-restored";
+  }
+  return null;
+}
+
+function buildDeduplicatedToast(
+  type: "success" | "error",
+  key: string,
+  content: string,
+  duration?: number | VoidFunction,
+  onClose?: VoidFunction,
+) {
+  const api = ensureApi();
+  if (key === "cms-network-restored") {
+    api.destroy("cms-network-unavailable");
+  }
+  return api.open({
+    key,
+    type,
+    content,
+    duration: typeof duration === "number" ? duration : 3,
+    onClose: typeof duration === "function" ? duration : onClose,
+  });
+}
+
 export const message: Pick<
   MessageInstance,
   "success" | "error" | "info" | "warning" | "loading" | "open" | "destroy"
 > = {
-  success: (content, duration, onClose) =>
-    ensureApi().success(content, duration, onClose),
-  error: (content, duration, onClose) =>
-    ensureApi().error(content, duration, onClose),
+  success: (content, duration, onClose) => {
+    const key = resolveNetworkToastKey(content);
+    if (key) {
+      return buildDeduplicatedToast(
+        "success",
+        key,
+        String(content),
+        duration,
+        onClose,
+      );
+    }
+    return ensureApi().success(content, duration, onClose);
+  },
+  error: (content, duration, onClose) => {
+    const key = resolveNetworkToastKey(content);
+    if (key) {
+      return buildDeduplicatedToast(
+        "error",
+        key,
+        String(content),
+        duration,
+        onClose,
+      );
+    }
+    return ensureApi().error(content, duration, onClose);
+  },
   info: (content, duration, onClose) =>
     ensureApi().info(content, duration, onClose),
   warning: (content, duration, onClose) =>

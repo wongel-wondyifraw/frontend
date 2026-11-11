@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Modal, Form, Input, Select, Tag } from 'antd';
+import { Modal, Form, Select, Tag } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -12,6 +12,8 @@ import { getLocations, createLocation, updateLocation } from '../../../services/
 import type { Location } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useCan } from '@/Components/auth/Can';
+import NameInput from '@/Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 
 type LocationFormValues = {
   name: string;
@@ -72,7 +74,8 @@ const LocationManagementTab: React.FC = () => {
       const values = await form.validateFields();
       setSubmitting(true);
 
-      const normalizedName = values.name.trim().toLowerCase();
+      const cleanName = normalizeTitleInitials(values.name);
+      const normalizedName = cleanName.toLowerCase();
       const isDuplicate = locations.some(
         (loc) =>
           loc.name.toLowerCase() === normalizedName && loc.id !== editingLocation?.id,
@@ -83,11 +86,12 @@ const LocationManagementTab: React.FC = () => {
         return;
       }
 
+      const payload = { ...values, name: cleanName };
       if (editingLocation) {
-        await updateLocation(editingLocation.id, values);
+        await updateLocation(editingLocation.id, payload);
         message.success('Location updated successfully');
       } else {
-        await createLocation(values);
+        await createLocation(payload);
         message.success('Location created successfully');
       }
       setModalOpen(false);
@@ -237,7 +241,7 @@ const LocationManagementTab: React.FC = () => {
               { whitespace: true, message: 'Location name cannot be blank' },
             ]}
           >
-            <Input placeholder="e.g. Main Sanctuary" />
+            <NameInput mode="title" placeholder="e.g. Main Sanctuary" />
           </Form.Item>
           <Form.Item name="status" label="Status" rules={[{ required: true }]}>
             <Select

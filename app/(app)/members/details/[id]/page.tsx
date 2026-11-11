@@ -1,6 +1,8 @@
 import MemberDetail from '@/views/Members/MemberDetail';
 import { getMemberServer } from '@/lib/api-server';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Member Details — Goro Full Gospel Church',
 };

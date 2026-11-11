@@ -5,6 +5,8 @@ import { Form, Input, Button, Card, Breadcrumb, Row, Col, Divider, App, Spin } f
 import { SafetyCertificateOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import PermissionPicker from './components/PermissionPicker';
+import NameInput from '@/Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import {
   createRole,
   getPermissionsGrouped,
@@ -71,10 +73,11 @@ export default function RoleDetailPage({ id, isNew }: RoleDetailPageProps) {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      const normalizedName = normalizeTitleInitials(values.name);
       setSaving(true);
       if (!isNew && id) {
         await updateRole(id, {
-          name: values.name,
+          name: normalizedName,
           description: values.description,
           permissionSlugs: values.permissionSlugs,
         });
@@ -82,7 +85,7 @@ export default function RoleDetailPage({ id, isNew }: RoleDetailPageProps) {
       } else {
         await createRole({
           key: values.key!,
-          name: values.name,
+          name: normalizedName,
           description: values.description,
           permissionSlugs: values.permissionSlugs,
         });
@@ -156,7 +159,7 @@ export default function RoleDetailPage({ id, isNew }: RoleDetailPageProps) {
                   label="Display name"
                   rules={[{ required: true, message: 'Name is required' }]}
                 >
-                  <Input placeholder="Volunteer Coordinator" />
+                  <NameInput mode="title" placeholder="Volunteer Coordinator" />
                 </Form.Item>
               </Col>
               <Col span={24} lg={isNew ? 8 : 12}>

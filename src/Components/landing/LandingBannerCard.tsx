@@ -35,6 +35,7 @@ import { getImageUrl } from '@/lib/media-url';
 import {
   formatLandingDateRange,
   formatLandingTime,
+  isIsoDate,
 } from '@/lib/landing-defaults';
 import type { LandingMediaItem } from '@/types';
 
@@ -390,7 +391,11 @@ export default function LandingBannerCard({
                 <span className="lp-metric-label">{item.cadenceLabel || 'Cadence'}</span>
                 <span className="lp-metric-value lp-metric-value--blue">
                   {item.cadenceValue ||
-                    (item.event_date ? `Every ${item.event_date}` : 'Every 1st Sat')}
+                    (item.event_date
+                      ? isIsoDate(item.event_date)
+                        ? formatLandingDateRange(item)
+                        : `Every ${item.event_date}`
+                      : 'Every 1st Sat')}
                 </span>
               </div>
             </div>

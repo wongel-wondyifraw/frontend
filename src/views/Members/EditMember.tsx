@@ -1,11 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useRouter, useParams } from 'next/navigation';
 import {
   Form,
   Input,
   Select,
-  DatePicker,
   Button,
   Upload,
   Avatar,
@@ -31,9 +31,11 @@ import {
 } from '@ant-design/icons';
 import StepperWizard from '../../Components/common/StepperWizard';
 import MemberFamilySection from '@/Components/Members/MemberFamilySection';
+import NameInput from '@/Components/common/NameInput';
+import CalendarDateInput from '@/Components/common/CalendarDateInput';
+import { formatCalendarDateField, fromEntityDate } from '@/lib/ethiopian-calendar';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import {
-  updateMember,
-  getMemberById,
   uploadMemberImage,
   getLocations,
   getMinistries,
@@ -45,10 +47,10 @@ import { buildMemberPayload, validateImageFile, validateDocumentFile, fileDispla
 import { upsertMemberFamily, familyToFormValues } from '@/lib/member-family';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getImageUrl } from '@/lib/media-url';
+import { useMembers } from '@/context/MembersContext';
 import { useToast } from '@/context/ToastContext';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import type { UploadChangeParam } from 'antd/es/upload';
-import dayjs from 'dayjs';
 import type { Location, Ministry, Member } from '@/types';
 import './AddMember.css';
 
@@ -89,6 +91,7 @@ const EditMember = () => {
   const params = useParams();
   const id = params?.id as string;
   const { showToast } = useToast();
+  const { fetchMemberById, updateMember } = useMembers();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -111,11 +114,15 @@ const EditMember = () => {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const member = await getMemberById(id);
+        const [member, family] = await Promise.all([
+          fetchMemberById(id, { signal: controller.signal }),
+          getFamilyByMember(id).catch(() => null),
+        ]);
+        if (!member || controller.signal.aborted) return;
         setMemberData(member);
-        const family = await getFamilyByMember(id).catch(() => null);
         form.setFieldsValue({
           first_name: member.first_name,
           middle_name: member.middle_name,
@@ -123,11 +130,19 @@ const EditMember = () => {
           email: member.email,
           phone: member.phone,
           address: member.address,
-          date_of_birth: member.date_of_birth ? dayjs(member.date_of_birth) : null,
+          date_of_birth: fromEntityDate(
+            member.date_of_birth,
+            member.date_of_birth_precision ?? 'day',
+            member.date_of_birth_calendar ?? 'gc',
+          ),
           marital_status: member.marital_status,
           gender: member.gender || undefined,
           status: member.status,
-          joined_date: member.joined_date ? dayjs(member.joined_date) : null,
+          joined_date: fromEntityDate(
+            member.joined_date,
+            member.joined_date_precision ?? 'day',
+            member.joined_date_calendar ?? 'gc',
+          ),
           baptized: member.baptized === true || member.baptized === 'true' ? 'yes' : 'no',
           holy_spirit_baptized:
             member.holy_spirit_baptized === true || member.holy_spirit_baptized === 'true' ? 'yes' : 'no',
@@ -136,7 +151,11 @@ const EditMember = () => {
           instagram_username: member.instagram_username || undefined,
           whatsapp_number: member.whatsapp_number || undefined,
           member_type: member.member_type || 'existing',
-          salvation_date: member.salvation_date ? dayjs(member.salvation_date) : undefined,
+          salvation_date: fromEntityDate(
+            member.salvation_date,
+            member.salvation_date_precision ?? 'day',
+            member.salvation_date_calendar ?? 'gc',
+          ),
           location_id: (member as Member & { location?: { name?: string } }).location?.name || member.location_id,
           interested_ministries: member.interested_ministries || [],
           employment_status: member.employment_status || undefined,
@@ -149,14 +168,20 @@ const EditMember = () => {
         if (member.image_url) setAvatarPreview(getImageUrl(member.image_url) || undefined);
         if (member.recommendation_letter_url) setLetterUrl(member.recommendation_letter_url);
       } catch (error: unknown) {
+        if (controller.signal.aborted) return;
         showToast('error', getApiErrorMessage(error, 'Failed to fetch member details'));
         router.push('/members/manage');
       } finally {
-        setInitialLoading(false);
+        if (!controller.signal.aborted) {
+          setInitialLoading(false);
+        }
       }
     };
-    load();
-  }, [id, router, form, showToast]);
+    void load();
+    return () => {
+      controller.abort(new axios.CanceledError('EditMember unmounted'));
+    };
+  }, [id, router, form, showToast, fetchMemberById]);
 
   const next = async () => {
     try {
@@ -201,7 +226,7 @@ const EditMember = () => {
     if (!raw?.trim()) return undefined;
     const existing = locations.find((l) => l.name.toLowerCase() === raw.toLowerCase() || l.id === raw);
     if (existing) return existing.id;
-    const created = await createLocation({ name: raw.trim(), status: 'active' });
+    const created = await createLocation({ name: normalizeTitleInitials(raw.trim()), status: 'active' });
     return created.id;
   };
 
@@ -219,12 +244,16 @@ const EditMember = () => {
       setUploading(false);
 
       const locationId = await resolveLocationId(values.location_id);
-      const payload = buildMemberPayload({
-        ...values,
-        location_id: locationId,
-        image_url: imageUrl,
-        recommendation_letter_url: recommendationLetterUrl,
-      });
+      const payload = buildMemberPayload(
+        {
+          ...values,
+          location_id: locationId,
+          image_url: imageUrl,
+          recommendation_letter_url: recommendationLetterUrl,
+        },
+        {},
+        { clearEmptyDates: true },
+      );
 
       await updateMember(id, payload);
 
@@ -300,21 +329,21 @@ const EditMember = () => {
                 <div className="member-name-fields">
                   <div className="member-name-grid">
                     <Form.Item label="First Name" name="first_name" rules={[{ required: true }]}>
-                      <Input size="large" />
+                      <NameInput mode="person" size="large" />
                     </Form.Item>
                     <Form.Item label="Middle Name" name="middle_name">
-                      <Input size="large" />
+                      <NameInput mode="person" size="large" />
                     </Form.Item>
                   </div>
                   <Form.Item label="Last Name" name="last_name" rules={[{ required: true }]}>
-                    <Input size="large" />
+                    <NameInput mode="person" size="large" />
                   </Form.Item>
                 </div>
               </div>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Date of Birth" name="date_of_birth">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -339,7 +368,7 @@ const EditMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label="When did you receive Jesus as a Saviour?" name="salvation_date">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -372,12 +401,13 @@ const EditMember = () => {
                   <Form.Item label="Location" name="location_id">
                     <AutoComplete
                       options={locations.map((loc) => ({ value: loc.name }))}
-                      size="large"
                       filterOption={(inputValue, option) =>
                         String(option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase())
                       }
                       allowClear
-                    />
+                    >
+                      <NameInput mode="title" size="large" placeholder="Search or enter location" />
+                    </AutoComplete>
                   </Form.Item>
                 </Col>
               </Row>
@@ -415,14 +445,14 @@ const EditMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label="Profession / Job title" name="profession">
-                    <Input size="large" />
+                    <NameInput mode="title" size="large" />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Employer / Organization" name="employer">
-                    <Input size="large" />
+                    <NameInput mode="title" size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -432,7 +462,7 @@ const EditMember = () => {
                 </Col>
               </Row>
               <Form.Item label="Field of Study" name="education_field">
-                <Input size="large" />
+                <NameInput mode="title" size="large" />
               </Form.Item>
             </div>
 
@@ -515,7 +545,7 @@ const EditMember = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item name="joined_date" label="Joined Date">
-                    <DatePicker style={{ width: '100%' }} size="large" />
+                    <CalendarDateInput allowPartial disableFuture size="large" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -551,11 +581,14 @@ const EditMember = () => {
                     const values = form.getFieldsValue();
                     return (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                        <div><strong>Name:</strong> {values.first_name} {values.last_name}</div>
+                        <div><strong>Name:</strong> {[normalizePersonName(values.first_name || ''), normalizePersonName(values.middle_name || ''), normalizePersonName(values.last_name || '')].filter(Boolean).join(' ') || '—'}</div>
+                        <div><strong>Birthdate:</strong> {formatCalendarDateField(values.date_of_birth, { includeEquivalent: true })}</div>
+                        <div><strong>Salvation Date:</strong> {formatCalendarDateField(values.salvation_date, { includeEquivalent: true })}</div>
+                        <div><strong>Joined Date:</strong> {formatCalendarDateField(values.joined_date, { includeEquivalent: true })}</div>
                         <div><strong>Phone:</strong> {values.phone || '—'}</div>
                         <div><strong>Member Type:</strong> {MEMBER_TYPE_OPTIONS.find((o) => o.value === values.member_type)?.label || values.member_type || '—'}</div>
                         <div><strong>Employment:</strong> {values.employment_status || '—'}</div>
-                        <div><strong>Profession:</strong> {values.profession || '—'}</div>
+                        <div><strong>Profession:</strong> {(values.profession ? normalizeTitleInitials(values.profession) : '') || '—'}</div>
                         <div><strong>Education:</strong> {values.education_level || '—'}</div>
                         <div><strong>Children:</strong> {values.has_children && values.children?.length ? values.children.length : 'None'}</div>
                         <div><strong>Church Letter:</strong> {fileDisplayName(churchLetterFile, letterUrl) || '—'}</div>

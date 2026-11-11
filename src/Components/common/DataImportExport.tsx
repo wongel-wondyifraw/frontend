@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Button, Dropdown, Modal, Upload, Alert, Space, Typography, Progress } from 'antd';
 import {
-  DownloadOutlined,
   UploadOutlined,
   ExportOutlined,
   ImportOutlined,
@@ -124,16 +123,8 @@ export default function DataImportExport({
         : undefined;
 
   return (
-    <>
+    <div className="data-io-wrapper">
       <div className="data-io-actions">
-        <Button
-          icon={<DownloadOutlined />}
-          onClick={() => {
-            void onDownloadTemplate();
-          }}
-        >
-          Template
-        </Button>
         {canImport ? (
           <Button icon={<ImportOutlined />} onClick={openImport}>
             Import
@@ -244,6 +235,6 @@ export default function DataImportExport({
           ) : null}
         </div>
       </Modal>
-    </>
+    </div>
   );
 }

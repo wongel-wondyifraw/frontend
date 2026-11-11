@@ -1,16 +1,32 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, App, Select, DatePicker } from 'antd';
+import React, { useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
+import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import dayjs, { type Dayjs } from 'dayjs';
 import DataTable from '../../Components/common/DataTable';
 import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
 import EntityNameCell from '../../Components/common/EntityNameCell';
 import DataImportExport from '../../Components/common/DataImportExport';
-import { getMembers, deleteMember, updateMember } from '../../services/api';
+import CalendarDateInput from '../../Components/common/CalendarDateInput';
+import {
+    type CalendarDateFieldValue,
+    type CalendarSystem,
+    convertFieldCalendar,
+    formatCalendarDate,
+} from '@/lib/ethiopian-calendar';
+import {
+    DEFAULT_DATE_BOUND_FIELD,
+    DEFAULT_MEMBER_FILTERS,
+    type MemberFilters,
+    type MembersQueryState,
+    buildMembersQueryKey,
+    isDefaultUnfilteredPageOneQuery,
+    resolveMembersPageFromState,
+    useMembers,
+} from '@/context/MembersContext';
 import {
     downloadMemberTemplate,
     exportMembersExcel,
@@ -18,7 +34,7 @@ import {
     importMembersFromFile,
 } from '@/lib/data-io/members-io';
 import type { ColumnsType } from 'antd/es/table';
-import type { ManageMembersProps, Member, PaginationParams } from '@/types';
+import type { ManageMembersProps, Member } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
@@ -27,22 +43,6 @@ import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMembers.css';
 
-const { RangePicker } = DatePicker;
-
-type MemberFilters = {
-    status?: string;
-    marital_status?: string;
-    joined_from?: string;
-    joined_to?: string;
-    sort_by: 'created_at' | 'joined_date' | 'visit_count';
-    sort_order: 'ASC' | 'DESC';
-};
-
-const DEFAULT_FILTERS: MemberFilters = {
-    sort_by: 'created_at',
-    sort_order: 'DESC',
-};
-
 const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const router = useRouter();
     const canCreate = useCan('members.create');
@@ -50,73 +50,113 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const canDelete = useCan('members.delete');
     const canApprove = useCan('members.approve');
     const { modal } = App.useApp();
-    const [members, setMembers] = useState<Member[]>(initialPage?.data ?? []);
-    const [loading, setLoading] = useState(initialPage === null);
-    const [searchText, setSearchText] = useState('');
-    const [page, setPage] = useState(initialPage?.page ?? 1);
-    const [pageSize, setPageSize] = useState(initialPage?.limit ?? 10);
-    const [total, setTotal] = useState(initialPage?.total ?? 0);
-    const [filters, setFilters] = useState<MemberFilters>(DEFAULT_FILTERS);
-    const [joinedRange, setJoinedRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+    const {
+        state,
+        hydrateInitialPage,
+        setSearchInput,
+        setDateBounds,
+        fetchMembersPage,
+        updateMember,
+        deleteMember,
+        markBulkImported,
+    } = useMembers();
 
-    const loadMembers = useCallback(async (
-        nextPage = page,
-        nextPageSize = pageSize,
-        search = searchText,
-        nextFilters = filters,
-    ) => {
-        try {
-            setLoading(true);
-            const params: PaginationParams = {
-                page: nextPage,
-                limit: nextPageSize,
-                search: search || undefined,
-                status: nextFilters.status,
-                marital_status: nextFilters.marital_status,
-                joined_from: nextFilters.joined_from,
-                joined_to: nextFilters.joined_to,
-                sort_by: nextFilters.sort_by,
-                sort_order: nextFilters.sort_order,
-            };
-            const result = await getMembers(params);
-            setMembers(result.data);
-            setTotal(result.total);
-            setPage(result.page);
-            setPageSize(result.limit);
-        } catch {
-            message.error('Failed to load members');
-        } finally {
-            setLoading(false);
-        }
-    }, [page, pageSize, searchText, filters]);
+    const { activeQuery, joinedFromField, joinedToField } = state;
+    const { page, limit: pageSize, search: searchText, filters } = activeQuery;
+    const { rows: members, total, loading } = resolveMembersPageFromState(state, initialPage);
+
+    const hydratedInitialRef = useRef<typeof initialPage | undefined>(undefined);
+
+    const loadMembers = useCallback(
+        async (
+            patch?: Partial<MembersQueryState> & { filters?: MemberFilters },
+            options: { silent?: boolean; signal?: AbortSignal } = {},
+        ) => {
+            try {
+                await fetchMembersPage(patch, {
+                    ...options,
+                    throwOnError: !options.silent,
+                });
+            } catch (error: unknown) {
+                if (!options.silent) {
+                    message.error(getApiErrorMessage(error, 'Failed to load members'));
+                }
+            }
+        },
+        [fetchMembersPage],
+    );
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
-        loadMembers(1, pageSize, value, filters);
+        void loadMembers({ page: 1, search: value });
     }, 300);
 
     useEffect(() => {
-        if (initialPage !== null) return;
-        void loadMembers();
-        // Initial load only; search/filters call loadMembers explicitly.
+        if (hydratedInitialRef.current !== initialPage) {
+            hydratedInitialRef.current = initialPage;
+            hydrateInitialPage(initialPage);
+        }
+    }, [initialPage, hydrateInitialPage]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const activeKey = buildMembersQueryKey(activeQuery);
+        const canSilentRevalidate = Boolean(
+            state.pagesByKey[activeKey] ||
+                (initialPage !== null &&
+                    isDefaultUnfilteredPageOneQuery(activeQuery) &&
+                    activeQuery.limit === initialPage.limit),
+        );
+        void loadMembers(undefined, {
+            silent: canSilentRevalidate,
+            signal: controller.signal,
+        });
+        return () => {
+            controller.abort(new axios.CanceledError('ManageMembers unmounted'));
+        };
+        // Revalidate once per mount against live server state; user interactions call loadMembers explicitly.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialPage]);
+    }, []);
 
     const handleSearchChange = (value: string) => {
-        setSearchText(value);
+        setSearchInput(value);
         debouncedSearch(value);
     };
 
     const applyFilters = (patch: Partial<MemberFilters>) => {
-        const next = { ...filters, ...patch };
-        setFilters(next);
-        loadMembers(1, pageSize, searchText, next);
+        const nextFilters: MemberFilters = { ...filters, ...patch };
+        void loadMembers({ page: 1, filters: nextFilters });
     };
 
-    const handleJoinedRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
-        setJoinedRange(dates);
+    const handleJoinedFromChange = (nextVal: CalendarDateFieldValue) => {
+        const synced: CalendarDateFieldValue = {
+            ...nextVal,
+            calendar: filters.joined_calendar,
+        };
+        setDateBounds(synced, undefined);
         applyFilters({
-            joined_from: dates?.[0] ? dates[0].format('YYYY-MM-DD') : undefined,
-            joined_to: dates?.[1] ? dates[1].format('YYYY-MM-DD') : undefined,
+            joined_from: synced.date || undefined,
+        });
+    };
+
+    const handleJoinedToChange = (nextVal: CalendarDateFieldValue) => {
+        const synced: CalendarDateFieldValue = {
+            ...nextVal,
+            calendar: filters.joined_calendar,
+        };
+        setDateBounds(undefined, synced);
+        applyFilters({
+            joined_to: synced.date || undefined,
+        });
+    };
+
+    const handleJoinedCalendarChange = (nextCalendar: CalendarSystem) => {
+        const nextFrom = convertFieldCalendar(joinedFromField, nextCalendar);
+        const nextTo = convertFieldCalendar(joinedToField, nextCalendar);
+        setDateBounds(nextFrom, nextTo);
+        applyFilters({
+            joined_calendar: nextCalendar,
+            joined_from: nextFrom.date || undefined,
+            joined_to: nextTo.date || undefined,
         });
     };
 
@@ -132,7 +172,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 try {
                     await deleteMember(member.id);
                     message.success('Member deleted successfully');
-                    loadMembers(page, pageSize, searchText, filters);
+                    await loadMembers(undefined, { silent: true });
                 } catch (error: unknown) {
                     message.error(getApiErrorMessage(error, 'Failed to delete member'));
                 }
@@ -143,8 +183,12 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
     const handleApprove = async (member: Member) => {
         try {
             await updateMember(member.id, { status: 'active' });
-            message.success('Member approved successfully');
-            loadMembers(page, pageSize, searchText, filters);
+            message.success(
+                filters.status && filters.status !== 'active'
+                    ? 'Member approved (moved out of current status filter)'
+                    : 'Member approved successfully',
+            );
+            await loadMembers(undefined, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to approve member'));
         }
@@ -154,7 +198,7 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         try {
             await updateMember(member.id, { status: 'rejected' });
             message.success('Member rejected');
-            loadMembers(page, pageSize, searchText, filters);
+            await loadMembers(undefined, { silent: true });
         } catch (error: unknown) {
             message.error(getApiErrorMessage(error, 'Failed to reject member'));
         }
@@ -166,25 +210,26 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             key: 'name',
             render: (_: unknown, record: Member) => (
                 <EntityNameCell
-                    title={
-                        <>
-                            {record.first_name}{' '}
-                            {record.middle_name ? `${record.middle_name} ` : ''}
-                            {record.last_name}
-                        </>
-                    }
+                    title={[record.first_name, record.middle_name, record.last_name]
+                        .filter(Boolean)
+                        .join(' ')}
                     subtitle={record.email || undefined}
                     avatarSrc={getImageUrl(record.image_url)}
                     initials={getInitials(record.first_name, record.last_name, record.middle_name)}
                     meta={
-                        <>
-                            {record.member_type && record.member_type !== 'existing' && (
-                                <Tag style={{ marginInlineEnd: 0 }}>{record.member_type}</Tag>
-                            )}
-                            {record.requires_follow_up && (
-                                <Tag color="orange" style={{ marginInlineEnd: 0 }}>Follow-up</Tag>
-                            )}
-                        </>
+                        (record.member_type && record.member_type !== 'existing') ||
+                        record.requires_follow_up ? (
+                            <div className="member-meta-tags">
+                                {record.member_type && record.member_type !== 'existing' && (
+                                    <Tag style={{ marginInlineEnd: 0 }}>{record.member_type}</Tag>
+                                )}
+                                {record.requires_follow_up && (
+                                    <Tag color="orange" style={{ marginInlineEnd: 0 }}>
+                                        Follow-up
+                                    </Tag>
+                                )}
+                            </div>
+                        ) : undefined
                     }
                 />
             ),
@@ -249,8 +294,15 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
             key: 'joined',
             responsive: ['lg'],
             render: (_: unknown, record: Member) => {
-                const raw = record.joined_date || record.created_at;
-                return raw ? new Date(raw).toLocaleDateString() : '-';
+                if (record.joined_date) {
+                    return formatCalendarDate(
+                        record.joined_date,
+                        record.joined_date_precision ?? 'day',
+                        record.joined_date_calendar ?? 'gc',
+                        { includeEquivalent: record.joined_date_calendar === 'ec' },
+                    );
+                }
+                return record.created_at ? new Date(record.created_at).toLocaleDateString() : '-';
             },
         },
         {
@@ -313,15 +365,14 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
         filters.status,
         filters.marital_status,
         filters.joined_from || filters.joined_to,
-        filters.sort_by !== DEFAULT_FILTERS.sort_by || filters.sort_order !== DEFAULT_FILTERS.sort_order
+        filters.sort_by !== DEFAULT_MEMBER_FILTERS.sort_by || filters.sort_order !== DEFAULT_MEMBER_FILTERS.sort_order
             ? true
             : null,
     ].filter(Boolean).length;
 
     const clearAllFilters = () => {
-        setJoinedRange(null);
-        setFilters(DEFAULT_FILTERS);
-        loadMembers(1, pageSize, searchText, DEFAULT_FILTERS);
+        setDateBounds(DEFAULT_DATE_BOUND_FIELD, DEFAULT_DATE_BOUND_FIELD);
+        void loadMembers({ page: 1, filters: DEFAULT_MEMBER_FILTERS });
     };
 
     const filterPanel = (
@@ -360,15 +411,71 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                 />
             </div>
             <div className="dt-filter-field">
-                <span className="dt-filter-label">Joined date</span>
-                <RangePicker
-                    value={joinedRange}
-                    onChange={handleJoinedRangeChange}
-                    placeholder={['From', 'To']}
-                    allowEmpty={[true, true]}
-                    disabledDate={(current) => current && current.isAfter(dayjs(), 'day')}
-                    style={{ width: '100%' }}
-                />
+                <div
+                    className="dt-filter-label-row"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                    }}
+                >
+                    <span className="dt-filter-label">Joined date</span>
+                    <Select
+                        size="small"
+                        aria-label="Joined date calendar"
+                        value={filters.joined_calendar}
+                        popupMatchSelectWidth={false}
+                        style={{ width: 72 }}
+                        labelRender={({ value: cal }) => (cal === 'ec' ? 'EC' : 'GC')}
+                        onChange={(v) => handleJoinedCalendarChange(v as CalendarSystem)}
+                        options={[
+                            { label: 'GC — Gregorian', value: 'gc' },
+                            { label: 'EC — Ethiopian', value: 'ec' },
+                        ]}
+                    />
+                </div>
+                <div
+                    className="dt-filter-date-bounds"
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                    <div className="dt-filter-date-bound">
+                        <span
+                            className="dt-filter-sublabel"
+                            style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}
+                        >
+                            From
+                        </span>
+                        <CalendarDateInput
+                            id="members-filter-joined-from"
+                            allowPartial
+                            hideCalendarSwitch
+                            disableFuture
+                            size="small"
+                            placeholder="From date"
+                            value={joinedFromField}
+                            onChange={handleJoinedFromChange}
+                        />
+                    </div>
+                    <div className="dt-filter-date-bound">
+                        <span
+                            className="dt-filter-sublabel"
+                            style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}
+                        >
+                            To
+                        </span>
+                        <CalendarDateInput
+                            id="members-filter-joined-to"
+                            allowPartial
+                            hideCalendarSwitch
+                            disableFuture
+                            size="small"
+                            placeholder="To date"
+                            value={joinedToField}
+                            onChange={handleJoinedToChange}
+                        />
+                    </div>
+                </div>
             </div>
             <div className="dt-filter-field">
                 <span className="dt-filter-label">Sort by</span>
@@ -415,15 +522,20 @@ const ManageMembersContent = ({ initialPage = null }: ManageMembersProps) => {
                         onExportExcel={exportMembersExcel}
                         onExportPdf={exportMembersPdf}
                         onImportFile={importMembersFromFile}
-                        onImportComplete={() => loadMembers(1, pageSize, searchText, filters)}
+                        onImportComplete={() => {
+                            void markBulkImported().catch(() => {
+                                message.error('Failed to reload members');
+                            });
+                        }}
                     />
                 }
                 serverPagination={{
                     current: page,
                     pageSize,
                     total,
-                    onChange: (nextPage, nextPageSize) =>
-                        loadMembers(nextPage, nextPageSize, searchText, filters),
+                    onChange: (nextPage, nextPageSize) => {
+                        void loadMembers({ page: nextPage, limit: nextPageSize });
+                    },
                 }}
                 actionButton={canCreate ? {
                     label: 'Add Member',

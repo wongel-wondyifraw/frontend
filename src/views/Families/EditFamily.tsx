@@ -8,6 +8,8 @@ import { ArrowLeftOutlined, TeamOutlined } from '@ant-design/icons';
 import { updateFamily, getFamilyById } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import SpouseSelect, { encodeLeaderValue, decodeLeaderValue } from '../../Components/common/SpouseSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizePersonName, normalizeTitleInitials } from '@/lib/name-normalizer';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import './AddFamily.css';
 
@@ -104,16 +106,20 @@ const EditFamilyContent = () => {
 
       setLoading(true);
       await updateFamily(id, {
-        name: values.name || null,
+        name: values.name?.trim() ? normalizeTitleInitials(values.name) : null,
         notes: values.notes || null,
         husband_id: husbandId,
         husband_type: husbandType,
         wife_id: wifeId,
         wife_type: wifeType,
         spouse_status,
-        external_spouse_name: values.external_spouse_name || null,
-        external_spouse_phone: values.external_spouse_phone || null,
-        external_spouse_church: values.external_spouse_church || null,
+        external_spouse_name: values.external_spouse_name?.trim()
+          ? normalizePersonName(values.external_spouse_name)
+          : null,
+        external_spouse_phone: values.external_spouse_phone?.trim() || null,
+        external_spouse_church: values.external_spouse_church?.trim()
+          ? normalizeTitleInitials(values.external_spouse_church)
+          : null,
       });
       message.success('Family updated');
       router.push(`/families/details/${id}`);
@@ -151,7 +157,7 @@ const EditFamilyContent = () => {
 
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="name" label="Family name">
-            <Input size="large" placeholder="Optional" />
+            <NameInput mode="title" size="large" placeholder="Optional" />
           </Form.Item>
 
           <Row gutter={16}>
@@ -220,7 +226,7 @@ const EditFamilyContent = () => {
                     label="Name"
                     rules={[{ required: true, message: 'External spouse name is required' }]}
                   >
-                    <Input size="large" placeholder="Full name" />
+                    <NameInput mode="person" size="large" placeholder="Full name" />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
@@ -230,7 +236,7 @@ const EditFamilyContent = () => {
                 </Col>
                 <Col span={8}>
                   <Form.Item name="external_spouse_church" label="Local church">
-                    <Input size="large" />
+                    <NameInput mode="title" size="large" />
                   </Form.Item>
                 </Col>
               </Row>

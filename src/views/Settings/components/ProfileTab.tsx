@@ -6,6 +6,7 @@ import { UserOutlined, UploadOutlined, AppstoreOutlined, DownloadOutlined, Delet
 import { useUser } from '@/context/UserContext';
 import { getAvatarUrl } from '@/lib/media-url';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
+import NameInput from '@/Components/common/NameInput';
 import type { User } from '@/types';
 
 interface ProfileTabProps {
@@ -154,12 +155,12 @@ const ProfileTab = ({
                     name="firstName"
                     rules={[{ required: true, message: 'First name is required' }]}
                   >
-                    <Input placeholder="First name" />
+                    <NameInput mode="person" placeholder="First name" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item label="Middle name" name="middleName">
-                    <Input placeholder="Optional" />
+                    <NameInput mode="person" placeholder="Optional" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -170,7 +171,7 @@ const ProfileTab = ({
                     name="lastName"
                     rules={[{ required: true, message: 'Last name is required' }]}
                   >
-                    <Input placeholder="Last name" />
+                    <NameInput mode="person" placeholder="Last name" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>

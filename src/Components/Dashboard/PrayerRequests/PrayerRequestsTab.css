@@ -1,0 +1,390 @@
+.pr-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.pr-toolbar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.pr-search-input {
+  max-width: 380px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.pr-search-input.ant-input-affix-wrapper,
+.pr-search-input .ant-input {
+  border-radius: 8px !important;
+  height: 42px !important;
+}
+
+.pr-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.pr-toolbar-filters .dt-filter-trigger {
+  height: 42px !important;
+  min-height: 42px !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 16px !important;
+  border-color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.pr-toolbar-filters .dt-filter-trigger:hover {
+  border-color: #1e40af !important;
+  color: #1e40af !important;
+}
+
+/* ========================================================
+   DESKTOP TABLE (>= 769px)
+   ======================================================== */
+.pr-desktop-table-wrapper {
+  display: block;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pr-sender-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pr-sender-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-sender-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-main, #0f172a);
+}
+
+.pr-confidential-pill {
+  margin: 0;
+  font-size: 11px;
+  padding: 0 6px;
+  line-height: 18px;
+}
+
+.pr-sender-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pr-contact-link {
+  font-size: 12px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.pr-contact-link:hover {
+  color: #1e40af;
+}
+
+.pr-message-cell {
+  max-width: 440px;
+}
+
+.pr-message-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-main, #334155);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-notes-preview {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid #cbd5e1;
+}
+
+.pr-time-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ========================================================
+   MOBILE FEED (< 769px)
+   ======================================================== */
+.pr-mobile-feed-wrapper {
+  display: none;
+}
+
+.pr-mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pr-mobile-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.pr-mobile-card:active {
+  background: #f8fafc;
+}
+
+.pr-mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-mobile-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-mobile-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main, #0f172a);
+}
+
+.pr-mobile-card-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-mobile-time {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pr-mobile-card-contacts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pr-mobile-card-message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #334155;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.pr-mobile-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pr-mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pr-mobile-empty-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* ========================================================
+   RESPONSIVE BREAKPOINTS (TABLET & MOBILE)
+   ======================================================== */
+@media (max-width: 768px) {
+  .pr-container {
+    padding-bottom: 84px; /* Clearance for bottom navigation bar */
+  }
+
+  .pr-desktop-table-wrapper {
+    display: none !important;
+  }
+
+  .pr-mobile-feed-wrapper {
+    display: block !important;
+  }
+
+  /* Plans-page style mobile toolbar: full-width search on row 1, filter below */
+  .pr-toolbar-controls {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+  }
+
+  .pr-search-input {
+    width: 100% !important;
+    max-width: none !important;
+    flex: 1 1 100% !important;
+    height: 42px !important;
+  }
+
+  .pr-toolbar-filters {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    flex: 1 1 100% !important;
+  }
+
+  .pr-toolbar-filters .dt-filter-trigger {
+    height: 42px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ========================================================
+   DETAIL MODAL STYLING & SCROLLBAR SUPPRESSION
+   ======================================================== */
+.pr-detail-modal,
+.ant-modal-wrap:has(.pr-detail-modal) {
+  z-index: 2000 !important;
+}
+
+/* Hide scrollbars across modal dialog, body, and text inputs */
+.pr-detail-modal .ant-modal-content,
+.pr-detail-modal .ant-modal-body,
+.pr-detail-modal .ant-modal-wrap,
+.pr-detail-modal textarea,
+.pr-detail-modal textarea.ant-input {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.pr-detail-modal .ant-modal-content::-webkit-scrollbar,
+.pr-detail-modal .ant-modal-body::-webkit-scrollbar,
+.pr-detail-modal .ant-modal-wrap::-webkit-scrollbar,
+.pr-detail-modal textarea::-webkit-scrollbar,
+.pr-detail-modal textarea.ant-input::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .pr-detail-modal {
+    max-width: calc(100vw - 20px) !important;
+    margin: 16px auto !important;
+    top: 16px !important;
+    padding-bottom: 24px;
+  }
+
+  .pr-detail-modal .ant-modal-content {
+    padding: 16px !important;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+}
+
+/* ========================================================
+   MODAL INLINE FOOTER BUTTONS
+   ======================================================== */
+.pr-modal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+}
+
+.pr-modal-footer-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.pr-modal-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 480px) {
+  .pr-modal-footer {
+    gap: 6px !important;
+  }
+
+  .pr-modal-footer-actions {
+    gap: 6px !important;
+  }
+
+  .pr-modal-btn {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    height: 32px !important;
+  }
+
+  .pr-modal-btn .anticon {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .pr-modal-btn {
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+}
+
+

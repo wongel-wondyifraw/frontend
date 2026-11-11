@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Button, Tag, Typography, message, Modal } from 'antd';
+import { Button, Tag, Typography, Modal } from 'antd';
+import { message } from '@/lib/app-message';
 import { DesktopOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { getSessions, logoutAllSessions } from '@/services/api';
 import dayjs from 'dayjs';

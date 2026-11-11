@@ -1,33 +1,36 @@
+.add-biblestudy-container,
 .add-ministry-container {
     max-width: 1200px;
     margin: 0 auto;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
 }
 
+.add-biblestudy-header,
 .add-ministry-header {
     margin-bottom: 24px;
 }
 
+.add-biblestudy-header h1,
 .add-ministry-header h1 {
     font-size: 28px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
     margin-bottom: 8px;
 }
 
+.add-biblestudy-header p,
 .add-ministry-header p {
-    color: #64748b;
+    color: var(--text-secondary, #64748b);
     font-size: 16px;
 }
 
-/* Reusing similar classes but with purple theme */
 .form-section-title-purple {
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main, #1e293b);
     margin-bottom: 24px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -45,10 +48,63 @@
     font-size: 16px;
 }
 
+/* Remove outer card background, borders, and padding to prevent double-card nesting */
+.add-biblestudy-container .content-card-unified,
+.add-biblestudy-container .add-biblestudy-form-wrapper,
+.add-biblestudy-form-wrapper,
 .content-card-unified {
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: none;
-    border: 1px solid var(--border-color);
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100%;
+}
+
+/* Enlarge inner stepper wizard card to full size as the primary elevated card */
+.add-biblestudy-container .wizard-card,
+.add-ministry-container .wizard-card {
+    border-radius: 16px !important;
+    border: 1px solid var(--border-color, #e2e8f0) !important;
+    background: var(--bg-card, #ffffff) !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
+    width: 100%;
+}
+
+.add-biblestudy-container .wizard-card .ant-card-body,
+.add-ministry-container .wizard-card .ant-card-body {
+    padding: 36px 40px !important;
+}
+
+@media (max-width: 768px) {
+    .add-biblestudy-container,
+    .add-ministry-container {
+        padding: 0;
+    }
+
+    .add-biblestudy-container .content-card-unified,
+    .add-biblestudy-container .add-biblestudy-form-wrapper,
+    .add-biblestudy-form-wrapper {
+        padding: 0 !important;
+    }
+
+    .add-biblestudy-container .wizard-card,
+    .add-ministry-container .wizard-card {
+        border-radius: 12px !important;
+    }
+
+    .add-biblestudy-container .wizard-card .ant-card-body,
+    .add-ministry-container .wizard-card .ant-card-body {
+        padding: 20px 16px !important;
+    }
+
+    .add-biblestudy-header h1,
+    .add-ministry-header h1 {
+        font-size: 22px;
+    }
+
+    .add-biblestudy-header p,
+    .add-ministry-header p {
+        font-size: 14px;
+    }
 }

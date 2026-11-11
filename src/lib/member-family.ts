@@ -1,4 +1,3 @@
-import dayjs, { type Dayjs } from "dayjs";
 import {
   addFamilyChild,
   createFamily,
@@ -10,9 +9,24 @@ import {
   decodeLeaderValue,
   encodeLeaderValue,
 } from "@/Components/common/SpouseSelect";
+import {
+  computeAgeFromFieldValue,
+  fromEntityDate,
+  toApiDateFields,
+  type CalendarDateFieldValue,
+  type CalendarSystem,
+  type DatePrecision,
+} from "@/lib/ethiopian-calendar";
+import {
+  normalizePersonName,
+  normalizeTitleInitials,
+} from "@/lib/name-normalizer";
 import type { Family } from "@/types";
 
-type ChildForm = { name?: string; date_of_birth?: Dayjs };
+type ChildForm = {
+  name?: string;
+  date_of_birth?: CalendarDateFieldValue | string | null;
+};
 
 type FamilyFormValues = {
   marital_status?: string;
@@ -27,17 +41,32 @@ type FamilyFormValues = {
   skip_spouse_info?: boolean;
 };
 
-function childPayload(child: ChildForm) {
-  const name = child.name?.trim();
+type ChildWritePayload = {
+  name: string;
+  age?: number;
+  date_of_birth?: string | null;
+  date_of_birth_precision?: DatePrecision;
+  date_of_birth_calendar?: CalendarSystem;
+};
+
+function childPayload(child: ChildForm): ChildWritePayload | null {
+  const name = normalizePersonName(child.name ?? "");
   if (!name) return null;
-  const dob = child.date_of_birth
-    ? child.date_of_birth.format("YYYY-MM-DD")
-    : undefined;
-  let age: number | undefined;
-  if (child.date_of_birth) {
-    age = Math.max(0, dayjs().diff(child.date_of_birth, "year"));
-  }
-  return { name, date_of_birth: dob, age };
+
+  const dateFields = toApiDateFields(child.date_of_birth, "date_of_birth", {
+    clearAsNull: false,
+  });
+
+  const age =
+    child.date_of_birth && typeof child.date_of_birth === "object"
+      ? computeAgeFromFieldValue(child.date_of_birth)
+      : undefined;
+
+  return {
+    name,
+    age,
+    ...(dateFields as Omit<ChildWritePayload, "name" | "age">),
+  };
 }
 
 function buildFamilyPayload(
@@ -80,9 +109,13 @@ function buildFamilyPayload(
       payload.spouse_status = "registered";
     } else if (values.spouse_from_church === "no" && values.external_spouse_name) {
       payload.spouse_status = "external";
-      payload.external_spouse_name = values.external_spouse_name?.trim();
+      payload.external_spouse_name = normalizePersonName(
+        values.external_spouse_name,
+      );
       payload.external_spouse_phone = values.external_spouse_phone?.trim();
-      payload.external_spouse_church = values.external_spouse_church?.trim();
+      payload.external_spouse_church = values.external_spouse_church?.trim()
+        ? normalizeTitleInitials(values.external_spouse_church)
+        : undefined;
     } else if (values.skip_spouse_info || !values.spouse_from_church) {
       payload.spouse_status = "pending";
     } else {
@@ -115,7 +148,7 @@ function buildFamilyPayload(
 
 async function syncChildren(
   familyId: string,
-  children: Array<{ name: string; date_of_birth?: string; age?: number }>,
+  children: ChildWritePayload[],
   existing?: Family | null,
 ) {
   const existingChildren = existing?.children || [];
@@ -141,7 +174,13 @@ export function familyToFormValues(
 
   const children = (family.children || []).map((c) => ({
     name: c.name,
-    date_of_birth: c.date_of_birth ? dayjs(c.date_of_birth) : undefined,
+    date_of_birth: c.date_of_birth
+      ? fromEntityDate(
+          c.date_of_birth,
+          c.date_of_birth_precision ?? "day",
+          c.date_of_birth_calendar ?? "gc",
+        )
+      : undefined,
   }));
 
   const base: Record<string, unknown> = {
@@ -166,6 +205,7 @@ export function familyToFormValues(
 
   return base;
 }
+
 export async function upsertMemberFamily(
   memberId: string,
   values: FamilyFormValues,
@@ -173,12 +213,7 @@ export async function upsertMemberFamily(
   const built = buildFamilyPayload(memberId, values);
   if (!built) return;
 
-  const children =
-    (built._children as Array<{
-      name: string;
-      date_of_birth?: string;
-      age?: number;
-    }>) || [];
+  const children = (built._children as ChildWritePayload[]) || [];
   delete built._children;
 
   const existing = await getFamilyByMember(memberId);
@@ -186,12 +221,13 @@ export async function upsertMemberFamily(
     await updateFamily(existing.id, built);
     if (
       values.has_children ||
-      (!values.skip_spouse_info && values.marital_status === "married" && children.length >= 0)
+      (!values.skip_spouse_info &&
+        values.marital_status === "married" &&
+        children.length >= 0)
     ) {
       await syncChildren(existing.id, children, existing);
     }
   } else {
-    // If skipping spouse and no children recorded, do not create an empty placeholder row in the DB
     if (values.skip_spouse_info && children.length === 0) {
       return;
     }

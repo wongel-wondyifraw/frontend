@@ -30,6 +30,7 @@ import type { Plan, PlanStatus, PlanType } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useCan } from '@/Components/auth/Can';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
+import { formatCalendarDate } from '@/lib/ethiopian-calendar';
 import '../Members/MemberDetail.css';
 import './PlanDetail.css';
 
@@ -155,35 +156,40 @@ const PlanDetailContent = () => {
               </Tag>
             </div>
             <div className="member-id">
-              {dayjs(plan.plan_date).format('dddd, MMMM D, YYYY')}
+              {formatCalendarDate(
+                plan.plan_date,
+                'day',
+                plan.plan_date_calendar ?? 'gc',
+                { includeEquivalent: plan.plan_date_calendar === 'ec' },
+              )}
               {start ? ` · ${start}${end ? `–${end}` : ''}` : ''}
             </div>
           </div>
           <div className="member-actions-stacked">
-            {canUpdate && plan.status === 'planned' && (
-              <>
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  size="middle"
-                  style={{ backgroundColor: '#16a34a' }}
-                  onClick={() => setStatus('completed')}
-                >
-                  Mark as achieved
+            {canUpdate && plan.status === 'planned' ? (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                size="middle"
+                style={{ backgroundColor: '#16a34a' }}
+                onClick={() => setStatus('completed')}
+              >
+                Mark as achieved
+              </Button>
+            ) : null}
+            {canUpdate && plan.status === 'planned' ? (
+              <Popconfirm
+                title="Cancel this plan?"
+                description="You can activate it again later."
+                onConfirm={() => setStatus('cancelled')}
+                okText="Cancel plan"
+                okType="danger"
+              >
+                <Button danger icon={<StopOutlined />} size="middle">
+                  Cancel
                 </Button>
-                <Popconfirm
-                  title="Cancel this plan?"
-                  description="You can activate it again later."
-                  onConfirm={() => setStatus('cancelled')}
-                  okText="Cancel plan"
-                  okType="danger"
-                >
-                  <Button danger icon={<StopOutlined />} size="middle">
-                    Cancel
-                  </Button>
-                </Popconfirm>
-              </>
-            )}
+              </Popconfirm>
+            ) : null}
             {canUpdate && (plan.status === 'cancelled' || plan.status === 'completed') && (
               <Button
                 type="primary"
@@ -227,7 +233,12 @@ const PlanDetailContent = () => {
           <div className="member-kpi-card">
             <Statistic
               title="Date"
-              value={dayjs(plan.plan_date).format('MMM D')}
+              value={formatCalendarDate(
+                plan.plan_date,
+                'day',
+                plan.plan_date_calendar ?? 'gc',
+                { short: true },
+              )}
               prefix={<CalendarOutlined style={{ color: '#1565c0' }} />}
             />
           </div>
@@ -266,7 +277,14 @@ const PlanDetailContent = () => {
                   <th>
                     <CalendarOutlined /> Date
                   </th>
-                  <td>{dayjs(plan.plan_date).format('MMMM D, YYYY')}</td>
+                  <td>
+                    {formatCalendarDate(
+                      plan.plan_date,
+                      'day',
+                      plan.plan_date_calendar ?? 'gc',
+                      { includeEquivalent: true },
+                    )}
+                  </td>
                 </tr>
                 <tr>
                   <th>

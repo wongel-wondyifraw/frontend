@@ -1,0 +1,192 @@
+@import '../common/skeletons/Skeletons.css';
+
+.member-step-skeleton {
+  width: 100%;
+}
+
+.member-step-skeleton-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.member-step-skeleton-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.member-step-skeleton-title {
+  width: 176px;
+  height: 22px;
+}
+
+.member-step-skeleton-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.member-step-skeleton-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.member-step-skeleton-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.member-step-skeleton-grid-2 .member-step-skeleton-field,
+.member-step-skeleton-grid-3 .member-step-skeleton-field {
+  margin-bottom: 0;
+}
+
+.member-step-skeleton-label {
+  width: 112px;
+  height: 14px;
+}
+
+.member-step-skeleton-label--wide {
+  width: 156px;
+}
+
+.member-step-skeleton-control {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.member-step-skeleton-control--compact {
+  height: 40px;
+}
+
+.member-step-skeleton-textarea {
+  width: 100%;
+  height: 82px;
+  border-radius: 8px;
+}
+
+.member-step-skeleton-radios {
+  display: flex;
+  gap: 8px;
+}
+
+.member-step-skeleton-radio-pill {
+  width: 72px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.member-step-skeleton-upload-btn {
+  width: 148px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.member-step-skeleton-helper {
+  width: 240px;
+  max-width: 100%;
+  height: 12px;
+}
+
+.member-step-skeleton-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.member-step-skeleton-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-step-skeleton-checkbox-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.member-step-skeleton-checkbox-label {
+  height: 14px;
+  width: 110px;
+}
+
+.member-step-skeleton-review-card {
+  background: var(--bg-card, #ffffff);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.member-step-skeleton-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px 24px;
+  margin-top: 16px;
+}
+
+.member-step-skeleton-review-item {
+  height: 16px;
+}
+
+.member-step-skeleton-family {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-card, #ffffff);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.member-step-skeleton-family-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.member-step-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  background: rgba(255, 247, 237, 0.9);
+  color: #9a3412;
+  font-size: 13px;
+}
+
+:root[data-theme='dark'] .member-step-error-banner {
+  border-color: rgba(251, 146, 60, 0.4);
+  background: rgba(124, 45, 18, 0.25);
+  color: #fdba74;
+}
+
+@media (max-width: 768px) {
+  .member-step-skeleton-heading {
+    display: none;
+  }
+
+  .member-step-skeleton-grid-2,
+  .member-step-skeleton-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .member-step-skeleton-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

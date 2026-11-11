@@ -152,6 +152,12 @@
   display: none !important;
 }
 
+.wizard-step-loading {
+  padding: 24px 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
 .wizard-actions {
   display: flex;
   justify-content: flex-end;
@@ -234,7 +240,8 @@
   }
 
   /* Avoid double titles: wizard header already names the step */
-  .wizard-panel-step > div > h3:first-of-type {
+  .wizard-panel-step > div > h3:first-of-type,
+  .wizard-panel-step > .chunk-load-boundary > div > h3:first-of-type {
     display: none;
   }
 

@@ -5,8 +5,6 @@ import {
   App,
   Avatar,
   Button,
-  DatePicker,
-  Drawer,
   Form,
   Input,
   Modal,
@@ -24,10 +22,16 @@ import {
   SettingOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
-import dayjs, { type Dayjs } from 'dayjs';
 import DataTable from '../../Components/common/DataTable';
 import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
+import CalendarDateRangeInput, {
+  requiredCalendarRangeValidator,
+  type CalendarDateRangeValue,
+} from '../../Components/common/CalendarDateRangeInput';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
+import { formatCalendarDate, getTodayInCalendar } from '@/lib/ethiopian-calendar';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import {
@@ -48,7 +52,6 @@ import { useDebouncedCallback } from '@/lib/debounce';
 import MemberSearchSelect from '../../Components/common/MemberSearchSelect';
 import './ManageTasks.css';
 
-const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'overdue' | 'cancelled';
@@ -58,11 +61,19 @@ function personName(p?: { first_name?: string; middle_name?: string; last_name?:
   return `${p.first_name || ''} ${p.middle_name ? `${p.middle_name} ` : ''}${p.last_name || ''}`.trim() || '-';
 }
 
+const sortByVisitCountDesc = (a: { visit_count?: number }, b: { visit_count?: number }) =>
+  (b.visit_count || 0) - (a.visit_count || 0);
+
+const visitCountExtra = (m: { visit_count?: number }) =>
+  ` — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`;
+
 function statusTag(task: TaskAssignment) {
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = getTodayInCalendar('gc').isoDate;
   if (task.status === 'completed') return <Tag color="success">Completed</Tag>;
   if (task.status === 'cancelled') return <Tag>Cancelled</Tag>;
-  if (task.status === 'pending' && task.end_date < today) return <Tag color="error">Overdue</Tag>;
+  if (task.status === 'pending' && String(task.end_date).slice(0, 10) < today) {
+    return <Tag color="error">Overdue</Tag>;
+  }
   return <Tag color="processing">Pending</Tag>;
 }
 
@@ -235,22 +246,24 @@ const ManageTasksContent = () => {
     if (!open) return;
     assignForm.resetFields();
     const homeVisit = definitions.find((d) => d.code === 'HOME_VISIT' && d.is_active);
-    if (homeVisit) {
-      assignForm.setFieldsValue({ definition_id: homeVisit.id });
-    }
+    assignForm.setFieldsValue({
+      ...(homeVisit ? { definition_id: homeVisit.id } : {}),
+      date_range: { start: null, end: null, calendar: 'gc' },
+    });
   };
 
   const submitAssign = async () => {
     try {
       const values = await assignForm.validateFields();
-      const range = values.date_range as [Dayjs, Dayjs];
+      const range = values.date_range as CalendarDateRangeValue;
       setAssignSubmitting(true);
       await createTask({
         definition_id: values.definition_id,
         minister_id: values.minister_id,
         target_member_id: values.target_member_id,
-        start_date: range[0].format('YYYY-MM-DD'),
-        end_date: range[1].format('YYYY-MM-DD'),
+        start_date: range.start,
+        end_date: range.end,
+        date_calendar: range.calendar,
         notes: values.notes || undefined,
         visitation_methods: values.visitation_methods || [],
       });
@@ -340,9 +353,10 @@ const ManageTasksContent = () => {
     try {
       const values = await defForm.validateFields();
       setDefSubmitting(true);
+      const normalizedName = normalizeTitleInitials(values.name);
       if (editingDef) {
         await updateTaskDefinition(editingDef.id, {
-          name: values.name,
+          name: normalizedName,
           description: values.description || undefined,
           requires_visit_target: editingDef.is_system ? undefined : values.requires_visit_target,
           is_active: values.is_active,
@@ -350,7 +364,7 @@ const ManageTasksContent = () => {
         message.success('Definition updated');
       } else {
         await createTaskDefinition({
-          name: values.name,
+          name: normalizedName,
           description: values.description || undefined,
           requires_visit_target: values.requires_visit_target,
           is_active: values.is_active,
@@ -431,15 +445,19 @@ const ManageTasksContent = () => {
       key: 'dates',
       responsive: ['lg'],
       render: (_: unknown, record: TaskAssignment) => (
-        <div>
-          <span>
-            {dayjs(record.start_date).format('MMM D, YYYY')} → {dayjs(record.end_date).format('MMM D, YYYY')}
+        <div className="task-dates-cell">
+          <span className="task-dates-range">
+            {formatCalendarDate(record.start_date, 'day', record.date_calendar ?? 'gc')}
+            {' → '}
+            {formatCalendarDate(record.end_date, 'day', record.date_calendar ?? 'gc', {
+              includeEquivalent: record.date_calendar === 'ec',
+            })}
           </span>
           {record.visitation_methods && record.visitation_methods.length > 0 && (
-            <div style={{ marginTop: 4 }}>
-                {record.visitation_methods.map(m => (
-                    <Tag key={m} color="blue">{m}</Tag>
-                ))}
+            <div className="task-visitation-methods" style={{ marginTop: 4 }}>
+              {record.visitation_methods.map(m => (
+                <Tag key={m} color="blue">{m}</Tag>
+              ))}
             </div>
           )}
         </div>
@@ -494,25 +512,25 @@ const ManageTasksContent = () => {
         searchValue={searchText}
         onSearchChange={handleSearchChange}
         filterPanel={filterPanel}
-        controlsEnd={
-          <>
-            {canCreate ? (
-              <Button
-                icon={<SettingOutlined />}
-                onClick={() => {
-                  setEditingDef(null);
-                  setDefsOpen(true);
-                }}
-              >
-                Definitions
-              </Button>
-            ) : null}
-            {canCreate ? (
-              <Button type="primary" className="data-table-action" icon={<PlusOutlined />} onClick={openAssign}>
-                Assign Task
-              </Button>
-            ) : null}
-          </>
+        actionAdjacent={
+          canCreate ? (
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => {
+                setEditingDef(null);
+                setDefsOpen(true);
+              }}
+            >
+              Definitions
+            </Button>
+          ) : null
+        }
+        actionButton={
+          canCreate ? {
+            label: 'Assign Task',
+            icon: <PlusOutlined />,
+            onClick: openAssign,
+          } : undefined
         }
         serverPagination={{
           current: page,
@@ -552,7 +570,7 @@ const ManageTasksContent = () => {
           </Form.Item>
 
           {selectedDefinition?.requires_visit_target && (
-            <>
+            <div id="task-visit-fields" className="task-visit-fields">
               <Form.Item
                 name="target_member_id"
                 label="Who to visit"
@@ -561,16 +579,14 @@ const ManageTasksContent = () => {
               >
                 <MemberSearchSelect
                   placeholder="Type to search member to visit"
-                  optionExtra={(m) =>
-                    ` — ${m.visit_count || 0} visit${(m.visit_count || 0) === 1 ? '' : 's'}`
-                  }
-                  sortBy={(a, b) => (b.visit_count || 0) - (a.visit_count || 0)}
+                  optionExtra={visitCountExtra}
+                  sortBy={sortByVisitCountDesc}
                 />
               </Form.Item>
               <Form.Item name="visitation_methods" label="Visitation method(s)">
                 <Checkbox.Group options={['Home', 'Office', 'Phone']} />
               </Form.Item>
-            </>
+            </div>
           )}
 
           <Form.Item
@@ -592,9 +608,9 @@ const ManageTasksContent = () => {
           <Form.Item
             name="date_range"
             label="Date range"
-            rules={[{ required: true, message: 'Select start and end dates' }]}
+            rules={[{ validator: requiredCalendarRangeValidator({ allowEmptyEnd: false }) }]}
           >
-            <RangePicker style={{ width: '100%' }} />
+            <CalendarDateRangeInput id="task-assign-date-range" allowEmptyEnd={false} />
           </Form.Item>
 
           <Form.Item name="notes" label="Notes">
@@ -603,21 +619,35 @@ const ManageTasksContent = () => {
         </Form>
       </Modal>
 
-      <Drawer
-        title="Task Definitions"
+      <Modal
+        title={editingDef ? 'Edit Task Definition' : 'Task Definitions'}
         open={defsOpen}
-        onClose={() => setDefsOpen(false)}
-        size={440}
+        onCancel={() => {
+          setDefsOpen(false);
+          setEditingDef(null);
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setDefsOpen(false);
+              setEditingDef(null);
+            }}
+          >
+            Close
+          </Button>,
+        ]}
+        width={560}
         destroyOnHidden
         afterOpenChange={syncDefinitionForm}
       >
-        <Form form={defForm} layout="vertical" onFinish={submitDefinition}>
+        <Form form={defForm} layout="vertical" onFinish={submitDefinition} style={{ marginTop: 8 }}>
           <Form.Item
             name="name"
             label="Name"
             rules={[{ required: true, message: 'Name is required' }]}
           >
-            <Input placeholder="e.g. Follow-up call" />
+            <NameInput mode="title" placeholder="e.g. Follow-up Call" />
           </Form.Item>
           <Form.Item name="description" label="Description">
             <TextArea rows={2} placeholder="What this task means" />
@@ -633,43 +663,46 @@ const ManageTasksContent = () => {
           <Form.Item name="is_active" label="Active" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Space style={{ marginBottom: 24 }}>
+          <Space style={{ marginBottom: 20 }}>
             <Button type="primary" htmlType="submit" loading={defSubmitting}>
               {editingDef ? 'Update' : 'Create'} definition
             </Button>
             {editingDef && (
-              <Button onClick={openCreateDefinition}>New</Button>
+              <Button onClick={openCreateDefinition}>Cancel Edit</Button>
             )}
           </Space>
         </Form>
 
         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
-          <h4 style={{ marginTop: 0 }}>Existing definitions</h4>
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+          <h4 style={{ marginTop: 0, marginBottom: 12 }}>Existing definitions</h4>
+          <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
             {definitions.map((def) => (
               <div
                 key={def.id}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
+                  alignItems: 'center',
                   gap: 12,
-                  padding: '10px 12px',
+                  padding: '10px 14px',
                   border: '1px solid var(--border-color)',
                   borderRadius: 8,
                   background: 'var(--bg-hover)',
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {def.name}{' '}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span>{def.name}</span>
                     {def.is_system && <Tag color="blue">System</Tag>}
                     {!def.is_active && <Tag>Inactive</Tag>}
                   </div>
                   {def.description && (
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{def.description}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary, #64748b)', marginTop: 2 }}>
+                      {def.description}
+                    </div>
                   )}
                 </div>
-                <Space>
+                <Space style={{ flexShrink: 0 }}>
                   <Button size="small" onClick={() => openEditDefinition(def)}>Edit</Button>
                   {!def.is_system && canDelete && (
                     <Button size="small" danger onClick={() => handleDeleteDefinition(def)}>
@@ -679,9 +712,9 @@ const ManageTasksContent = () => {
                 </Space>
               </div>
             ))}
-          </Space>
+          </div>
         </div>
-      </Drawer>
+      </Modal>
     </div>
   );
 };

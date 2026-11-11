@@ -3,7 +3,16 @@ import axios, {
   type AxiosProgressEvent,
   type InternalAxiosRequestConfig,
 } from "axios";
-import { ApiRequestError } from "@/lib/errors";
+import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookies";
+import {
+  ApiRequestError,
+  NETWORK_EVENT,
+  NETWORK_UNAVAILABLE_MESSAGE,
+  emitNetworkSignal,
+  getApiErrorMessage,
+  getAxiosErrorMessage,
+  isNetworkUnavailableError,
+} from "@/lib/errors";
 import type {
   ApiSearchResult,
   DashboardStats,
@@ -29,6 +38,7 @@ import type {
   User,
   Location,
   PageContent,
+  ContactRequestItem,
 } from "@/types";
 
 const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -37,43 +47,64 @@ export const API_BASE_URL = rawUrl
   .trim()
   .replace(/\/api\/v1$/i, "");
 
-if (process.env.NODE_ENV === "development") {
-  console.log("API_BASE_URL:", API_BASE_URL);
-}
-
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
   },
 });
 
-function toApiError(error: unknown): ApiRequestError {
+const publicApi = axios.create({
+  baseURL: `${API_BASE_URL}/api/v1`,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const isCanceledRequest = (error: unknown): boolean => {
+  if (axios.isCancel(error)) return true;
+  if (axios.isAxiosError(error) && error.code === "ERR_CANCELED") return true;
+  return error instanceof Error && error.name === "AbortError";
+};
+
+export function toApiError(error: unknown): ApiRequestError {
   if (error instanceof ApiRequestError) {
+    if (error.isNetworkError) {
+      emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+    }
     return error;
+  }
+
+  if (isCanceledRequest(error)) {
+    return new ApiRequestError("Request canceled", undefined, {
+      isNetworkError: false,
+    });
+  }
+
+  if (isNetworkUnavailableError(error)) {
+    emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+    return new ApiRequestError(NETWORK_UNAVAILABLE_MESSAGE, undefined, {
+      isNetworkError: true,
+    });
   }
 
   if (axios.isAxiosError(error)) {
     if (!error.response) {
+      const isNetworkError = !isCanceledRequest(error);
+      if (isNetworkError) {
+        emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
+      }
       return new ApiRequestError(
-        `Unable to reach the API at ${API_BASE_URL}. Check that the backend is running.`,
+        isNetworkError ? NETWORK_UNAVAILABLE_MESSAGE : "Request canceled",
+        undefined,
+        { isNetworkError },
       );
     }
 
-    const data = error.response.data as
-      { message?: string | string[]; statusCode?: number } | undefined;
-    const rawMessage = Array.isArray(data?.message)
-      ? data.message[0]
-      : data?.message;
-    const message =
-      (typeof rawMessage === "string" && rawMessage.trim()) ||
-      error.message ||
-      "Request failed";
-
+    const message = getAxiosErrorMessage(error, "Request failed");
+    const data = error.response.data as { statusCode?: number } | undefined;
     return new ApiRequestError(
       message,
       data?.statusCode ?? error.response.status,
@@ -81,10 +112,23 @@ function toApiError(error: unknown): ApiRequestError {
   }
 
   if (error instanceof Error) {
-    return new ApiRequestError(error.message || "Request failed");
+    return new ApiRequestError(getApiErrorMessage(error, "Request failed"));
   }
 
   return new ApiRequestError("Request failed");
+}
+
+export async function postPublicAuth<T = void>(
+  path: string,
+  body: unknown,
+): Promise<T> {
+  try {
+    const response = await publicApi.post<T>(path, body);
+    emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
 }
 
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -116,7 +160,10 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequest | undefined;
     if (!originalRequest) {
@@ -159,6 +206,10 @@ api.interceptors.response.use(
         );
         if (typeof window !== "undefined") {
           localStorage.setItem("token", data.access_token);
+          setAuthCookie(
+            data.access_token,
+            localStorage.getItem("cms_remember_me") === "1",
+          );
           if (data.refresh_token) {
             localStorage.setItem("refresh_token", data.refresh_token);
           }
@@ -172,10 +223,16 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("token");
-          localStorage.removeItem("refresh_token");
-          window.dispatchEvent(new Event("auth:logout")); // Optional custom event
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+        if (status === 401 || status === 403) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("refresh_token");
+            clearAuthCookie();
+            window.dispatchEvent(new Event("auth:logout")); // Optional custom event
+          }
+        } else if (isNetworkUnavailableError(err)) {
+          emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
         }
         return Promise.reject(err);
       } finally {
@@ -183,11 +240,8 @@ api.interceptors.response.use(
       }
     }
 
-    if (!error.response) {
-      console.error(
-        "NETWORK ERROR: Possible causes include CORS failure, backend down, or incorrect NEXT_PUBLIC_API_URL.",
-      );
-      console.error("Target URL:", error.config?.url);
+    if (!error.response && !isCanceledRequest(error)) {
+      emitNetworkSignal(NETWORK_EVENT.UNAVAILABLE);
     }
     return Promise.reject(error);
   },
@@ -248,7 +302,9 @@ export const logoutUser = async (): Promise<void> => {
       await api.post("/auth/logout", { refresh_token: refreshToken });
     }
   } catch (error) {
-    console.error("Logout API failed:", error);
+    if (!isNetworkUnavailableError(error)) {
+      console.error("Logout API failed:", getApiErrorMessage(error));
+    }
   }
 };
 
@@ -503,12 +559,28 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 };
 
+const MEMBERS_NO_STORE_CONFIG = {
+  adapter: ["fetch", "xhr", "http"] as ("fetch" | "xhr" | "http")[],
+  fetchOptions: { cache: "no-store" as RequestCache },
+  headers: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+  },
+};
+
+export interface MemberRequestOptions {
+  signal?: AbortSignal;
+}
+
 export const getMembers = async (
   params: PaginationParams = {},
+  options?: MemberRequestOptions,
 ): Promise<PaginatedResponse<Member>> => {
   try {
     const response = await api.get<PaginatedResponse<Member>>("/members", {
       params,
+      signal: options?.signal,
+      ...MEMBERS_NO_STORE_CONFIG,
     });
     return response.data;
   } catch (error) {
@@ -521,9 +593,15 @@ export const getMembersList = async (): Promise<Member[]> => {
   return result.data;
 };
 
-export const getMemberById = async (id: string): Promise<Member> => {
+export const getMemberById = async (
+  id: string,
+  options?: MemberRequestOptions,
+): Promise<Member> => {
   try {
-    const response = await api.get<Member>(`/members/${id}`);
+    const response = await api.get<Member>(`/members/${id}`, {
+      signal: options?.signal,
+      ...MEMBERS_NO_STORE_CONFIG,
+    });
     return response.data;
   } catch (error) {
     throw toApiError(error);
@@ -1109,6 +1187,7 @@ export const getPlans = async (
     type?: string;
     from?: string;
     to?: string;
+    calendar?: "gc" | "ec";
     status?: string;
   } = {},
 ): Promise<PaginatedResponse<Plan>> => {
@@ -1219,6 +1298,21 @@ export const getFamilyByMember = async (
   }
 };
 
+export const getFamilyByPerson = async (
+  personId: string,
+  type: 'member' | 'minister' = 'minister',
+): Promise<Family | null> => {
+  try {
+    const response = await api.get<{ family: Family | null }>(
+      `/families/by-person/${personId}`,
+      { params: { type } },
+    );
+    return response.data?.family ?? null;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export const createFamily = async (
   data: Record<string, unknown>,
 ): Promise<Family> => {
@@ -1252,7 +1346,13 @@ export const deleteFamily = async (id: string): Promise<void> => {
 
 export const addFamilyChild = async (
   familyId: string,
-  data: { name: string; age?: number; date_of_birth?: string },
+  data: {
+    name: string;
+    age?: number;
+    date_of_birth?: string | null;
+    date_of_birth_precision?: "day" | "month" | "year";
+    date_of_birth_calendar?: "gc" | "ec";
+  },
 ): Promise<FamilyChild> => {
   try {
     const response = await api.post<FamilyChild>(
@@ -1462,6 +1562,62 @@ export const submitContactRequest = async (
   }
 };
 
+export const getContactRequests = async (
+  status?: string,
+): Promise<ContactRequestItem[]> => {
+  try {
+    const params = status && status !== "all" ? { status } : {};
+    const response = await api.get<ContactRequestItem[]>(
+      "/website/contact-requests",
+      { params },
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const getContactRequest = async (
+  id: string,
+): Promise<ContactRequestItem> => {
+  try {
+    const response = await api.get<ContactRequestItem>(
+      `/website/contact-requests/${id}`,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const updateContactRequest = async (
+  id: string,
+  data: Partial<Pick<ContactRequestItem, "status" | "notes" | "assigned_to" | "responded_at">>,
+): Promise<ContactRequestItem> => {
+  try {
+    const response = await api.patch<ContactRequestItem>(
+      `/website/contact-requests/${id}`,
+      data,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
+export const deleteContactRequest = async (
+  id: string,
+): Promise<{ success: boolean }> => {
+  try {
+    const response = await api.delete<{ success: boolean }>(
+      `/website/contact-requests/${id}`,
+    );
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
+};
+
 export default api;
 
 export interface NotificationListResponse {
@@ -1554,13 +1710,30 @@ export function subscribeNotificationStream(
   if (!token) return () => {};
 
   let es: EventSource | null = null;
+  let retryTimer: number | undefined;
   let retryMs = 1000;
   let closed = false;
 
+  const clearRetryTimer = () => {
+    if (retryTimer !== undefined) {
+      window.clearTimeout(retryTimer);
+      retryTimer = undefined;
+    }
+  };
+
   const connect = () => {
-    if (closed) return;
+    if (closed || es) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return;
+    }
+    clearRetryTimer();
     const url = `${API_BASE_URL}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
     es = new EventSource(url);
+
+    es.onopen = () => {
+      retryMs = 1000;
+      emitNetworkSignal(NETWORK_EVENT.REACHABLE);
+    };
 
     es.onmessage = (ev) => {
       try {
@@ -1575,17 +1748,37 @@ export function subscribeNotificationStream(
     es.onerror = () => {
       es?.close();
       es = null;
-      if (!closed) {
-        setTimeout(connect, retryMs);
-        retryMs = Math.min(retryMs * 2, 30000);
+      if (closed) return;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        return;
       }
+      clearRetryTimer();
+      retryTimer = window.setTimeout(connect, retryMs);
+      retryMs = Math.min(retryMs * 2, 30000);
     };
   };
 
+  const handleRestored = () => {
+    if (closed) return;
+    clearRetryTimer();
+    retryMs = 1000;
+    if (!es || es.readyState === EventSource.CLOSED) {
+      es?.close();
+      es = null;
+      connect();
+    }
+  };
+
+  window.addEventListener(NETWORK_EVENT.RESTORED, handleRestored);
+  window.addEventListener("online", handleRestored);
   connect();
 
   return () => {
     closed = true;
+    clearRetryTimer();
+    window.removeEventListener(NETWORK_EVENT.RESTORED, handleRestored);
+    window.removeEventListener("online", handleRestored);
     es?.close();
+    es = null;
   };
 }

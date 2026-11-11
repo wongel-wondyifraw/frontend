@@ -1,4 +1,11 @@
-import type { LandingMediaItem, LandingPageContent } from "@/types";
+import type { CalendarSystem, LandingMediaItem, LandingPageContent } from "@/types";
+import {
+  ETHIOPIC_MONTHS,
+  GREGORIAN_MONTHS_SHORT,
+  extractIsoParts,
+  formatCalendarDate,
+  gcToEc,
+} from "@/lib/ethiopian-calendar";
 import { TENANT } from "@/lib/tenant";
 
 /**
@@ -303,38 +310,53 @@ export function isIsoDate(value?: string | null): boolean {
   return Boolean(value && ISO_DATE.test(value.trim()));
 }
 
-/** Format stored start/end dates for public display (supports legacy free-text). */
+function formatGcShortRange(
+  start: { year: number; month: number; day: number },
+  end: { year: number; month: number; day: number },
+): string {
+  const sameYear = start.year === end.year;
+  const startLabel = sameYear
+    ? `${GREGORIAN_MONTHS_SHORT[start.month - 1]} ${start.day}`
+    : `${GREGORIAN_MONTHS_SHORT[start.month - 1]} ${start.day}, ${start.year}`;
+  const endLabel = `${GREGORIAN_MONTHS_SHORT[end.month - 1]} ${end.day}, ${end.year}`;
+  return `${startLabel} – ${endLabel}`;
+}
+
+/** Format stored start/end dates for public display (supports legacy free-text and GC/EC). */
 export function formatLandingDateRange(item: {
   event_date?: string;
   event_date_end?: string;
+  event_date_calendar?: CalendarSystem;
 }): string {
   const start = item.event_date?.trim();
   if (!start) return "";
   if (!isIsoDate(start)) return start;
 
-  const startDate = new Date(`${start}T12:00:00`);
+  const startParts = extractIsoParts(start);
+  if (!startParts) return start;
+
+  const calendar: CalendarSystem = item.event_date_calendar ?? "gc";
   const end = item.event_date_end?.trim();
-  if (!end || !isIsoDate(end) || end === start) {
-    return startDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  const endParts = end && isIsoDate(end) ? extractIsoParts(end) : null;
+
+  if (!endParts || end === start) {
+    if (calendar === "ec") {
+      return formatCalendarDate(start, "day", "ec", { includeEquivalent: true });
+    }
+    return formatCalendarDate(start, "day", "gc");
   }
 
-  const endDate = new Date(`${end}T12:00:00`);
-  const sameYear = startDate.getFullYear() === endDate.getFullYear();
-  const startLabel = startDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: sameYear ? undefined : "numeric",
-  });
-  const endLabel = endDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  return `${startLabel} – ${endLabel}`;
+  if (calendar === "ec") {
+    const ecStart = gcToEc(startParts.year, startParts.month, startParts.day);
+    const ecEnd = gcToEc(endParts.year, endParts.month, endParts.day);
+    const ecRange =
+      ecStart.year === ecEnd.year
+        ? `${ETHIOPIC_MONTHS[ecStart.month - 1].name} ${ecStart.day} – ${ETHIOPIC_MONTHS[ecEnd.month - 1].name} ${ecEnd.day}, ${ecEnd.year} E.C.`
+        : `${ETHIOPIC_MONTHS[ecStart.month - 1].name} ${ecStart.day}, ${ecStart.year} – ${ETHIOPIC_MONTHS[ecEnd.month - 1].name} ${ecEnd.day}, ${ecEnd.year} E.C.`;
+    return `${ecRange} (${formatGcShortRange(startParts, endParts)} G.C.)`;
+  }
+
+  return formatGcShortRange(startParts, endParts);
 }
 
 /** Format HH:mm (or legacy) time for public display. */

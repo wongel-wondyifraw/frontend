@@ -1,7 +1,13 @@
-import type { Plan } from "@/types";
+import type { CalendarSystem, Plan } from "@/types";
 import { createPlansBulk, getPlans } from "@/services/api";
 import { getApiErrorMessage } from "@/lib/errors";
 import { splitList } from "@/lib/csv";
+import {
+  formatByPrecision,
+  formatDateForCsv,
+  parseFlexibleCalendarDate,
+} from "@/lib/ethiopian-calendar";
+import { normalizeTitleInitials } from "@/lib/name-normalizer";
 import {
   downloadExcelTemplate,
   downloadExcelData,
@@ -55,7 +61,7 @@ export function planToCsvRow(p: Plan): Record<string, string> {
   return {
     title: p.title ?? "",
     type: p.type ?? "",
-    plan_date: p.plan_date ? String(p.plan_date).slice(0, 10) : "",
+    plan_date: formatDateForCsv(p.plan_date, "day", p.plan_date_calendar ?? "gc"),
     start_time: formatTime(p.start_time),
     end_time: formatTime(p.end_time),
     location: p.location ?? "",
@@ -122,24 +128,48 @@ export async function exportPlansPdf(): Promise<void> {
   });
 }
 
-function rowToPlanPayload(
+export function rowToPlanPayload(
   row: Record<string, string>,
 ): Record<string, unknown> {
-  const title = row.title?.trim();
+  const title = normalizeTitleInitials(row.title ?? "");
   const type = row.type?.trim();
-  const plan_date = row.plan_date?.trim();
+  const planDateRaw = row.plan_date?.trim();
 
-  if (!title || !type || !plan_date) {
+  if (!title || !type || !planDateRaw) {
     throw new Error("title, type, and plan_date are required");
   }
   if (!PLAN_TYPES.has(type)) {
     throw new Error(`type must be one of: ${[...PLAN_TYPES].join(", ")}`);
   }
 
+  const rawCal = row.plan_date_calendar?.trim().toLowerCase();
+  if (rawCal && rawCal !== "gc" && rawCal !== "ec") {
+    throw new Error('plan_date_calendar must be "gc" or "ec"');
+  }
+  const calendarOpt = (rawCal === "gc" || rawCal === "ec" ? rawCal : undefined) as
+    | CalendarSystem
+    | undefined;
+
+  const parsedDate = parseFlexibleCalendarDate(planDateRaw, {
+    calendar: calendarOpt,
+    allowPartial: false,
+  });
+  if (!parsedDate) {
+    throw new Error(
+      `plan_date ("${planDateRaw}") must be a full date (YYYY-MM-DD, optionally followed by EC or GC)`,
+    );
+  }
+
   const payload: Record<string, unknown> = {
     title,
     type,
-    plan_date,
+    plan_date: formatByPrecision(
+      parsedDate.year,
+      parsedDate.month,
+      parsedDate.day,
+      "day",
+    ),
+    plan_date_calendar: parsedDate.calendar,
   };
 
   const start = row.start_time?.trim();
@@ -148,7 +178,10 @@ function rowToPlanPayload(
   if (end) payload.end_time = end.length === 5 ? `${end}:00` : end;
 
   const location = row.location?.trim();
-  if (location) payload.location = location;
+  if (location) {
+    const normalizedLocation = normalizeTitleInitials(location);
+    if (normalizedLocation) payload.location = normalizedLocation;
+  }
   const notes = row.notes?.trim();
   if (notes) payload.notes = notes;
 

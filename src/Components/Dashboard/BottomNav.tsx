@@ -122,8 +122,19 @@ const MORE_ITEMS: NavItem[] = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { user, logout } = useUser();
+  const { user, loading, logout } = useUser();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  if (!user && loading) {
+    return (
+      <nav className="bottom-nav" aria-label="Loading mobile navigation" aria-busy="true">
+        <div className="bottom-nav-skeleton-item" aria-hidden="true" />
+        <div className="bottom-nav-skeleton-item" aria-hidden="true" />
+        <div className="bottom-nav-skeleton-item" aria-hidden="true" />
+        <div className="bottom-nav-skeleton-item" aria-hidden="true" />
+      </nav>
+    );
+  }
 
   const can = (permission?: string) => !permission || hasPermission(user, permission);
   const canItem = (item: NavItem) =>

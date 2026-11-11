@@ -1,22 +1,30 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, App } from 'antd';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Tag, App, Select } from 'antd';
 import { message } from '@/lib/app-message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import DataTable from '../../Components/common/DataTable';
+import DataTableFilterPopup from '../../Components/common/DataTableFilterPopup';
 import TableRowActions, { TABLE_ACTIONS_COLUMN } from '../../Components/common/TableRowActions';
 import EntityNameCell from '../../Components/common/EntityNameCell';
 import { getMinisters, deleteMinister } from '../../services/api';
 import type { ColumnsType } from 'antd/es/table';
-import type { ManageMinistersProps, Minister } from '@/types';
+import type { ManageMinistersProps, Minister, PaginationParams } from '@/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDebouncedCallback } from '@/lib/debounce';
 import { getImageUrl } from '@/lib/media-url';
 import { getInitials } from '@/lib/initials';
+import { formatCalendarDate } from '@/lib/ethiopian-calendar';
 import { PermissionGate } from '@/Components/auth/PermissionGate';
 import { useCan } from '@/Components/auth/Can';
 import './ManageMinisters.css';
+
+type MinisterFilters = {
+  status?: string;
+};
+
+const DEFAULT_FILTERS: MinisterFilters = {};
 
 const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) => {
   const router = useRouter();
@@ -30,34 +38,85 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
   const [page, setPage] = useState(initialPage?.page ?? 1);
   const [pageSize, setPageSize] = useState(initialPage?.limit ?? 10);
   const [total, setTotal] = useState(initialPage?.total ?? 0);
+  const [filters, setFilters] = useState<MinisterFilters>(DEFAULT_FILTERS);
+  const requestSeqRef = useRef(0);
+  const hasHydratedRef = useRef(false);
 
-  const loadMinisters = useCallback(async (nextPage = page, nextPageSize = pageSize, search = searchText) => {
+  const loadMinisters = useCallback(async (
+    nextPage = page,
+    nextPageSize = pageSize,
+    search = searchText,
+    nextFilters = filters,
+    options: { silent?: boolean } = {},
+  ) => {
+    const seq = ++requestSeqRef.current;
     try {
-      setLoading(true);
-      const result = await getMinisters({ page: nextPage, limit: nextPageSize, search: search || undefined });
+      if (!options.silent) {
+        setLoading(true);
+      }
+      const params: PaginationParams = {
+        page: nextPage,
+        limit: nextPageSize,
+        search: search || undefined,
+        status: nextFilters.status,
+      };
+      const result = await getMinisters(params);
+      if (seq !== requestSeqRef.current) return;
       setMinisters(result.data);
       setTotal(result.total);
       setPage(result.page);
       setPageSize(result.limit);
     } catch {
-      message.error('Failed to load ministers');
+      if (seq !== requestSeqRef.current) return;
+      if (!options.silent) {
+        message.error('Failed to load ministers');
+      }
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+      }
     }
-  }, [page, pageSize, searchText]);
+  }, [page, pageSize, searchText, filters]);
 
   const debouncedSearch = useDebouncedCallback((value: string) => {
-    loadMinisters(1, pageSize, value);
+    void loadMinisters(1, pageSize, value, filters);
   }, 300);
 
   useEffect(() => {
-    if (initialPage !== null) return;
-    loadMinisters();
-  }, [initialPage, loadMinisters]);
+    if (hasHydratedRef.current) return;
+    hasHydratedRef.current = true;
+    if (initialPage !== null) {
+      setMinisters(initialPage.data);
+      setTotal(initialPage.total);
+      setPage(initialPage.page);
+      setPageSize(initialPage.limit);
+      void loadMinisters(
+        initialPage.page,
+        initialPage.limit,
+        '',
+        DEFAULT_FILTERS,
+        { silent: true },
+      );
+      return;
+    }
+    void loadMinisters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPage]);
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
     debouncedSearch(value);
+  };
+
+  const applyFilters = (patch: Partial<MinisterFilters>) => {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    loadMinisters(1, pageSize, searchText, next);
+  };
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    loadMinisters(1, pageSize, searchText, DEFAULT_FILTERS);
   };
 
   const handleDelete = (minister: Minister) => {
@@ -72,7 +131,8 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
         try {
           await deleteMinister(minister.id);
           message.success('Minister deleted successfully');
-          loadMinisters(page, pageSize, searchText);
+          router.refresh();
+          await loadMinisters(page, pageSize, searchText, filters);
         } catch (error: unknown) {
           message.error(getApiErrorMessage(error, 'Failed to delete minister'));
         }
@@ -86,16 +146,19 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       key: 'name',
       render: (_: unknown, record: Minister) => (
         <EntityNameCell
-          title={
-            <>
-              {record.first_name}{' '}
-              {record.middle_name ? `${record.middle_name} ` : ''}
-              {record.last_name}
-            </>
-          }
+          title={[record.first_name, record.middle_name, record.last_name]
+            .filter(Boolean)
+            .join(' ')}
           subtitle={record.email || undefined}
           avatarSrc={getImageUrl(record.image_url)}
           initials={getInitials(record.first_name, record.last_name, record.middle_name)}
+          meta={
+            record.title ? (
+              <Tag color="purple" style={{ marginInlineEnd: 0 }}>
+                {record.title}
+              </Tag>
+            ) : undefined
+          }
         />
       ),
     },
@@ -110,7 +173,7 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       title: 'Phone',
       dataIndex: 'phone',
       key: 'phone',
-      responsive: ['sm'],
+      responsive: ['md'],
       render: (phone: string | undefined) => phone || '-',
     },
     {
@@ -119,7 +182,9 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
       dataIndex: 'status',
       render: (status: string | undefined) => {
         const s = (status || 'active').toLowerCase();
-        const color = s === 'active' ? '#10b981' : '#ef4444';
+        let color = '#94A3B8';
+        if (s === 'active') color = '#10b981';
+        else if (s === 'inactive' || s === 'suspended') color = '#ef4444';
         return (
           <Tag color={color} style={{ borderRadius: '20px', padding: '0 12px', fontWeight: 600 }}>
             {s.toUpperCase()}
@@ -129,14 +194,24 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
     },
     {
       title: 'Joined',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (date: string | undefined) => (date ? new Date(date).toLocaleDateString() : '-'),
+      key: 'joined',
+      responsive: ['lg'],
+      render: (_: unknown, record: Minister) => {
+        if (record.joined_date) {
+          return formatCalendarDate(
+            record.joined_date,
+            record.joined_date_precision ?? 'day',
+            record.joined_date_calendar ?? 'gc',
+            { includeEquivalent: record.joined_date_calendar === 'ec' },
+          );
+        }
+        return record.created_at ? new Date(record.created_at).toLocaleDateString() : '-';
+      },
     },
     {
       title: 'Action',
-            key: 'action',
-            ...TABLE_ACTIONS_COLUMN,
+      key: 'action',
+      ...TABLE_ACTIONS_COLUMN,
       render: (_: unknown, record: Minister) => (
         <TableRowActions
           ariaLabel={`Actions for ${record.first_name}`}
@@ -170,6 +245,26 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
     },
   ];
 
+  const activeFilterCount = [filters.status].filter(Boolean).length;
+
+  const filterPanel = (
+    <DataTableFilterPopup activeCount={activeFilterCount} onClear={clearAllFilters}>
+      <div className="dt-filter-field">
+        <span className="dt-filter-label">Status</span>
+        <Select
+          allowClear
+          placeholder="Any status"
+          value={filters.status}
+          onChange={(value) => applyFilters({ status: value || undefined })}
+          options={[
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ]}
+        />
+      </div>
+    </DataTableFilterPopup>
+  );
+
   return (
     <div className="manage-page">
       <DataTable
@@ -182,11 +277,13 @@ const ManageMinistersContent = ({ initialPage = null }: ManageMinistersProps) =>
         searchPlaceholder="Search ministers..."
         searchValue={searchText}
         onSearchChange={handleSearchChange}
+        filterPanel={filterPanel}
         serverPagination={{
           current: page,
           pageSize,
           total,
-          onChange: (nextPage, nextPageSize) => loadMinisters(nextPage, nextPageSize, searchText),
+          onChange: (nextPage, nextPageSize) =>
+            loadMinisters(nextPage, nextPageSize, searchText, filters),
         }}
         actionButton={canCreate ? {
           label: 'Register Minister',

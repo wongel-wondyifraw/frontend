@@ -17,6 +17,11 @@ import {
   subscribeNotificationStream,
 } from '@/services/api';
 import { useUser } from '@/context/UserContext';
+import {
+  NETWORK_EVENT,
+  getApiErrorMessage,
+  isNetworkUnavailableError,
+} from '@/lib/errors';
 import { hasPermission } from '@/types';
 
 export interface AppNotification {
@@ -65,7 +70,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setItems(data.items);
       setUnreadCount(data.unreadCount);
     } catch (err) {
-      console.error('Failed to load notifications', err);
+      if (!isNetworkUnavailableError(err)) {
+        console.error('Failed to load notifications', getApiErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -78,18 +85,49 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    refresh();
+    let cancelled = false;
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
 
-    cleanupRef.current?.();
-    cleanupRef.current = subscribeNotificationStream((event) => {
-      if (event.type === 'notification' && event.notification) {
-        const n = event.notification as AppNotification;
-        setItems((prev) => [n, ...prev.filter((i) => i.id !== n.id)].slice(0, 20));
-        setUnreadCount((c) => c + 1);
+    const startSync = () => {
+      if (cancelled) return;
+      void refresh();
+      cleanupRef.current?.();
+      cleanupRef.current = subscribeNotificationStream((event) => {
+        if (event.type === 'notification' && event.notification) {
+          const n = event.notification as AppNotification;
+          setItems((prev) => [n, ...prev.filter((i) => i.id !== n.id)].slice(0, 20));
+          setUnreadCount((c) => c + 1);
+        }
+      });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleHandle = window.requestIdleCallback(startSync, { timeout: 1500 });
+    } else {
+      timeoutHandle = setTimeout(startSync, 1000);
+    }
+
+    const handleNetworkRestored = () => {
+      if (!cancelled) {
+        void refresh();
       }
-    });
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
+    }
 
     return () => {
+      cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener(NETWORK_EVENT.RESTORED, handleNetworkRestored);
+      }
+      if (idleHandle !== undefined && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== undefined) {
+        clearTimeout(timeoutHandle);
+      }
       cleanupRef.current?.();
       cleanupRef.current = null;
     };

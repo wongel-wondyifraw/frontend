@@ -260,34 +260,62 @@
     min-width: 0;
   }
 
+  /* Mobile layout aligned with Plans page: searchbar 100% width on row 1, filters below */
   .data-table-controls {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
     width: 100%;
   }
 
-  .data-table-filters {
-    width: auto;
-    margin-left: auto;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
-    gap: 10px;
-    flex: 0 0 auto;
-  }
-
   .data-table-search {
-    width: auto !important;
-    max-width: none;
-    flex: 1 1 auto;
+    width: 100% !important;
+    max-width: none !important;
+    flex: 1 1 100% !important;
   }
 
-  .data-table-filters > * {
-    width: auto !important;
-    min-width: 0 !important;
-    flex: 0 0 auto;
+  .data-table-filters {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    flex: 1 1 100%;
+  }
+
+  .data-table-filters .data-io-actions {
+    display: contents !important;
+  }
+
+  .data-table-filters > *:only-child {
+    grid-column: span 2 !important;
+    width: 100% !important;
+  }
+
+  .data-table-filters .ant-btn {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+  }
+
+  .data-table-filters .dt-filter-badge {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .data-table-filters .dt-filter-trigger {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    justify-content: center !important;
   }
 
   .dt-filter,
@@ -297,11 +325,14 @@
   .mm-filter-sort,
   .mm-filter-range {
     width: 100% !important;
+    height: 42px !important;
   }
 
   .data-table-filters > .ant-select,
   .data-table-filters > .ant-picker {
-    min-width: 140px;
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 42px !important;
   }
 
   .data-table-card,

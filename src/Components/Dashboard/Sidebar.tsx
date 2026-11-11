@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Home,
   Users,
+  User,
   Briefcase,
   Settings,
   ChevronDown,
@@ -19,7 +20,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
 import { Avatar } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
 import { getAvatarUrl } from '@/lib/media-url';
 import { hasPermission } from '@/types';
 import { TENANT } from '@/lib/tenant';
@@ -60,7 +60,7 @@ interface NavSection {
 }
 
 const Sidebar = () => {
-  const { user, logout, avatarVersion } = useUser();
+  const { user, loading, logout, avatarVersion } = useUser();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -293,7 +293,7 @@ const Sidebar = () => {
         <div className="sidebar-profile">
           <Avatar
             size={80}
-            icon={<UserOutlined />}
+            icon={<User size={34} strokeWidth={1.75} />}
             src={getAvatarUrl(user?.avatar_url, avatarVersion)}
             className="sidebar-profile-img"
             style={{
@@ -304,32 +304,61 @@ const Sidebar = () => {
           />
           <div className="sidebar-profile-info">
             <p className="sidebar-tenant-name">{TENANT.shortName}</p>
-            <h3 className="profile-name">
-              {user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Loading...'}
-            </h3>
+            {user ? (
+              <h3 className="profile-name">
+                {`${user.first_name} ${user.last_name || ''}`.trim()}
+              </h3>
+            ) : loading ? (
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--name" aria-hidden="true" />
+            ) : (
+              <h3 className="profile-name">Guest</h3>
+            )}
             {user && <div className="profile-role-pill">{user.role}</div>}
+            {!user && loading && (
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--pill" aria-hidden="true" />
+            )}
             {user?.title && <div className="profile-title-pill">{user.title}</div>}
           </div>
         </div>
       </div>
 
       <nav className="sidebar-nav">
-        {visibleSections.map((section) => (
-          <div key={section.id} className="nav-section">
-            <div className="nav-section-title">{section.title}</div>
-            <div className="nav-section-items">
-              {section.items.map((item) =>
-                item.type === 'link' ? (
-                  <div key={item.id} className="nav-group">
-                    {renderItem(item)}
-                  </div>
-                ) : (
-                  renderItem(item)
-                ),
-              )}
+        {!user && loading ? (
+          <div className="sidebar-nav-skeleton" aria-hidden="true">
+            <div className="sidebar-skeleton-group">
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--heading" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
+            </div>
+            <div className="sidebar-skeleton-group">
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--heading" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
+            </div>
+            <div className="sidebar-skeleton-group">
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--heading" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
+              <div className="sidebar-skeleton-bar sidebar-skeleton-bar--item" />
             </div>
           </div>
-        ))}
+        ) : (
+          visibleSections.map((section) => (
+            <div key={section.id} className="nav-section">
+              <div className="nav-section-title">{section.title}</div>
+              <div className="nav-section-items">
+                {section.items.map((item) =>
+                  item.type === 'link' ? (
+                    <div key={item.id} className="nav-group">
+                      {renderItem(item)}
+                    </div>
+                  ) : (
+                    renderItem(item)
+                  ),
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </nav>
 
       <div className="sidebar-footer-links">
@@ -349,6 +378,7 @@ const Sidebar = () => {
           type="button"
           aria-label="Log out of your account"
           className="nav-item footer-item danger-item"
+          disabled={!user}
           onClick={handleLogout}
         >
           <span className="nav-icon">

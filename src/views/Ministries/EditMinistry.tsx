@@ -16,6 +16,8 @@ import MemberTransferList from '../../Components/common/MemberTransferList';
 import { updateMinistry, getMinistry, getMinistryMembers, addMinistryMember, removeMinistryMember } from '../../services/api';
 import { getApiErrorMessage } from '@/lib/errors';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import './AddMinistry.css';
 
 const { TextArea } = Input;
@@ -119,7 +121,7 @@ const EditMinistry = () => {
             setLoading(true);
             const leader = decodeLeaderValue(values.leader_key);
             const ministryData = {
-                name: values.name,
+                name: normalizeTitleInitials(values.name),
                 about: values.about || '',
                 schedule: values.schedule || '',
                 leader_id: leader.leader_id,
@@ -188,7 +190,7 @@ const EditMinistry = () => {
                     <p>Update ministry information, leadership, and members.</p>
                 </div>
 
-                <div className="content-card-unified">
+                <div className="add-ministry-form-wrapper">
                     <Form form={form} layout="vertical" onFinish={handleSubmit}>
                         <StepperWizard
                             steps={STEPS}
@@ -204,8 +206,8 @@ const EditMinistry = () => {
                         >
                             {/* STEP 1: Ministry Information */}
                             <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <TeamOutlined style={{ color: '#1565c0' }} /> Ministry Information
+                                <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <TeamOutlined style={{ color: '#1E40AF' }} /> Ministry Information
                                 </h3>
                                 <Row gutter={24}>
                                     <Col span={24}>
@@ -214,7 +216,7 @@ const EditMinistry = () => {
                                             label="Ministry Name"
                                             rules={[{ required: true, message: 'Ministry name is required' }]}
                                         >
-                                            <Input size="large" placeholder="e.g. Worship Team" />
+                                            <NameInput mode="title" size="large" placeholder="e.g. Worship Team" />
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -225,8 +227,8 @@ const EditMinistry = () => {
 
                             {/* STEP 2: Leadership & Schedule */}
                             <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UserOutlined style={{ color: '#1565c0' }} /> Leadership & Schedule
+                                <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <UserOutlined style={{ color: '#1E40AF' }} /> Leadership & Schedule
                                 </h3>
                                 <Row gutter={24}>
                                     <Col xs={24} md={12}>
@@ -244,11 +246,11 @@ const EditMinistry = () => {
 
                             {/* STEP 3: Manage Members */}
                             <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <UsergroupAddOutlined style={{ color: '#1565c0' }} /> Manage Members
+                                <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <UsergroupAddOutlined style={{ color: '#1E40AF' }} /> Manage Members
                                 </h3>
                                 <MemberTransferList
-                remoteSearch
+                                    remoteSearch
                                     selectedKeys={selectedMemberKeys}
                                     onChange={setSelectedMemberKeys}
                                     description="Search and check members to update who belongs to this ministry."
@@ -257,14 +259,18 @@ const EditMinistry = () => {
 
                             {/* STEP 4: Review & Update */}
                             <div>
-                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <CheckCircleOutlined style={{ color: '#1565c0' }} /> Review Changes
+                                <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <CheckCircleOutlined style={{ color: '#1E40AF' }} /> Review Changes
                                 </h3>
-                                <div style={{
-                                    background: '#fff', borderRadius: '8px', padding: '20px',
-                                    border: '1px solid var(--border-color)', marginTop: '16px'
-                                }}>
-                                    <h4 style={{ marginBottom: '16px', color: '#0f172a' }}>Ministry Summary</h4>
+                                <div
+                                    style={{
+                                        background: 'var(--bg-card, #fff)',
+                                        borderRadius: 12,
+                                        padding: 20,
+                                        border: '1px solid var(--border-color)',
+                                    }}
+                                >
+                                    <h4 style={{ marginBottom: 16, color: 'var(--text-main, #0f172a)' }}>Ministry Summary</h4>
                                     <Form.Item noStyle shouldUpdate>
                                         {() => {
                                             const values = form.getFieldsValue();
@@ -274,8 +280,8 @@ const EditMinistry = () => {
                                                 : 'Not assigned';
                                             const selectedCount = selectedMemberKeys.length;
                                             return (
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: '13px' }}>
-                                                    <div><strong>Ministry Name:</strong> {values.name || '—'}</div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
+                                                    <div><strong>Ministry Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                                                     <div><strong>Leader:</strong> {leaderLabel}</div>
                                                     <div><strong>Schedule:</strong> {values.schedule || '—'}</div>
                                                     <div><strong>Members:</strong> {selectedCount > 0 ? `${selectedCount} member(s) selected` : 'None'}</div>

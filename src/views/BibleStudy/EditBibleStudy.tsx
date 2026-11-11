@@ -18,6 +18,8 @@ import { getApiErrorMessage } from '@/lib/errors';
 import { UploadProgressBar } from '@/Components/common/UploadProgressBar';
 import { BIBLE_BOOKS } from '@/lib/bible-books';
 import LeaderSelect, { decodeLeaderValue, encodeLeaderValue } from '../../Components/common/LeaderSelect';
+import NameInput from '../../Components/common/NameInput';
+import { normalizeTitleInitials } from '@/lib/name-normalizer';
 import './AddBibleStudy.css';
 
 const { Option } = Select;
@@ -112,10 +114,10 @@ const EditBibleStudy = () => {
 
       const leader = decodeLeaderValue(values.leader_key);
       await updateBibleStudy(id, {
-        name: values.name,
+        name: normalizeTitleInitials(values.name),
         about: values.about || '',
         schedule: values.schedule || '',
-        location: values.location,
+        location: normalizeTitleInitials(values.location),
         content_type: values.content_type,
         bible_book: values.content_type === 'book' ? values.bible_book : null,
         material_url: values.content_type === 'study_material' ? (materialUrl || null) : null,
@@ -174,7 +176,7 @@ const EditBibleStudy = () => {
             <div>
               <h3 style={{ marginBottom: 20 }}><BookOutlined style={{ color: '#1565c0' }} /> Bible Study Information</h3>
               <Form.Item name="name" label="Bible Study Name" rules={[{ required: true }]}>
-                <Input size="large" />
+                <NameInput mode="title" size="large" />
               </Form.Item>
               <Form.Item name="about" label="About this Bible Study">
                 <TextArea rows={4} />
@@ -195,7 +197,7 @@ const EditBibleStudy = () => {
                 </Col>
               </Row>
               <Form.Item name="location" label="Meeting Location" rules={[{ required: true }]}>
-                <Input size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
+                <NameInput mode="title" size="large" prefix={<EnvironmentOutlined style={{ color: '#bfbfbf' }} />} />
               </Form.Item>
             </div>
             <div>
@@ -256,9 +258,9 @@ const EditBibleStudy = () => {
                   const leader = decodeLeaderValue(values.leader_key);
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 24px', fontSize: 13 }}>
-                      <div><strong>Name:</strong> {values.name || '—'}</div>
+                      <div><strong>Name:</strong> {(values.name ? normalizeTitleInitials(values.name) : '') || '—'}</div>
                       <div><strong>Leader:</strong> {leader.leader_id ? `${leader.leader_type === 'minister' ? 'Minister' : 'Member'} selected` : 'Not assigned'}</div>
-                      <div><strong>Location:</strong> {values.location || '—'}</div>
+                      <div><strong>Location:</strong> {(values.location ? normalizeTitleInitials(values.location) : '') || '—'}</div>
                       <div><strong>Content:</strong> {values.content_type === 'book' ? `Book — ${values.bible_book || '—'}` : 'Study Material'}</div>
                       <div><strong>Members:</strong> {selectedMemberKeys.length}</div>
                     </div>

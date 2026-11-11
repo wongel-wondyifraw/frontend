@@ -3,7 +3,14 @@
 import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { App } from 'antd';
-import { bindAppMessage } from '@/lib/app-message';
+import {
+  bindAppMessage,
+  message as deduplicatedMessage,
+} from '@/lib/app-message';
+import {
+  NETWORK_RESTORED_MESSAGE,
+  NETWORK_UNAVAILABLE_MESSAGE,
+} from '@/lib/errors';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -26,11 +33,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback(
     (type: ToastType, content: string, title?: string) => {
+      const trimmed = content.trim();
+      const key =
+        trimmed === NETWORK_UNAVAILABLE_MESSAGE
+          ? 'cms-network-unavailable'
+          : trimmed === NETWORK_RESTORED_MESSAGE
+            ? 'cms-network-restored'
+            : undefined;
+
       if (title) {
-        notification[type]({ title, description: content });
-      } else {
-        message[type](content);
+        notification[type]({ key, title, description: content });
+        return;
       }
+
+      if (key === 'cms-network-unavailable' || key === 'cms-network-restored') {
+        if (type === 'success') {
+          deduplicatedMessage.success(content);
+        } else if (type === 'error') {
+          deduplicatedMessage.error(content);
+        } else {
+          message[type](content);
+        }
+        return;
+      }
+
+      message[type](content);
     },
     [message, notification],
   );
